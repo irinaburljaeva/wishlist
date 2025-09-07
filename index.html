@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Семейный виш-лист</title>
+
+  <!-- Tailwind (CDN) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React + ReactDOM (CDN, UMD) -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+
+  <!-- Babel для JSX в браузере -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    :root { color-scheme: light; }
+    .container-narrow { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+    .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-size:14px; font-weight:600; }
+    .btn-primary { background:#0f172a; color:#fff; }
+    .btn-ghost { background:transparent; }
+    .input, .textarea, .select { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:8px 12px; outline:none; }
+    .input:focus, .textarea:focus, .select:focus { box-shadow: 0 0 0 4px #e2e8f0; }
+    .badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; padding:6px 10px; }
+  </style>
+</head>
+<body class="bg-gradient-to-b from-white to-slate-50 min-h-screen">
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useMemo, useState } = React;
+
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const saveLocal = (k, v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadLocal = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb } catch { return fb } }
+
+    const prettyPrice = (p) => {
+      if (!p) return '';
+      const num = Number(String(p).replace(/[^0-9.,]/g, '').replace(',', '.'));
+      if (Number.isFinite(num)) return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(num);
+      return p;
+    };
+
+    async function fetchLinkPreview(url) {
+      // Берём публичный Microlink API для превью (картинка/заголовок/описание)
+      try {
+        const res = await fetch(`https://api.microlink.io/?url=${encodeURIComponent(url)}&audio=false&video=false`);
+        const data = await res.json();
+        const r = data?.data || {};
+        return {
+          title: r.title || '',
+          description: r.description || '',
+          image: r.image?.url || r.logo?.url || '',
+          publisher: r.publisher || new URL(url).hostname.replace('www.', ''),
+        };
+      } catch {
+        return { title: '', description: '', image: '', publisher: '' };
+      }
+    }
+
+    function Header({ role, setRole, listId, setListId, displayName, setDisplayName }) {
+      return (
+        <div className="container-narrow py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">🎁</div>
+            <div>
+              <h1 className="text-2xl font-semibold">Семейный виш-лист</h1>
+              <p className="text-sm text-slate-500">Красивая страница подарков с тайными бронями</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 w-full md:w-auto">
+            <input className="input md:w-64" value={listId} onChange={e=>setListId(e.target.value)} placeholder="Название списка (например: Новый год 2025)" />
+            <input className="input md:w-44" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Ваше имя" />
+            <select className="select md:w-44" value={role} onChange={e=>setRole(e.target.value)}>
+              <option value="owner">Автор списка</option>
+              <option value="santa">Даритель</option>
+            </select>
+            <a className="btn btn-ghost md:w-44 text-center" href="#howto">Как поделиться</a>
+          </div>
+        </div>
+      );
+    }
+
+    function AddItemForm({ onAdd }) {
+      const [title, setTitle] = useState('');
+      const [url, setUrl] = useState('');
+      const [price, setPrice] = useState('');
+      const [note, setNote] = useState('');
+      const [loading, setLoading] = useState(false);
+      const [preview, setPreview] = useState(null);
+
+      useEffect(() => {
+        let active = true;
+        (async () => {
+          if (!url || !/^https?:\/\//i.test(url)) { setPreview(null); return; }
+          setLoading(true);
+          const p = await fetchLinkPreview(url);
+          if (active) { setPreview(p); setLoading(false); }
+        })();
+        return () => { active = false; };
+      }, [url]);
+
+      const submit = () => {
+        if (!title.trim()) return;
+        onAdd({ title: title.trim(), url: url.trim(), price: price.trim(), note: note.trim(), preview });
+        setTitle(''); setUrl(''); setPrice(''); setNote(''); setPreview(null);
+      };
+
+      return (
+        <div className="card p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Что хочу" />
+              <input className="input" value={price} onChange={e=>setPrice(e.target.value)} placeholder="Цена (необязательно)" />
+              <div className="md:col-span-2 flex items-center gap-2">
+                <span className="text-slate-500">🔗</span>
+                <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка на товар (маркетплейс)" />
+              </div>
+              <div className="md:col-span-2">
+                <textarea className="textarea" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий / размер / цвет"></textarea>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button className="btn btn-primary w-full" onClick={submit}>➕ Добавить</button>
+              {loading && <div className="text-sm text-slate-500">Загружаем превью…</div>}
+              {preview && (
+                <div className="rounded-xl border border-slate-200 p-2 flex gap-3 items-start">
+                  {preview.image ? (
+                    <img src={preview.image} alt="preview" className="w-16 h-16 rounded-lg object-cover"/>
+                  ) : (
+                    <div className="w-16 h-16 rounded-lg bg-slate-100 flex items-center justify-center">🔗</div>
+                  )}
+                  <div className="text-xs">
+                    <div className="font-medium line-clamp-2">{preview.title || 'Предпросмотр ссылки'}</div>
+                    <div className="text-slate-500 line-clamp-2">{preview.description}</div>
+                    <div className="mt-1"><span className="badge">{preview.publisher}</span></div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ItemCard({ item, role, currentUid, onClaim, onUnclaim, claimsNameVisible, onDelete }) {
+      const claimed = item.claims && item.claims.length > 0;
+      const youClaimed = (item.claims || []).some(c => c.claimerUid === currentUid);
+      const firstClaim = (item.claims || [])[0];
+
+      return (
+        <div className="card overflow-hidden group">
+          <div className="grid grid-cols-[96px_1fr] gap-3 p-3">
+            {item.preview?.image ? (
+              <img src={item.preview.image} alt="img" className="w-24 h-24 rounded-xl object-cover"/>
+            ) : (
+              <div className={`w-24 h-24 rounded-xl flex items-center justify-center ${claimed?'bg-green-50':'bg-slate-100'}`}>🎁</div>
+            )}
+            <div className="flex flex-col">
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <div className="text-base font-semibold leading-tight">{item.title}</div>
+                  {item.price && <div className="text-sm text-slate-500">{prettyPrice(item.price)}</div>}
+                  {item.note && <div className="text-sm text-slate-500 mt-1 line-clamp-2">{item.note}</div>}
+                </div>
+                {onDelete && (
+                  <button className="btn btn-ghost p-2 opacity-0 group-hover:opacity-100" onClick={()=>onDelete(item.id)} title="Удалить">🗑️</button>
+                )}
+              </div>
+              <div className="mt-2 flex items-center gap-2 flex-wrap">
+                {item.url && <a href={item.url} target="_blank" rel="noreferrer" className="text-sm underline inline-flex items-center gap-1">🔗 Открыть ссылку</a>}
+                {role === 'owner' ? (
+                  <span className={`badge ${claimed?'bg-slate-900 text-white':'bg-slate-100 text-slate-700'}`}>{claimed? 'Кто-то уже забронировал' : 'Пока свободно'}</span>
+                ) : (
+                  claimed ? (
+                    youClaimed ? (
+                      <div className="flex items-center gap-2">
+                        <span className="badge bg-slate-900 text-white">✅ Вы забронировали</span>
+                        <button className="btn btn-ghost border border-slate-200" onClick={()=>onUnclaim(item.id)}>Снять бронь</button>
+                      </div>
+                    ) : (
+                      <span className="badge">Уже забронировано</span>
+                    )
+                  ) : (
+                    <button className="btn btn-ghost border border-slate-200" onClick={()=>onClaim(item.id)}>Забронировать</button>
+                  )
+                )}
+                {role === 'santa' && claimsNameVisible && claimed && firstClaim?.claimerName && (
+                  <span className="text-xs text-slate-500">(забронировал(а): {firstClaim.claimerName})</span>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [listId, setListId] = useState(loadLocal('wish:listId', 'Новый год 2025'));
+      const [role, setRole] = useState(loadLocal('wish:role', 'owner'));
+      const [displayName, setDisplayName] = useState(loadLocal('wish:name', ''));
+      const [items, setItems] = useState(loadLocal('wish:items', []));
+      const [claimsNameVisible, setClaimsNameVisible] = useState(false);
+      const [currentUid, setCurrentUid] = useState(loadLocal('wish:uid', uid()));
+
+      useEffect(()=>saveLocal('wish:listId', listId), [listId]);
+      useEffect(()=>saveLocal('wish:role', role), [role]);
+      useEffect(()=>saveLocal('wish:name', displayName), [displayName]);
+      useEffect(()=>saveLocal('wish:items', items), [items]);
+      useEffect(()=>saveLocal('wish:uid', currentUid), [currentUid]);
+
+      const addItem = ({ title, url, price, note, preview }) => {
+        const item = { id: uid(), title, url, price, note, preview, createdAt: Date.now(), addedByUid: currentUid, claims: [] };
+        setItems(prev => [item, ...prev]);
+      };
+      const deleteItem = (id) => setItems(prev => prev.filter(i => i.id !== id));
+      const claim = (itemId) => setItems(prev => prev.map(i => i.id===itemId ? { ...i, claims: [{ claimerUid: currentUid, claimerName: displayName || 'Без имени', createdAt: Date.now() }] } : i));
+      const unclaim = (itemId) => setItems(prev => prev.map(i => i.id===itemId ? { ...i, claims: [] } : i));
+
+      const sortedItems = useMemo(() => {
+        const claimed = items.filter(i => (i.claims?.length || 0) > 0);
+        const free = items.filter(i => (i.claims?.length || 0) === 0);
+        return [...free, ...claimed];
+      }, [items]);
+
+      return (
+        <div>
+          <Header role={role} setRole={setRole} listId={listId} setListId={setListId} displayName={displayName} setDisplayName={setDisplayName} />
+
+          <div className="container-narrow space-y-4">
+            {role === 'owner' && <AddItemForm onAdd={addItem} />}
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm text-slate-500">👥 Список: <span className="font-medium">{listId}</span></div>
+              {role === 'santa' && (
+                <label className="flex items-center gap-2 text-sm text-slate-500">
+                  <input type="checkbox" checked={claimsNameVisible} onChange={e=>setClaimsNameVisible(e.target.checked)} />
+                  Показывать имя забронировавшего
+                </label>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortedItems.map(item => (
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  role={role}
+                  currentUid={currentUid}
+                  onClaim={claim}
+                  onUnclaim={unclaim}
+                  claimsNameVisible={claimsNameVisible}
+                  onDelete={role==='owner'?deleteItem:undefined}
+                />
+              ))}
+            </div>
+
+            {sortedItems.length === 0 && (
+              <div className="text-center text-slate-500 py-12">
+                Пока пусто. Добавьте первое желание!
+              </div>
+            )}
+
+            <div id="howto" className="card p-6 space-y-3">
+              <div className="text-base font-semibold">Как поделиться</div>
+              <ol className="list-decimal ml-6 space-y-2 text-sm">
+                <li>Придумайте общее название списка (например, «Новый год 2025») и укажите его сверху.</li>
+                <li>Автор выбирает роль «Автор списка», добавляет желания и отправляет ссылку на эту страницу семье.</li>
+                <li>Дарители открывают страницу, выбирают роль «Даритель» и нажимают «Забронировать» на выбранном подарке.</li>
+                <li>Автор видит, что подарок забронирован, но не видит кем.</li>
+              </ol>
+              <div className="text-sm text-slate-500">
+                Сейчас данные сохраняются только на вашем устройстве (LocalStorage). Для синхронизации между устройствами можно позже подключить Firebase.
+              </div>
+            </div>
+
+            <div className="pb-10"></div>
+          </div>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
