@@ -87,7 +87,6 @@
       const [newName, setNewName] = useState('');
       const [creating, setCreating] = useState(false);
       const [error, setError] = useState('');
-
       return (
         <div className="container-narrow">
           <div className="card p-6 space-y-4">
@@ -119,11 +118,13 @@
                     if (!v) return;
                     setCreating(true); setError('');
                     try {
-                      await onCreateNew(v);   // выберет список при успехе
-                      setNewName('');         // очищаем только при успехе
+                      // Больше НЕ проставляем mode здесь — определим его на шаге роли
+                      await listDoc(v).set({ updatedAt: Date.now() }, { merge: true });
+                      setListId(v);
+                      setNewName('');
                     } catch (e) {
                       console.error(e);
-                      setError('Не удалось создать список. Проверьте Firestore Rules (create на /lists/{listId}).');
+                      setError('Не удалось создать список. Rules: allow create на /lists/{listId}.');
                     } finally {
                       setCreating(false);
                     }
@@ -157,7 +158,7 @@
                   <option value="open">Режим: добавляют все (Новый год)</option>
                 </select>
                 <div className="note flex items-center">
-                  {!canEditMode ? 'Режим сохранит только владелец' : 'Вы можете сохранить выбранный режим'}
+                  {!canEditMode ? 'Режим сохранит только владелец' : 'Вы сохраните выбранный режим'}
                 </div>
               </div>
             </div>
@@ -275,7 +276,7 @@
       const [listId, setListId] = useState(loadLocal('wish:listId', ''));
       const [displayName, setDisplayName] = useState(loadLocal('wish:name', ''));
       const [role, setRole] = useState('santa'); // santa | owner
-      const [mode, setMode] = useState('single_owner'); // single_owner | open
+      const [mode, setMode] = useState('single_owner'); // UI default
 
       const [authUid, setAuthUid] = useState(null);
       const [ownerUid, setOwnerUid] = useState(null);
@@ -307,7 +308,7 @@
         const unsub = listDoc(listId).onSnapshot(s => {
           const d = s.data() || {};
           setOwnerUid(d.ownerUid || null);
-          setMode(d.mode || 'single_owner');
+          setMode(d.mode || 'single_owner');  // UI default если поле пока не задано
         });
         return () => unsub && unsub();
       }, [listId]);
@@ -330,27 +331,25 @@
         return () => unsub && unsub();
       }, [listId, role]);
 
-      // create new list (fixed: error-safe)
+      // create new list (теперь без записи mode)
       const onCreateNew = async (name) => {
-        await listDoc(name).set({ updatedAt: Date.now(), mode: 'single_owner' }, { merge: true });
+        await listDoc(name).set({ updatedAt: Date.now() }, { merge: true });
         setListId(name);
       };
 
-      // continue to screen 3 — set owner if recipient; show error inline if denied
+      // continue to screen 3 — фиксируем ownerUid и (если вы владелец) режим
       const onContinue = async () => {
         setStepError('');
         try {
           if (!listId) { setStepError('Не выбран список.'); return; }
 
           if (role === 'owner') {
-            // владелец фиксирует ownerUid и режим
             await listDoc(listId).set({
               ownerUid: authUid,
               mode,
               updatedAt: Date.now()
             }, { merge: true });
           } else {
-            // даритель не трогает ownerUid/mode
             await listDoc(listId).set({ updatedAt: Date.now() }, { merge: true });
           }
           setScreen(3);
@@ -450,9 +449,8 @@
               setMode={async (m)=>{
                 setMode(m);
                 if (canEditMode) {
-                  try {
-                    await listDoc(listId).set({ mode: m, updatedAt: Date.now() }, { merge: true });
-                  } catch (e) { console.error(e); }
+                  try { await listDoc(listId).set({ mode: m, updatedAt: Date.now() }, { merge: true }); }
+                  catch (e) { console.error(e); }
                 }
               }}
               authUid={authUid}
@@ -465,7 +463,6 @@
             />
           )}
 
-          {/* навигация между экранами */}
           <div className="container-narrow mt-6 flex gap-2">
             {screen > 1 && <button className="btn btn-ghost border" onClick={()=>setScreen(screen-1)}>← Назад</button>}
             {screen === 1 && <button className="btn btn-primary ml-auto" disabled={!listId} onClick={()=>setScreen(2)}>Далее</button>}
