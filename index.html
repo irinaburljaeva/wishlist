@@ -19,13 +19,13 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
 
   <style>
-    .container-narrow { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+    .container-narrow { max-width: 1024px; margin: 0 auto; padding: 0 16px; }
     .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
     .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-size:14px; font-weight:600; }
     .btn-primary { background:#0f172a; color:#fff; }
     .btn-ghost { background:transparent; }
     .btn[disabled] { opacity:.6; cursor:not-allowed; }
-    .input, .textarea, .select { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:8px 12px; outline:none; }
+    .input, .textarea, .select { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:10px 12px; outline:none; }
     .input:focus, .textarea:focus, .select:focus { box-shadow: 0 0 0 4px #e2e8f0; }
     .badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; padding:6px 10px; }
     .err { color:#b91c1c; font-size:12px; }
@@ -52,12 +52,13 @@
     const db = firebase.firestore();
     auth.signInAnonymously().catch(console.error);
 
-    // Коллекции
-    const listDoc   = (listId) => db.collection('lists').doc(listId);
-    const itemsCol  = (listId) => listDoc(listId).collection('items');
-    const claimsCol = (listId) => listDoc(listId).collection('claims');
+    // Col helpers
+    const listsCol = () => db.collection('lists');
+    const listDoc  = (listId) => listsCol().doc(listId);
+    const itemsCol = (listId) => listDoc(listId).collection('items');
+    const claimsCol= (listId) => listDoc(listId).collection('claims');
 
-    // Утилиты
+    // utils
     const saveLocal = (k, v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb } catch { return fb } }
     const prettyPrice = (p) => {
@@ -67,47 +68,99 @@
       return p;
     };
 
-    // Компоненты
-    function Header({ role, setRole, listId, setListId, displayName, setDisplayName, mode, setMode, canEditMeta }) {
+    // ===== WIZARD SCREENS =====
+    function StatusBar({ listId, authUid, ownerUid, mode }) {
       return (
-        <div className="container-narrow py-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">🎁</div>
-            <div>
-              <h1 className="text-2xl font-semibold">Семейный виш-лист</h1>
-              <p className="text-sm text-slate-500">Дни рождения и общий список — в одном приложении</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 w-full md:w-auto">
-            <input className="input md:w-56" value={listId} onChange={e=>setListId(e.target.value.trim())} placeholder="ID списка (напр. valera-bday)" />
-            <input className="input md:w-44" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Ваше имя" />
-            <select className="select md:w-44" value={role} onChange={e=>setRole(e.target.value)}>
-              <option value="owner">Автор списка</option>
-              <option value="santa">Даритель</option>
-            </select>
-            <select className="select md:w-56" value={mode} onChange={e=>setMode(e.target.value)} disabled={!canEditMeta}>
-              <option value="single_owner">Режим: владелец добавляет</option>
-              <option value="open">Режим: добавляют все</option>
-            </select>
-            <span className="note md:ml-2">{!canEditMeta ? 'Режим меняет только автор' : ''}</span>
+        <div className="container-narrow">
+          <div className="text-xs text-slate-500 py-2">
+            <span className="mr-4">🗂 listId: <b>{listId || '—'}</b></span>
+            <span className="mr-4">👤 uid: <code>{authUid || '—'}</code></span>
+            <span className="mr-4">⭐ ownerUid: <code>{ownerUid || '—'}</code></span>
+            <span>⚙️ mode: <b>{mode || 'single_owner'}</b></span>
           </div>
         </div>
       );
     }
 
+    // Screen 1 — choose/create list
+    function ScreenChooseList({ lists, listId, setListId, onCreateNew, onNext }) {
+      const [newName, setNewName] = useState('');
+      return (
+        <div className="container-narrow">
+          <div className="card p-6 space-y-4">
+            <h2 className="text-xl font-semibold">Выберите или создайте праздник</h2>
+
+            <div className="space-y-2">
+              <div className="text-sm text-slate-600">Существующие:</div>
+              <div className="grid gap-2">
+                {lists.length === 0 && <div className="note">Пока нет — создайте первый список ниже.</div>}
+                {lists.map(l => (
+                  <button key={l.id}
+                    className={`btn ${listId===l.id?'btn-primary':'btn-ghost border'}`}
+                    onClick={()=>setListId(l.id)}>
+                    {l.id} {l.mode ? `· ${l.mode}` : ''}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="text-sm text-slate-600">Создать новый праздник/лист</div>
+              <div className="grid gap-2 md:grid-cols-[1fr_auto]">
+                <input className="input" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Например: День рождения Валеры, newyear2025" />
+                <button className="btn btn-ghost border" onClick={()=>{ if(newName.trim()){ onCreateNew(newName.trim()); setNewName(''); }}}>Создать</button>
+              </div>
+              <div className="note">ID списка — то, что будете отправлять семье как «адрес» списка.</div>
+            </div>
+
+            <div className="pt-2">
+              <button className="btn btn-primary" disabled={!listId} onClick={onNext}>Далее</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Screen 2 — identity + role
+    function ScreenIdentity({ displayName, setDisplayName, role, setRole, mode, setMode, canEditMeta, onContinue }) {
+      return (
+        <div className="container-narrow">
+          <div className="card p-6 space-y-4">
+            <h2 className="text-xl font-semibold">Кто вы для этого списка?</h2>
+            <div className="grid gap-3 md:grid-cols-2">
+              <input className="input" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Ваше имя" />
+              <select className="select" value={role} onChange={e=>setRole(e.target.value)}>
+                <option value="owner">Получатель (автор списка)</option>
+                <option value="santa">Даритель</option>
+              </select>
+              <div className="md:col-span-2 grid gap-2 md:grid-cols-2">
+                <select className="select" value={mode} onChange={e=>setMode(e.target.value)} disabled={!canEditMeta}>
+                  <option value="single_owner">Режим: владелец добавляет (дни рождения)</option>
+                  <option value="open">Режим: добавляют все (Новый год)</option>
+                </select>
+                <div className="note flex items-center">{!canEditMeta ? 'Менять режим может только владелец' : 'Вы можете менять режим списка'}</div>
+              </div>
+            </div>
+            <div className="pt-2">
+              <button className="btn btn-primary" onClick={onContinue}>Продолжить</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Screen 3 — list UI
     function AddItemForm({ onAdd, disabled, error }) {
       const [title, setTitle] = useState('');
       const [url, setUrl] = useState('');
       const [price, setPrice] = useState('');
       const [note, setNote] = useState('');
-
       const submit = () => {
         if (disabled) return;
         if (!title.trim()) return;
         onAdd({ title: title.trim(), url: url.trim(), price: price.trim(), note: note.trim() });
         setTitle(''); setUrl(''); setPrice(''); setNote('');
       };
-
       return (
         <div className="card p-4">
           <div className="grid gap-3 md:grid-cols-3">
@@ -124,78 +177,112 @@
             </div>
             <div className="flex flex-col gap-2">
               <button className="btn btn-primary w-full" onClick={submit} disabled={disabled}>➕ Добавить</button>
-              {disabled && <div className="note">Секунду… назначаем владельца/права списка.</div>}
+              {disabled && <div className="note">Ожидаем подтверждение прав владельца…</div>}
               {error && <div className="err">{error}</div>}
-              <div className="note">В режиме «владелец добавляет» — добавлять/удалять может только автор. В «open» — любой.</div>
             </div>
           </div>
         </div>
       );
     }
 
-    function ItemCard({ item, role, authUid, claimData, onClaim, onUnclaim, onDelete, writeError, isClaimLoading }) {
+    function ItemCard({ item, role, authUid, claimData, onClaim, onUnclaim }) {
       const claimed = !!claimData;
-      const isMyItem = item.addedByUid && authUid && item.addedByUid === authUid;
+      const myItem = item.addedByUid && authUid && item.addedByUid === authUid;
 
       return (
-        <div className="card overflow-hidden group">
-          <div className="grid grid-cols-[96px_1fr] gap-3 p-3">
-            <div className={`w-24 h-24 rounded-xl flex items-center justify-center ${claimed?'bg-green-50':'bg-slate-100'}`}>🎁</div>
-            <div className="flex flex-col">
-              <div className="flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-base font-semibold leading-tight">{item.title}</div>
-                  {item.price && <div className="text-sm text-slate-500">{prettyPrice(item.price)}</div>}
-                  {item.note && <div className="text-sm text-slate-500 mt-1 line-clamp-2">{item.note}</div>}
-                </div>
-                {role === 'owner' && (
-                  <button className="btn btn-ghost p-2 opacity-0 group-hover:opacity-100" onClick={()=>onDelete(item.id)} title="Удалить">🗑️</button>
+        <div className="card p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <div className="text-base font-semibold">{item.title}</div>
+              {item.price && <div className="text-sm text-slate-500">{prettyPrice(item.price)}</div>}
+              {item.note && <div className="text-sm text-slate-500 mt-1">{item.note}</div>}
+              {item.url && <div className="mt-1"><a className="text-sm underline" target="_blank" rel="noreferrer" href={item.url}>Открыть ссылку</a></div>}
+            </div>
+            {role === 'santa' && (
+              <div className="min-w-[160px] text-right">
+                {myItem ? (
+                  <span className="badge">Это ваш подарок</span>
+                ) : !claimed ? (
+                  <button className="btn btn-ghost border" onClick={()=>onClaim(item.id)}>Забронировать</button>
+                ) : (
+                  <span className="badge">Забронировано: {claimData.claimerName}</span>
                 )}
               </div>
-
-              {role === "santa" && (
-                <div className="mt-2 flex items-center gap-2 flex-wrap">
-                  {item.url && <a href={item.url} target="_blank" rel="noreferrer" className="text-sm underline">Открыть ссылку</a>}
-                  {isMyItem ? (
-                    <span className="badge">Это ваш подарок</span>
-                  ) : !claimed ? (
-                    <button className="btn btn-ghost border border-slate-200" onClick={()=>onClaim(item.id)} disabled={isClaimLoading}>
-                      {isClaimLoading ? 'Бронируем…' : 'Забронировать'}
-                    </button>
-                  ) : (
-                    <span className="badge">Забронировано: {claimData.claimerName}</span>
-                  )}
-                  {writeError && <div className="err w-full">{writeError}</div>}
-                </div>
-              )}
-              {/* Автор видит только описание без статусов */}
-            </div>
+            )}
           </div>
         </div>
       );
     }
 
+    function ScreenList({
+      listId, role, mode, canEditMeta, setMode,
+      authUid, ownerUid, items, claims, addItem, writeError, onClaim
+    }) {
+      const canAdd = role === 'owner' || mode === 'open';
+      return (
+        <div className="container-narrow space-y-4">
+          <div className="card p-4 flex flex-wrap gap-3 items-center justify-between">
+            <div className="font-medium">Список: {listId}</div>
+            <div className="flex items-center gap-2">
+              <select className="select" value={mode} onChange={e=>setMode(e.target.value)} disabled={!canEditMeta}>
+                <option value="single_owner">Режим: владелец добавляет</option>
+                <option value="open">Режим: добавляют все</option>
+              </select>
+              {!canEditMeta && <span className="note">Режим меняет только владелец</span>}
+            </div>
+          </div>
+
+          {canAdd && role === 'owner' && <AddItemForm onAdd={addItem} disabled={false} error={writeError} />}
+          {canAdd && role !== 'owner' && mode === 'open' && <div className="note">В «open» режиме добавлять может любой участник.</div>}
+          {!canAdd && <div className="note">Добавлять может только получатель (владелец) этого списка.</div>}
+
+          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+            {items.map(it => (
+              <ItemCard key={it.id} item={it} role={role} authUid={authUid} claimData={claims[it.id]} onClaim={onClaim} />
+            ))}
+          </div>
+
+          {items.length === 0 && (
+            <div className="text-center text-slate-500 py-12">Пока пусто. Добавьте первое желание!</div>
+          )}
+        </div>
+      );
+    }
+
+    // ===== APP =====
     function App() {
-      const [listId, setListId] = useState(loadLocal('wish:listId', 'newyear2025'));
-      const [role, setRole] = useState(loadLocal('wish:role', 'owner'));
+      const [screen, setScreen] = useState(1); // 1 choose list, 2 identity, 3 list
+      const [lists, setLists] = useState([]);
+      const [listId, setListId] = useState(loadLocal('wish:listId', ''));
       const [displayName, setDisplayName] = useState(loadLocal('wish:name', ''));
+      const [role, setRole] = useState('santa'); // santa | owner
+      const [mode, setMode] = useState('single_owner'); // single_owner | open
+
+      const [authUid, setAuthUid] = useState(null);
+      const [ownerUid, setOwnerUid] = useState(null);
       const [items, setItems] = useState([]);
       const [claims, setClaims] = useState({});
       const [writeError, setWriteError] = useState('');
-      const [claimLoading, setClaimLoading] = useState(false);
 
-      // мета списка
-      const [mode, setMode] = useState('single_owner'); // single_owner | open
-      const [ownerUid, setOwnerUid] = useState(null);
-      const [authUid, setAuthUid] = useState(null);
-      const [ownerReady, setOwnerReady] = useState(false); // разрешение добавлять в single_owner
+      // auth
+      useEffect(()=> {
+        const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
+        return () => unsub();
+      }, []);
 
+      // lists feed
+      useEffect(()=> {
+        const unsub = listsCol().orderBy('updatedAt','desc').limit(50)
+          .onSnapshot(s => setLists(s.docs.map(d => ({ id: d.id, ...d.data() }))));
+        return () => unsub && unsub();
+      }, []);
+
+      // save locals
       useEffect(()=>saveLocal('wish:listId', listId), [listId]);
-      useEffect(()=>saveLocal('wish:role', role), [role]);
       useEffect(()=>saveLocal('wish:name', displayName), [displayName]);
 
-      // подписка на метаданные списка (ownerUid/mode)
-      useEffect(() => {
+      // meta of current list
+      useEffect(()=> {
         if (!listId) return;
         const unsub = listDoc(listId).onSnapshot(s => {
           const d = s.data() || {};
@@ -205,179 +292,159 @@
         return () => unsub && unsub();
       }, [listId]);
 
-      // auth и назначение владельца/режима, если вы "Автор списка"
-      useEffect(() => {
-        const unsub = auth.onAuthStateChanged(async (user) => {
-          setAuthUid(user?.uid || null);
-          if (!user || !listId) return;
-
-          try {
-            if (role === 'owner') {
-              // автор задаёт ownerUid (если ещё не задан) и может менять режим
-              const toSet = { updatedAt: Date.now() };
-              if (!ownerUid) toSet.ownerUid = user.uid;
-              // если пользователь с UI поменял режим — запишем
-              if (mode) toSet.mode = mode;
-              await listDoc(listId).set(toSet, { merge: true });
-            }
-          } catch(e) { console.error(e); }
-        });
-        return () => unsub();
-      }, [listId, role, mode, ownerUid]);
-
-      // вычисляем, можно ли добавлять
-      useEffect(() => {
-        // в open режиме добавлять можно всем авторизованным
-        if (mode === 'open') { setOwnerReady(true); return; }
-        // в single_owner — только владельцу
-        setOwnerReady(Boolean(ownerUid && authUid && ownerUid === authUid));
-      }, [mode, ownerUid, authUid]);
-
-      // items
-      useEffect(() => {
+      // items / claims
+      useEffect(()=> {
         if (!listId) return;
-        const unsub = itemsCol(listId)
-          .orderBy('createdAt','desc')
-          .onSnapshot(snap => setItems(snap.docs.map(d => ({ id: d.id, ...d.data() }))), console.error);
+        const unsub = itemsCol(listId).orderBy('createdAt','desc')
+          .onSnapshot(s => setItems(s.docs.map(d => ({ id: d.id, ...d.data() }))));
         return () => unsub && unsub();
       }, [listId]);
 
-      // claims (видят только дарители; автор не подписывается)
-      useEffect(() => {
-        if (!listId || role !== "santa") { setClaims({}); return; }
-        const unsub = claimsCol(listId).onSnapshot(snap => {
+      useEffect(()=> {
+        if (!listId || role !== 'santa') { setClaims({}); return; }
+        const unsub = claimsCol(listId).onSnapshot(s => {
           const obj = {};
-          snap.forEach(d => obj[d.id] = d.data());
+          s.forEach(d => obj[d.id] = d.data());
           setClaims(obj);
-        }, console.error);
+        });
         return () => unsub && unsub();
       }, [listId, role]);
 
-      // --- действия ---
+      // create new list
+      const onCreateNew = async (name) => {
+        await listDoc(name).set({ updatedAt: Date.now(), mode: 'single_owner' }, { merge: true });
+        setListId(name);
+      };
+
+      // proceed from screen 1 to 2
+      const go2 = () => setScreen(2);
+
+      // continue to screen 3 — set owner if recipient
+      const onContinue = async () => {
+        try {
+          if (!listId) return;
+
+          // владелец может менять режим; если «Получатель» — зафиксируем ownerUid
+          if (role === 'owner') {
+            await listDoc(listId).set({
+              ownerUid: authUid,
+              mode,
+              updatedAt: Date.now()
+            }, { merge: true });
+          } else {
+            // даритель меняет только имя; режим трогает только владелец
+            await listDoc(listId).set({ updatedAt: Date.now() }, { merge: true });
+          }
+          setScreen(3);
+        } catch (e) {
+          console.error(e);
+          alert('Не удалось сохранить настройки списка. Проверьте Firestore Rules.');
+        }
+      };
+
+      // actions
       const addItem = async ({ title, url, price, note }) => {
         setWriteError('');
-        if (!authUid) { setWriteError('Нет авторизации. Перезайдите.'); return; }
-
-        // в single_owner добавлять может только владелец
-        if (mode === 'single_owner' && !ownerReady) {
-          setWriteError('Добавлять может только автор этого списка.');
-          return;
-        }
         try {
+          // в single_owner добавляет владелец; в open — любой
+          if (mode === 'single_owner' && authUid !== ownerUid) {
+            setWriteError('Добавлять может только получатель (владелец) этого списка.');
+            return;
+          }
           await itemsCol(listId).add({
             title, url, price, note,
             addedByUid: authUid,
             createdAt: Date.now()
           });
+          await listDoc(listId).set({ updatedAt: Date.now() }, { merge: true });
         } catch (e) {
           console.error(e);
-          setWriteError('Нет прав для добавления. Проверьте правила Firestore и роль.');
+          setWriteError('Нет прав для добавления. Проверьте правила Firestore.');
         }
       };
 
-      const deleteItem = async (id) => {
+      const onClaim = async (itemId) => {
         setWriteError('');
-        // удалять может владелец списка или автор item — правила это тоже проверяют,
-        // но дадим понятное сообщение заранее
-        if (mode === 'single_owner' && !ownerReady) {
-          setWriteError('Удалять может только автор этого списка.');
-          return;
-        }
         try {
-          await itemsCol(listId).doc(id).delete();
-          await claimsCol(listId).doc(id).delete();
-        } catch (e) {
-          console.error(e);
-          setWriteError('Нет прав для удаления. Проверьте правила Firestore.');
-        }
-      };
-
-      const claim = async (itemId) => {
-        setWriteError('');
-        setClaimLoading(true);
-        try {
-          // запретим бронировать свой же подарок на UI (и в rules это запрещено)
-          const it = items.find(i => i.id === itemId);
-          if (it && it.addedByUid === authUid) {
+          const item = items.find(i => i.id === itemId);
+          if (item?.addedByUid === authUid) {
             setWriteError('Нельзя бронировать свой собственный подарок.');
-          } else {
-            const cdoc = await claimsCol(listId).doc(itemId).get();
-            if (cdoc.exists) {
-              setWriteError('Этот подарок уже забронировали.');
-            } else {
-              await claimsCol(listId).doc(itemId).set({
-                claimerUid: authUid,
-                claimerName: displayName || 'Без имени',
-                createdAt: Date.now()
-              });
-            }
+            return;
           }
+          const c = await claimsCol(listId).doc(itemId).get();
+          if (c.exists) {
+            setWriteError('Этот подарок уже забронирован.');
+            return;
+          }
+          await claimsCol(listId).doc(itemId).set({
+            claimerUid: authUid,
+            claimerName: displayName || 'Без имени',
+            createdAt: Date.now()
+          });
         } catch (e) {
           console.error(e);
-          setWriteError('Не удалось забронировать (проверьте правила Firestore).');
-        } finally {
-          setClaimLoading(false);
-        }
-      };
-
-      const unclaim = async (itemId) => {
-        setWriteError('');
-        try {
-          await claimsCol(listId).doc(itemId).delete();
-        } catch (e) {
-          console.error(e);
-          setWriteError('Не удалось снять бронь (проверьте правила Firestore).');
+          setWriteError('Не удалось забронировать. Проверьте правила Firestore.');
         }
       };
 
       const canEditMeta = role === 'owner' && authUid && ownerUid === authUid;
 
       return (
-        <div>
-          <Header
-            role={role} setRole={setRole}
-            listId={listId} setListId={setListId}
-            displayName={displayName} setDisplayName={setDisplayName}
-            mode={mode} setMode={setMode}
-            canEditMeta={canEditMeta}
-          />
-
-          <div className="container-narrow space-y-4">
-            {(role === 'owner' || mode === 'open') && (
-              <AddItemForm onAdd={addItem} disabled={mode==='single_owner' && !ownerReady} error={writeError} />
-            )}
-
-            {writeError && role !== 'owner' && <div className="card p-3 err">Ошибка: {writeError}</div>}
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {items.map(item => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  role={role}
-                  authUid={authUid}
-                  claimData={claims[item.id]}
-                  onClaim={claim}
-                  onUnclaim={unclaim}
-                  onDelete={role==='owner'?deleteItem:undefined}
-                  writeError={writeError}
-                  isClaimLoading={claimLoading}
-                />
-              ))}
-            </div>
-
-            {items.length === 0 && (
-              <div className="text-center text-slate-500 py-12">
-                Пока пусто. Добавьте первое желание!
-              </div>
-            )}
-
-            <div className="note container-narrow pb-8 space-y-1">
-              <p>Режим «владелец добавляет» — подходит для дней рождения (добавляет только автор).</p>
-              <p>Режим «добавляют все» — подходит для Нового года: каждый добавляет свои желания и может бронировать чужие.</p>
-              <p>Автор подарка не видит бронь по своему подарку и не может бронировать его.</p>
+        <div className="pb-10">
+          <div className="container-narrow py-6 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">🎁</div>
+            <div>
+              <h1 className="text-2xl font-semibold">Семейный виш-лист</h1>
+              <p className="text-sm text-slate-500">Шаги: выбрать список → указать роль → работать со списком</p>
             </div>
           </div>
+
+          <StatusBar listId={listId} authUid={authUid} ownerUid={ownerUid} mode={mode} />
+
+          {screen === 1 && (
+            <ScreenChooseList
+              lists={lists}
+              listId={listId}
+              setListId={setListId}
+              onCreateNew={onCreateNew}
+              onNext={go2}
+            />
+          )}
+
+          {screen === 2 && (
+            <ScreenIdentity
+              displayName={displayName}
+              setDisplayName={setDisplayName}
+              role={role}
+              setRole={setRole}
+              mode={mode}
+              setMode={setMode}
+              canEditMeta={true /* на этом шаге позволяем выбрать режим, но зафиксируется он только если вы "Получатель" */}
+              onContinue={onContinue}
+            />
+          )}
+
+          {screen === 3 && (
+            <ScreenList
+              listId={listId}
+              role={role}
+              mode={mode}
+              canEditMeta={canEditMeta}
+              setMode={async (m)=>{
+                setMode(m);
+                if (canEditMeta) {
+                  await listDoc(listId).set({ mode: m, updatedAt: Date.now() }, { merge: true });
+                }
+              }}
+              authUid={authUid}
+              ownerUid={ownerUid}
+              items={items}
+              claims={claims}
+              addItem={addItem}
+              writeError={writeError}
+              onClaim={onClaim}
+            />
+          )}
         </div>
       );
     }
