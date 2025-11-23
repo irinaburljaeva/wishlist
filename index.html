@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Семейный виш-лист</title>
+  <title>Новогодний семейный виш-лист</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -19,24 +19,28 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
 
   <style>
-    .container-narrow { max-width: 1024px; margin: 0 auto; padding: 0 16px; }
-    .card { background:#fff; border:1px solid #e2e8f0; border-radius:16px; box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:12px; padding:10px 14px; font-size:14px; font-weight:600; }
-    .btn-primary { background:#0f172a; color:#fff; }
-    .btn-ghost { background:transparent; }
-    .btn[disabled] { opacity:.6; cursor:not-allowed; }
-    .input, .textarea, .select { width:100%; border:1px solid #cbd5e1; border-radius:12px; padding:10px 12px; outline:none; }
-    .input:focus, .textarea:focus, .select:focus { box-shadow: 0 0 0 4px #e2e8f0; }
-    .badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#f1f5f9; color:#334155; font-size:12px; padding:6px 10px; }
-    .err { color:#b91c1c; font-size:12px; }
-    .note { color:#64748b; font-size:12px; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif; }
+    .container-narrow { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    .card { background:#ffffff; border-radius:24px; box-shadow:0 20px 40px rgba(15,23,42,.10); border:1px solid rgba(148,163,184,.25);}
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:10px 16px; font-size:14px; font-weight:600; }
+    .btn-primary { background:linear-gradient(135deg,#f97316,#facc15); color:#111827; }
+    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-ghost { background:transparent; color:#0f172a; }
+    .btn-tab-active { background:#0f172a; color:#fefce8; }
+    .btn-tab-inactive { background:transparent; color:#334155; }
+    .input, .textarea { width:100%; border-radius:16px; border:1px solid #e2e8f0; padding:10px 14px; outline:none; background:#f8fafc; }
+    .input:focus, .textarea:focus { border-color:#fb923c; box-shadow:0 0 0 3px rgba(251,146,60,.25); background:#ffffff; }
+    .badge { display:inline-flex; align-items:center; gap:6px; border-radius:999px; background:#fefce8; color:#92400e; font-size:11px; padding:4px 9px; }
+    .badge-soft { background:#e2e8f0; color:#334155; }
+    .err { color:#b91c1c; font-size:13px; }
+    .note { color:#64748b; font-size:13px; }
   </style>
 </head>
-<body class="bg-gradient-to-b from-white to-slate-50 min-h-screen">
+<body class="min-h-screen bg-gradient-to-b from-rose-50 via-amber-50 to-sky-50">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useEffect, useState } = React;
+    const { useEffect, useState, useMemo } = React;
 
     // === Firebase init ===
     const firebaseConfig = {
@@ -52,421 +56,411 @@
     const db = firebase.firestore();
     auth.signInAnonymously().catch(console.error);
 
-    // Col helpers
-    const listsCol = () => db.collection('lists');
-    const listDoc  = (listId) => listsCol().doc(listId);
-    const itemsCol = (listId) => listDoc(listId).collection('items');
-    const claimsCol= (listId) => listDoc(listId).collection('claims');
+    // Один общий список на Новый год
+    const LIST_ID = 'newyear2025';
+    const listDoc  = db.collection('lists').doc(LIST_ID);
+    const itemsCol = () => listDoc.collection('items');
+    const claimsCol = () => listDoc.collection('claims');
 
-    // utils
-    const saveLocal = (k, v) => localStorage.setItem(k, JSON.stringify(v));
-    const loadLocal = (k, fb) => { try { return JSON.parse(localStorage.getItem(k)) ?? fb } catch { return fb } }
-    const prettyPrice = (p) => {
-      if (!p) return '';
-      const num = Number(String(p).replace(/[^0-9.,]/g, '').replace(',', '.'));
-      if (Number.isFinite(num)) return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(num);
-      return p;
+    const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadLocal = (k,fallback) => {
+      try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
+      catch { return fallback; }
     };
 
-    // ===== UI pieces =====
-    function StatusBar({ listId, authUid, ownerUid, mode, error }) {
+    function prettyPrice(p){
+      if(!p) return '';
+      const num = Number(String(p).replace(/[^0-9.,]/g,'').replace(',','.'));
+      if(Number.isFinite(num)) return new Intl.NumberFormat(undefined,{style:'currency',currency:'EUR'}).format(num);
+      return p;
+    }
+
+    // ---------- Компоненты UI ----------
+    function Header({ userName }) {
       return (
-        <div className="container-narrow">
-          <div className="text-xs text-slate-500 py-2 flex flex-wrap items-center gap-3">
-            <span>🗂 listId: <b>{listId || '—'}</b></span>
-            <span>👤 uid: <code>{authUid || '—'}</code></span>
-            <span>⭐ ownerUid: <code>{ownerUid || '—'}</code></span>
-            <span>⚙️ mode: <b>{mode || 'single_owner'}</b></span>
-            {error && <span className="err">· {error}</span>}
+        <header className="container-narrow pt-6 pb-4">
+          <div className="flex items-center gap-4">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
+              🎄
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-slate-900">Новогодний семейный виш-лист</h1>
+              <p className="text-sm text-slate-600">
+                {userName ? <>Вы: <span className="font-semibold">{userName}</span></> : 'Укажите своё имя и добавьте желания.'}
+              </p>
+            </div>
+          </div>
+        </header>
+      );
+    }
+
+    function NameCard({ userName, setUserName }) {
+      return (
+        <section className="container-narrow mb-4">
+          <div className="card px-5 py-4 flex items-center gap-4">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
+              👤
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-slate-800 mb-1">Шаг 1. Как вас зовут?</div>
+              <input
+                className="input text-sm"
+                placeholder="Например: Ира, Валера, Мама…"
+                value={userName}
+                onChange={e => setUserName(e.target.value)}
+              />
+              <p className="note mt-1">
+                Имя будет видно рядом с вашими желаниями и подарками, которые вы бронируете.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    function Tabs({ activeTab, setActiveTab }) {
+      return (
+        <div className="container-narrow mb-3">
+          <div className="card px-2 py-2 flex gap-2">
+            <button
+              className={`btn flex-1 text-sm ${activeTab === 'my' ? 'btn-tab-active' : 'btn-tab-inactive'}`}
+              onClick={()=>setActiveTab('my')}
+            >
+              🎁 Мои желания
+            </button>
+            <button
+              className={`btn flex-1 text-sm ${activeTab === 'family' ? 'btn-tab-active' : 'btn-tab-inactive'}`}
+              onClick={()=>setActiveTab('family')}
+            >
+              🎅 Подарки семье
+            </button>
           </div>
         </div>
       );
     }
 
-    function ScreenChooseList({ lists, listId, setListId, onCreateNew }) {
-      const [newName, setNewName] = useState('');
-      const [creating, setCreating] = useState(false);
-      const [error, setError] = useState('');
-      return (
-        <div className="container-narrow">
-          <div className="card p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Выберите или создайте праздник</h2>
+    function AddWishForm({ onAdd, disabled, error }) {
+      const [title,setTitle] = useState('');
+      const [price,setPrice] = useState('');
+      const [url,setUrl] = useState('');
+      const [note,setNote] = useState('');
 
-            <div className="space-y-2">
-              <div className="text-sm text-slate-600">Существующие:</div>
-              <div className="grid gap-2">
-                {lists.length === 0 && <div className="note">Пока нет — создайте первый список ниже.</div>}
-                {lists.map(l => (
-                  <button key={l.id}
-                    className={`btn ${listId===l.id?'btn-primary':'btn-ghost border'}`}
-                    onClick={()=>setListId(l.id)}>
-                    {l.id} {l.mode ? `· ${l.mode}` : ''}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <div className="text-sm text-slate-600">Создать новый праздник/лист</div>
-              <div className="grid gap-2 md:grid-cols-[1fr_auto]">
-                <input className="input" value={newName} onChange={e=>setNewName(e.target.value)} placeholder="Например: День рождения, newyear2025" />
-                <button
-                  className="btn btn-ghost border"
-                  disabled={creating || !newName.trim()}
-                  onClick={async ()=>{
-                    const v = newName.trim();
-                    if (!v) return;
-                    setCreating(true); setError('');
-                    try {
-                      // Больше НЕ проставляем mode здесь — определим его на шаге роли
-                      await listDoc(v).set({ updatedAt: Date.now() }, { merge: true });
-                      setListId(v);
-                      setNewName('');
-                    } catch (e) {
-                      console.error(e);
-                      setError('Не удалось создать список. Rules: allow create на /lists/{listId}.');
-                    } finally {
-                      setCreating(false);
-                    }
-                  }}
-                >
-                  {creating ? 'Создаём…' : 'Создать'}
-                </button>
-              </div>
-              {error && <div className="err">{error}</div>}
-              <div className="note">ID списка — то, что будете отправлять семье как «адрес».</div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function ScreenIdentity({ displayName, setDisplayName, role, setRole, mode, setMode, canEditMode, onContinue, error }) {
-      return (
-        <div className="container-narrow">
-          <div className="card p-6 space-y-4">
-            <h2 className="text-xl font-semibold">Кто вы для этого списка?</h2>
-            <div className="grid gap-3 md:grid-cols-2">
-              <input className="input" value={displayName} onChange={e=>setDisplayName(e.target.value)} placeholder="Ваше имя" />
-              <select className="select" value={role} onChange={e=>setRole(e.target.value)}>
-                <option value="owner">Получатель (автор списка)</option>
-                <option value="santa">Даритель</option>
-              </select>
-              <div className="md:col-span-2 grid gap-2 md:grid-cols-2">
-                <select className="select" value={mode} onChange={e=>setMode(e.target.value)} disabled={!canEditMode}>
-                  <option value="single_owner">Режим: владелец добавляет (дни рождения)</option>
-                  <option value="open">Режим: добавляют все (Новый год)</option>
-                </select>
-                <div className="note flex items-center">
-                  {!canEditMode ? 'Режим сохранит только владелец' : 'Вы сохраните выбранный режим'}
-                </div>
-              </div>
-            </div>
-            {error && <div className="err">{error}</div>}
-            <div className="pt-2">
-              <button className="btn btn-primary" onClick={onContinue}>Продолжить</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    function AddItemForm({ onAdd, disabled, error }) {
-      const [title, setTitle] = useState('');
-      const [url, setUrl] = useState('');
-      const [price, setPrice] = useState('');
-      const [note, setNote] = useState('');
       const submit = () => {
-        if (disabled) return;
-        if (!title.trim()) return;
-        onAdd({ title: title.trim(), url: url.trim(), price: price.trim(), note: note.trim() });
-        setTitle(''); setUrl(''); setPrice(''); setNote('');
+        if(disabled) return;
+        if(!title.trim()) return;
+        onAdd({ title:title.trim(), price:price.trim(), url:url.trim(), note:note.trim() });
+        setTitle(''); setPrice(''); setUrl(''); setNote('');
       };
+
       return (
-        <div className="card p-4">
-          <div className="grid gap-3 md:grid-cols-3">
-            <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
-              <input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Что хочу" />
-              <input className="input" value={price} onChange={e=>setPrice(e.target.value)} placeholder="Цена (необязательно)" />
-              <div className="md:col-span-2 flex items-center gap-2">
-                <span className="text-slate-500">🔗</span>
-                <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка на товар" />
-              </div>
-              <div className="md:col-span-2">
-                <textarea className="textarea" rows="3" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий"></textarea>
-              </div>
+        <div className="card p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-slate-900 text-base">Добавить желание</h2>
+            <span className="badge text-[11px]">Видят все, но брони по вам вы не увидите</span>
+          </div>
+          <div className="space-y-3">
+            <input
+              className="input text-sm"
+              placeholder="Что вы хотите получить? (например, тёплый плед)"
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+            />
+            <div className="grid gap-3 md:grid-cols-2">
+              <input
+                className="input text-sm"
+                placeholder="Цена (необязательно)"
+                value={price}
+                onChange={e=>setPrice(e.target.value)}
+              />
+              <input
+                className="input text-sm"
+                placeholder="Ссылка на товар (маркетплейс, сайт…) "
+                value={url}
+                onChange={e=>setUrl(e.target.value)}
+              />
             </div>
-            <div className="flex flex-col gap-2">
-              <button className="btn btn-primary w-full" onClick={submit} disabled={disabled}>➕ Добавить</button>
-              {disabled && <div className="note">Ожидаем подтверждение прав…</div>}
-              {error && <div className="err">{error}</div>}
+            <textarea
+              className="textarea text-sm resize-none"
+              rows="2"
+              placeholder="Комментарий: цвет, размер, нюансы…"
+              value={note}
+              onChange={e=>setNote(e.target.value)}
+            ></textarea>
+            {error && <div className="err">{error}</div>}
+            <div className="flex justify-end">
+              <button className="btn btn-primary text-sm" onClick={submit} disabled={disabled}>
+                ➕ Добавить в мои желания
+              </button>
             </div>
           </div>
         </div>
       );
     }
 
-    function ItemCard({ item, role, authUid, claimData, onClaim }) {
-      const claimed = !!claimData;
-      const myItem = item.addedByUid && authUid && item.addedByUid === authUid;
+    function WishCardMy({ wish }) {
       return (
         <div className="card p-3">
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex justify-between items-start gap-3">
             <div>
-              <div className="text-base font-semibold">{item.title}</div>
-              {item.price && <div className="text-sm text-slate-500">{prettyPrice(item.price)}</div>}
-              {item.note && <div className="text-sm text-slate-500 mt-1">{item.note}</div>}
-              {item.url && <div className="mt-1"><a className="text-sm underline" target="_blank" rel="noreferrer" href={item.url}>Открыть ссылку</a></div>}
+              <div className="font-semibold text-sm text-slate-900">{wish.title}</div>
+              {wish.price && <div className="text-xs text-slate-500 mt-0.5">{prettyPrice(wish.price)}</div>}
+              {wish.note && <div className="text-xs text-slate-600 mt-1">{wish.note}</div>}
+              {wish.url && (
+                <a
+                  href={wish.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-sky-700 underline mt-1 inline-block"
+                >
+                  Открыть ссылку
+                </a>
+              )}
             </div>
-            {role === 'santa' && (
-              <div className="min-w-[160px] text-right">
-                {myItem ? (
-                  <span className="badge">Это ваш подарок</span>
-                ) : !claimed ? (
-                  <button className="btn btn-ghost border" onClick={()=>onClaim(item.id)}>Забронировать</button>
-                ) : (
-                  <span className="badge">Забронировано: {claimData.claimerName}</span>
-                )}
-              </div>
-            )}
+            <span className="badge-soft badge text-[11px]">Моё желание</span>
           </div>
         </div>
       );
     }
 
-    function ScreenList({
-      listId, role, mode, canEditMode, setMode,
-      authUid, ownerUid, items, claims, addItem, writeError, onClaim
-    }) {
-      const canAdd = role === 'owner' || mode === 'open';
+    function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine }) {
+      const claimed = !!claim;
+      const iGift = claim && claim.claimerName === currentUserName;
+
       return (
-        <div className="container-narrow space-y-4">
-          <div className="card p-4 flex flex-wrap gap-3 items-center justify-between">
-            <div className="font-medium">Список: {listId}</div>
-            <div className="flex items-center gap-2">
-              <select className="select" value={mode} onChange={e=>setMode(e.target.value)} disabled={!canEditMode}>
-                <option value="single_owner">Режим: владелец добавляет</option>
-                <option value="open">Режим: добавляют все</option>
-              </select>
-              {!canEditMode && <span className="note">Режим меняет только владелец</span>}
+        <div className="card p-3">
+          <div className="flex justify-between items-start gap-3">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <div className="font-semibold text-sm text-slate-900">{wish.title}</div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="badge text-[11px]">Для: {wish.ownerName || 'Без имени'}</span>
+                {wish.price && <span className="text-xs text-slate-500">{prettyPrice(wish.price)}</span>}
+              </div>
+              {wish.note && <div className="text-xs text-slate-600">{wish.note}</div>}
+              {wish.url && (
+                <a
+                  href={wish.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-sky-700 underline inline-block"
+                >
+                  Открыть ссылку
+                </a>
+              )}
+            </div>
+
+            <div className="min-w-[130px] text-right space-y-1">
+              {claimed ? (
+                <div className="badge-soft badge w-full justify-end text-[11px]">
+                  🎁 Уже дарит: {iGift ? 'Вы' : claim.claimerName}
+                </div>
+              ) : (
+                <button
+                  className="btn btn-primary text-xs w-full"
+                  onClick={onClaim}
+                  disabled={isMine}
+                >
+                  Я подарю
+                </button>
+              )}
             </div>
           </div>
-
-          {canAdd && role === 'owner' && <AddItemForm onAdd={addItem} disabled={false} error={writeError} />}
-          {canAdd && role !== 'owner' && mode === 'open' && <div className="note">В «open» режиме добавлять может любой участник.</div>}
-          {!canAdd && <div className="note">Добавлять может только получатель (владелец) этого списка.</div>}
-
-          <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-            {items.map(it => (
-              <ItemCard key={it.id} item={it} role={role} authUid={authUid} claimData={claims[it.id]} onClaim={onClaim} />
-            ))}
-          </div>
-
-          {items.length === 0 && (
-            <div className="text-center text-slate-500 py-12">Пока пусто. Добавьте первое желание!</div>
-          )}
         </div>
       );
     }
 
-    // ===== APP =====
+    // ---------- Основное приложение ----------
     function App() {
-      const [screen, setScreen] = useState(1); // 1 choose list, 2 identity, 3 list
-      const [lists, setLists] = useState([]);
-      const [listId, setListId] = useState(loadLocal('wish:listId', ''));
-      const [displayName, setDisplayName] = useState(loadLocal('wish:name', ''));
-      const [role, setRole] = useState('santa'); // santa | owner
-      const [mode, setMode] = useState('single_owner'); // UI default
+      const [authUid,setAuthUid] = useState(null);
+      const [userName,setUserName] = useState(loadLocal('nywish:name',''));
+      const [activeTab,setActiveTab] = useState('my'); // 'my' | 'family'
 
-      const [authUid, setAuthUid] = useState(null);
-      const [ownerUid, setOwnerUid] = useState(null);
-      const [items, setItems] = useState([]);
-      const [claims, setClaims] = useState({});
-      const [writeError, setWriteError] = useState('');
-      const [stepError, setStepError] = useState('');
+      const [items,setItems] = useState([]);
+      const [claims,setClaims] = useState({});
+      const [itemsLoading,setItemsLoading] = useState(true);
+      const [addError,setAddError] = useState('');
+      const [claimError,setClaimError] = useState('');
 
       // auth
-      useEffect(()=> {
+      useEffect(() => {
         const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
         return () => unsub();
       }, []);
 
-      // lists feed
-      useEffect(()=> {
-        const unsub = listsCol().orderBy('updatedAt','desc').limit(50)
-          .onSnapshot(s => setLists(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-        return () => unsub && unsub();
+      // save name
+      useEffect(()=>{ saveLocal('nywish:name', userName); }, [userName]);
+
+      // items
+      useEffect(() => {
+        setItemsLoading(true);
+        const unsub = itemsCol().orderBy('createdAt','desc')
+          .onSnapshot(
+            snap => {
+              const arr = [];
+              snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
+              setItems(arr);
+              setItemsLoading(false);
+            },
+            err => { console.error(err); setItemsLoading(false); }
+          );
+        return () => unsub();
       }, []);
 
-      // save locals
-      useEffect(()=>saveLocal('wish:listId', listId), [listId]);
-      useEffect(()=>saveLocal('wish:name', displayName), [displayName]);
-
-      // meta of current list
-      useEffect(()=> {
-        if (!listId) return;
-        const unsub = listDoc(listId).onSnapshot(s => {
-          const d = s.data() || {};
-          setOwnerUid(d.ownerUid || null);
-          setMode(d.mode || 'single_owner');  // UI default если поле пока не задано
-        });
-        return () => unsub && unsub();
-      }, [listId]);
-
-      // items / claims
-      useEffect(()=> {
-        if (!listId) return;
-        const unsub = itemsCol(listId).orderBy('createdAt','desc')
-          .onSnapshot(s => setItems(s.docs.map(d => ({ id: d.id, ...d.data() }))));
-        return () => unsub && unsub();
-      }, [listId]);
-
-      useEffect(()=> {
-        if (!listId || role !== 'santa') { setClaims({}); return; }
-        const unsub = claimsCol(listId).onSnapshot(s => {
-          const obj = {};
-          s.forEach(d => obj[d.id] = d.data());
-          setClaims(obj);
-        });
-        return () => unsub && unsub();
-      }, [listId, role]);
-
-      // create new list (теперь без записи mode)
-      const onCreateNew = async (name) => {
-        await listDoc(name).set({ updatedAt: Date.now() }, { merge: true });
-        setListId(name);
-      };
-
-      // continue to screen 3 — фиксируем ownerUid и (если вы владелец) режим
-      const onContinue = async () => {
-        setStepError('');
-        try {
-          if (!listId) { setStepError('Не выбран список.'); return; }
-
-          if (role === 'owner') {
-            await listDoc(listId).set({
-              ownerUid: authUid,
-              mode,
-              updatedAt: Date.now()
-            }, { merge: true });
-          } else {
-            await listDoc(listId).set({ updatedAt: Date.now() }, { merge: true });
+      // claims (будут приходить только те, к которым есть доступ по правилам)
+      useEffect(() => {
+        if (!authUid) return;
+        const unsub = claimsCol().onSnapshot(
+          snap => {
+            const map = {};
+            snap.forEach(doc => map[doc.id] = doc.data());
+            setClaims(map);
+          },
+          err => {
+            console.error('claims error', err);
+            setClaims({});
           }
-          setScreen(3);
-        } catch (e) {
-          console.error(e);
-          setStepError('Не удалось сохранить настройки списка. Проверьте Firestore Rules (update на /lists/{listId}).');
+        );
+        return () => unsub();
+      }, [authUid]);
+
+      const myWishes = useMemo(
+        () => items.filter(i => i.addedByUid === authUid),
+        [items, authUid]
+      );
+      const familyWishes = useMemo(
+        () => items.filter(i => i.addedByUid !== authUid),
+        [items, authUid]
+      );
+
+      const myGifts = useMemo(() => {
+        const ids = Object.entries(claims)
+          .filter(([id,c]) => c.claimerUid === authUid)
+          .map(([id]) => id);
+        return items.filter(i => ids.includes(i.id));
+      }, [claims, items, authUid]);
+
+      const handleAddWish = async ({ title, price, url, note }) => {
+        setAddError('');
+        if (!userName.trim()) {
+          setAddError('Сначала введите своё имя наверху.');
+          return;
         }
-      };
-
-      // actions
-      const addItem = async ({ title, url, price, note }) => {
-        setWriteError('');
         try {
-          if (mode === 'single_owner' && authUid !== ownerUid) {
-            setWriteError('Добавлять может только получатель (владелец) этого списка.');
-            return;
-          }
-          await itemsCol(listId).add({
-            title, url, price, note,
+          await itemsCol().add({
+            title,
+            price,
+            url,
+            note,
+            ownerName: userName.trim(),
             addedByUid: authUid,
             createdAt: Date.now()
           });
-          await listDoc(listId).set({ updatedAt: Date.now() }, { merge: true });
         } catch (e) {
           console.error(e);
-          setWriteError('Нет прав для добавления. Проверьте правила Firestore.');
+          setAddError('Не удалось добавить. Проверьте Firestore Rules.');
         }
       };
 
-      const onClaim = async (itemId) => {
-        setWriteError('');
+      const handleClaim = async (wish) => {
+        setClaimError('');
+        if (!userName.trim()) {
+          setClaimError('Сначала введите своё имя наверху.');
+          return;
+        }
+        if (wish.addedByUid === authUid) {
+          setClaimError('Нельзя бронировать собственное желание.');
+          return;
+        }
         try {
-          const item = items.find(i => i.id === itemId);
-          if (item?.addedByUid === authUid) {
-            setWriteError('Нельзя бронировать свой собственный подарок.');
+          const ref = claimsCol().doc(wish.id);
+          const snap = await ref.get();
+          if (snap.exists) {
+            setClaimError('Этот подарок уже кто-то забронировал.');
             return;
           }
-          const c = await claimsCol(listId).doc(itemId).get();
-          if (c.exists) {
-            setWriteError('Этот подарок уже забронирован.');
-            return;
-          }
-          await claimsCol(listId).doc(itemId).set({
+          await ref.set({
             claimerUid: authUid,
-            claimerName: displayName || 'Без имени',
+            claimerName: userName.trim(),
             createdAt: Date.now()
           });
         } catch (e) {
           console.error(e);
-          setWriteError('Не удалось забронировать. Проверьте правила Firestore.');
+          setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
         }
       };
 
-      const canEditMode = role === 'owner' && authUid && ownerUid === authUid;
-
       return (
         <div className="pb-10">
-          <div className="container-narrow py-6 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center">🎁</div>
-            <div>
-              <h1 className="text-2xl font-semibold">Семейный виш-лист</h1>
-              <p className="text-sm text-slate-500">Шаги: выбрать список → указать роль → работать со списком</p>
-            </div>
-          </div>
+          <Header userName={userName} />
+          <NameCard userName={userName} setUserName={setUserName} />
+          <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          <StatusBar listId={listId} authUid={authUid} ownerUid={ownerUid} mode={mode} error={writeError || stepError} />
+          <main className="container-narrow space-y-4">
+            {activeTab === 'my' && (
+              <>
+                <AddWishForm onAdd={handleAddWish} disabled={!authUid} error={addError} />
+                <section className="space-y-2">
+                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                    Мои желания
+                    {itemsLoading && <span className="note">(загружается…)</span>}
+                  </h2>
+                  {myWishes.length === 0 && !itemsLoading && (
+                    <p className="note">Пока пусто. Добавьте хотя бы один подарок, который вы хотите получить.</p>
+                  )}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {myWishes.map(w => <WishCardMy key={w.id} wish={w} />)}
+                  </div>
+                </section>
+              </>
+            )}
 
-          {screen === 1 && (
-            <ScreenChooseList
-              lists={lists}
-              listId={listId}
-              setListId={setListId}
-              onCreateNew={onCreateNew}
-            />
-          )}
+            {activeTab === 'family' && (
+              <>
+                <section className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                      Желания семьи
+                      {itemsLoading && <span className="note">(загружается…)</span>}
+                    </h2>
+                  </div>
+                  <p className="note">
+                    Здесь не показываются ваши собственные желания — только других членов семьи.
+                    Вы можете выбрать, кому что подарить 💝
+                  </p>
+                  {claimError && <div className="err">{claimError}</div>}
+                  <div className="grid gap-3 md:grid-cols-2">
+                    {familyWishes.map(w => (
+                      <WishCardFamily
+                        key={w.id}
+                        wish={w}
+                        claim={claims[w.id]}
+                        currentUserName={userName.trim()}
+                        isMine={w.addedByUid === authUid}
+                        onClaim={() => handleClaim(w)}
+                      />
+                    ))}
+                  </div>
+                  {familyWishes.length === 0 && !itemsLoading && (
+                    <p className="note">Пока никто, кроме вас, не добавил желаний.</p>
+                  )}
+                </section>
 
-          {screen === 2 && (
-            <ScreenIdentity
-              displayName={displayName}
-              setDisplayName={setDisplayName}
-              role={role}
-              setRole={setRole}
-              mode={mode}
-              setMode={setMode}
-              canEditMode={true /* сохранится только если вы "Получатель" */}
-              onContinue={onContinue}
-              error={stepError}
-            />
-          )}
-
-          {screen === 3 && (
-            <ScreenList
-              listId={listId}
-              role={role}
-              mode={mode}
-              canEditMode={canEditMode}
-              setMode={async (m)=>{
-                setMode(m);
-                if (canEditMode) {
-                  try { await listDoc(listId).set({ mode: m, updatedAt: Date.now() }, { merge: true }); }
-                  catch (e) { console.error(e); }
-                }
-              }}
-              authUid={authUid}
-              ownerUid={ownerUid}
-              items={items}
-              claims={claims}
-              addItem={addItem}
-              writeError={writeError}
-              onClaim={onClaim}
-            />
-          )}
-
-          <div className="container-narrow mt-6 flex gap-2">
-            {screen > 1 && <button className="btn btn-ghost border" onClick={()=>setScreen(screen-1)}>← Назад</button>}
-            {screen === 1 && <button className="btn btn-primary ml-auto" disabled={!listId} onClick={()=>setScreen(2)}>Далее</button>}
-          </div>
+                {myGifts.length > 0 && (
+                  <section className="space-y-1">
+                    <h3 className="text-sm font-semibold text-slate-800">Что вы уже дарите</h3>
+                    <ul className="list-disc list-inside text-xs text-slate-700">
+                      {myGifts.map(g => (
+                        <li key={g.id}>
+                          {g.title} <span className="text-slate-500">для {g.ownerName || 'без имени'}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+              </>
+            )}
+          </main>
         </div>
       );
     }
