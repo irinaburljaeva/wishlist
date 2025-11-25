@@ -621,7 +621,7 @@
   () => items.filter(i => i.addedByUid === authUid),
   [items, authUid]
 );
-            );
+        
 
       const familyWishes = useMemo(
         () => items.filter(i => i.addedByUid !== authUid),
