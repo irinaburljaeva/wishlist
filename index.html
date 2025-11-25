@@ -148,7 +148,6 @@
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // JPEG даёт самый маленький размер
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
 
             if (dataUrl.length > 900000) {
@@ -330,7 +329,126 @@
       );
     }
 
-    function WishCardMy({ wish }) {
+    // ----- Карточка моего желания с кнопками изменить/удалить -----
+    function WishCardMy({ wish, locked, onDelete, onUpdate, onImageClick }) {
+      const [editing, setEditing] = useState(false);
+      const [title, setTitle] = useState(wish.title || '');
+      const [url, setUrl] = useState(wish.url || '');
+      const [note, setNote] = useState(wish.note || '');
+      const [imageData, setImageData] = useState(wish.image || '');
+      const [imageError,setImageError] = useState('');
+      const [imageLoading,setImageLoading] = useState(false);
+
+      useEffect(() => {
+        setTitle(wish.title || '');
+        setUrl(wish.url || '');
+        setNote(wish.note || '');
+        setImageData(wish.image || '');
+        setImageError('');
+        setImageLoading(false);
+        setEditing(false);
+      }, [wish.id]);
+
+      const handleSave = async () => {
+        if (!title.trim()) return;
+        await onUpdate(wish.id, {
+          title: title.trim(),
+          url: url.trim(),
+          note: note.trim(),
+          image: imageData || null
+        });
+        setEditing(false);
+      };
+
+      const handleDeleteClick = async () => {
+        if (!window.confirm('Удалить это желание?')) return;
+        await onDelete(wish.id);
+      };
+
+      const handleFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+          setImageData(wish.image || '');
+          setImageError('');
+          return;
+        }
+        setImageLoading(true);
+        setImageError('');
+        try {
+          const compressed = await compressImage(file);
+          setImageData(compressed);
+        } catch (err) {
+          console.error(err);
+          setImageError(typeof err === 'string'
+            ? err
+            : 'Не удалось обработать изображение. Попробуйте другой файл.');
+        } finally {
+          setImageLoading(false);
+        }
+      };
+
+      if (editing) {
+        return (
+          <div className="card p-3 space-y-2">
+            <div className="text-xs uppercase text-slate-400 tracking-wide mb-1">Редактирование желания</div>
+            <input
+              className="input text-sm mb-2"
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+              placeholder="Название подарка"
+            />
+            <input
+              className="input text-sm mb-2"
+              value={url}
+              onChange={e=>setUrl(e.target.value)}
+              placeholder="Ссылка (необязательно)"
+            />
+            <textarea
+              className="textarea text-sm mb-2"
+              rows="2"
+              value={note}
+              onChange={e=>setNote(e.target.value)}
+              placeholder="Комментарий"
+            />
+            <div className="space-y-2 mb-2">
+              <label className="text-xs font-medium text-slate-700">
+                Изображение
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                className="input text-sm"
+                onChange={handleFileChange}
+              />
+              {imageLoading && <div className="note">Изображение сжимается…</div>}
+              {imageError && <div className="err">{imageError}</div>}
+              {imageData && !imageLoading && (
+                <img
+                  src={imageData}
+                  alt=""
+                  className="w-full rounded-xl object-cover max-h-40 cursor-pointer"
+                  onClick={() => onImageClick(imageData)}
+                />
+              )}
+            </div>
+            <div className="flex gap-2 justify-end">
+              <button
+                className="btn btn-ghost text-xs border border-slate-300"
+                onClick={() => setEditing(false)}
+              >
+                Отмена
+              </button>
+              <button
+                className="btn btn-primary text-xs"
+                onClick={handleSave}
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="card p-3">
           <div className="flex flex-col gap-2">
@@ -338,7 +456,8 @@
               <img
                 src={wish.image}
                 alt=""
-                className="w-full rounded-xl object-cover max-h-48"
+                className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
+                onClick={() => onImageClick(wish.image)}
               />
             )}
             <div className="flex justify-between items-start gap-3">
@@ -355,15 +474,37 @@
                     Открыть ссылку
                   </a>
                 )}
+                {locked && (
+                  <div className="note text-[11px] mt-2">
+                    Этот подарок уже кто-то дарит — редактирование отключено, но можно удалить после праздника.
+                  </div>
+                )}
               </div>
-              <span className="badge-soft badge text-[11px]">Моё желание</span>
+              <div className="flex flex-col items-end gap-2">
+                <span className="badge-soft badge text-[11px]">Моё желание</span>
+                <div className="flex gap-1">
+                  <button
+                    className="btn btn-ghost border border-slate-300 text-xs px-3 py-1"
+                    onClick={() => !locked && setEditing(true)}
+                    disabled={locked}
+                  >
+                    Изменить
+                  </button>
+                  <button
+                    className="btn btn-ghost border border-red-200 text-xs px-3 py-1 text-red-600"
+                    onClick={handleDeleteClick}
+                  >
+                    Удалить
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       );
     }
 
-    function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine }) {
+    function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine, onImageClick }) {
       const claimed = !!claim;
       const iGift = claim && claim.claimerName === currentUserName;
 
@@ -374,7 +515,8 @@
               <img
                 src={wish.image}
                 alt=""
-                className="w-full rounded-xl object-cover max-h-48"
+                className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
+                onClick={() => onImageClick(wish.image)}
               />
             )}
 
@@ -431,6 +573,7 @@
       const [itemsLoading,setItemsLoading] = useState(true);
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
+      const [previewImage, setPreviewImage] = useState(null);
 
       // auth
       useEffect(() => {
@@ -475,9 +618,11 @@
       }, [authUid]);
 
       const myWishes = useMemo(
-        () => items.filter(i => i.addedByUid === authUid),
-        [items, authUid]
-      );
+  () => items.filter(i => i.addedByUid === authUid),
+  [items, authUid]
+);
+            );
+
       const familyWishes = useMemo(
         () => items.filter(i => i.addedByUid !== authUid),
         [items, authUid]
@@ -509,6 +654,26 @@
         } catch (e) {
           console.error(e);
           setAddError('Не удалось добавить. Проверьте Firestore Rules.');
+        }
+      };
+
+      const handleUpdateWish = async (wishId, updates) => {
+        setAddError('');
+        try {
+          await itemsCol().doc(wishId).update(updates);
+        } catch (e) {
+          console.error(e);
+          setAddError('Не удалось изменить. Проверьте Firestore Rules.');
+        }
+      };
+
+      const handleDeleteWish = async (wishId) => {
+        setAddError('');
+        try {
+          await itemsCol().doc(wishId).delete();
+        } catch (e) {
+          console.error(e);
+          setAddError('Не удалось удалить. Проверьте Firestore Rules.');
         }
       };
 
@@ -549,17 +714,35 @@
           <main className="container-narrow space-y-4">
             {activeTab === 'my' && (
               <>
-                <AddWishForm onAdd={handleAddWish} disabled={!authUid} error={addError} />
+                <AddWishForm
+                  onAdd={handleAddWish}
+                  disabled={!authUid}
+                  error={addError}
+                />
+
                 <section className="space-y-2">
                   <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                     Мои желания
                     {itemsLoading && <span className="note">(загружается…)</span>}
                   </h2>
+
                   {myWishes.length === 0 && !itemsLoading && (
-                    <p className="note">Пока пусто. Добавьте хотя бы один подарок, который вы хотите получить.</p>
+                    <p className="note">
+                      Пока пусто. Добавьте хотя бы один подарок, который вы хотите получить.
+                    </p>
                   )}
+
                   <div className="grid gap-3 md:grid-cols-2">
-                    {myWishes.map(w => <WishCardMy key={w.id} wish={w} />)}
+                    {myWishes.map(w => (
+                      <WishCardMy
+                        key={w.id}
+                        wish={w}
+                        locked={!!claims[w.id]}
+                        onDelete={handleDeleteWish}
+                        onUpdate={handleUpdateWish}
+                        onImageClick={setPreviewImage}
+                      />
+                    ))}
                   </div>
                 </section>
               </>
@@ -574,11 +757,14 @@
                       {itemsLoading && <span className="note">(загружается…)</span>}
                     </h2>
                   </div>
+
                   <p className="note">
                     Здесь не показываются ваши собственные желания — только других членов семьи.
                     Вы можете выбрать, кому что подарить 💝
                   </p>
+
                   {claimError && <div className="err">{claimError}</div>}
+
                   <div className="grid gap-3 md:grid-cols-2">
                     {familyWishes.map(w => (
                       <WishCardFamily
@@ -588,9 +774,11 @@
                         currentUserName={userName.trim()}
                         isMine={w.addedByUid === authUid}
                         onClaim={() => handleClaim(w)}
+                        onImageClick={setPreviewImage}
                       />
                     ))}
                   </div>
+
                   {familyWishes.length === 0 && !itemsLoading && (
                     <p className="note">Пока никто, кроме вас, не добавил желаний.</p>
                   )}
@@ -602,7 +790,8 @@
                     <ul className="list-disc list-inside text-xs text-slate-700">
                       {myGifts.map(g => (
                         <li key={g.id}>
-                          {g.title} <span className="text-slate-500">для {g.ownerName || 'без имени'}</span>
+                          {g.title}{' '}
+                          <span className="text-slate-500">для {g.ownerName || 'без имени'}</span>
                         </li>
                       ))}
                     </ul>
@@ -611,6 +800,19 @@
               </>
             )}
           </main>
+
+          {previewImage && (
+            <div
+              className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+              onClick={() => setPreviewImage(null)}
+            >
+              <img
+                src={previewImage}
+                alt="Подарок"
+                className="max-h-full max-w-full rounded-2xl shadow-2xl"
+              />
+            </div>
+          )}
         </div>
       );
     }
