@@ -126,6 +126,46 @@
       catch { return fallback; }
     };
 
+    // ====== СЖАТИЕ ИЗОБРАЖЕНИЙ ЧЕРЕЗ CANVAS ======
+    async function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            const scale = Math.min(
+              MAX_WIDTH / img.width,
+              MAX_HEIGHT / img.height,
+              1
+            );
+
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // JPEG даёт самый маленький размер
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+            if (dataUrl.length > 900000) {
+              reject('Изображение слишком большое даже после сжатия. Выберите файл поменьше.');
+              return;
+            }
+
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject('Не удалось прочитать изображение.');
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject('Не удалось прочитать файл.');
+        reader.readAsDataURL(file);
+      });
+    }
+
     function Header({ userName }) {
       return (
         <header className="container-narrow pt-6 pb-4">
@@ -189,26 +229,44 @@
       );
     }
 
-    // ----- Форма добавления желания c загрузкой изображения -----
+    // ----- Форма добавления желания c загрузкой и сжатием изображения -----
     function AddWishForm({ onAdd, disabled, error }) {
       const [title,setTitle] = useState('');
       const [url,setUrl] = useState('');
       const [note,setNote] = useState('');
       const [imageData,setImageData] = useState('');
+      const [imageError,setImageError] = useState('');
+      const [imageLoading,setImageLoading] = useState(false);
 
       const submit = () => {
         if(disabled) return;
         if(!title.trim()) return;
         onAdd({ title:title.trim(), url:url.trim(), note:note.trim(), image:imageData });
         setTitle(''); setUrl(''); setNote(''); setImageData('');
+        setImageError('');
       };
 
-      const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (!file) { setImageData(''); return; }
-        const reader = new FileReader();
-        reader.onload = () => setImageData(reader.result);
-        reader.readAsDataURL(file);
+      const handleFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+          setImageData('');
+          setImageError('');
+          return;
+        }
+        setImageLoading(true);
+        setImageError('');
+        try {
+          const compressed = await compressImage(file);
+          setImageData(compressed);
+        } catch (err) {
+          console.error(err);
+          setImageData('');
+          setImageError(typeof err === 'string'
+            ? err
+            : 'Не удалось обработать изображение. Попробуйте другой файл.');
+        } finally {
+          setImageLoading(false);
+        }
       };
 
       return (
@@ -250,7 +308,9 @@
                 className="input text-sm"
                 onChange={handleFileChange}
               />
-              {imageData && (
+              {imageLoading && <div className="note">Изображение сжимается…</div>}
+              {imageError && <div className="err">{imageError}</div>}
+              {imageData && !imageLoading && (
                 <img
                   src={imageData}
                   alt="Превью подарка"
