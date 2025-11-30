@@ -189,7 +189,7 @@
               <h1 className="text-2xl font-bold text-slate-900">
                 Новогодний семейный виш-лист
               </h1>
-              {/* На телефоне скрываем, чтобы имя не дублировалось */}
+              {/* на мобиле эту строку прячем, чтобы имя не дублировалось */}
               <p className="text-sm text-slate-600 hidden sm:block">
                 {userName
                   ? <>Вы: <span className="font-semibold">{userName}</span></>
@@ -583,7 +583,7 @@
       const handleDisabledClick = (e) => {
         e.preventDefault();
         e.stopPropagation();
-        setShowInfo(v => !v);
+        setShowInfo((v) => !v);
       };
 
       return (
@@ -599,7 +599,7 @@
             )}
 
             <div className="flex items-start gap-3">
-              {/* Левая колонка: информация о подарке */}
+              {/* Левая колонка */}
               <div className="flex-1 space-y-1">
                 <div className="font-semibold text-sm text-slate-900">
                   {wish.title}
@@ -634,12 +634,11 @@
                 {claimed ? (
                   <>
                     <button
-                      type="button"
                       className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
+                      disabled
                       onClick={handleDisabledClick}
                       onMouseEnter={() => setShowInfo(true)}
                       onMouseLeave={() => setShowInfo(false)}
-                      aria-disabled="true"
                     >
                       Забронировано
                     </button>
@@ -652,7 +651,6 @@
                   </>
                 ) : (
                   <button
-                    type="button"
                     className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
                     onClick={onClaim}
                     disabled={isMine}
@@ -706,7 +704,7 @@
         return () => unsub();
       }, []);
 
-      // claims — ВСЕ брони, без зависимости от authUid
+      // claims — слушаем всегда, чтобы сразу видеть забронированные подарки
       useEffect(() => {
         const unsub = claimsCol().onSnapshot(
           snap => {
@@ -808,31 +806,22 @@
           setClaimError('Нельзя бронировать собственное желание.');
           return;
         }
+
         try {
           const ref = claimsCol().doc(wish.id);
-          const snap = await ref.get();
-
-          if (snap.exists) {
-            const data = snap.data();
-            // Обновляем локальное состояние, чтобы сразу показать "Забронировано"
-            setClaims(prev => ({
-              ...prev,
-              [wish.id]: data
-            }));
-            setClaimError(
-              `Этот подарок уже забронирован: его дарит ${data.claimerName || 'кто-то из семьи'}.`
-            );
-            return;
-          }
-
-          await ref.set({
+          // создаём документ только если он ещё не существует
+          await ref.create({
             claimerUid: authUid,
             claimerName: userName.trim(),
             createdAt: Date.now()
           });
         } catch (e) {
           console.error(e);
-          setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
+          if (e && e.code === 'already-exists') {
+            setClaimError('Этот подарок уже кто-то забронировал.');
+          } else {
+            setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
+          }
         }
       };
 
@@ -852,7 +841,7 @@
                 />
 
                 <section className="space-y-2">
-                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-800 flex items=center gap-2">
                     Мои желания
                     {itemsLoading && <span className="note">(загружается…)</span>}
                   </h2>
