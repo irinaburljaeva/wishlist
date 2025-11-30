@@ -111,6 +111,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
+      
     const { useEffect, useState, useMemo } = React;
 
     // === Firebase init ===
@@ -131,7 +132,6 @@
     const LIST_ID = 'newyear2025';
     const listDoc  = db.collection('lists').doc(LIST_ID);
     const itemsCol = () => listDoc.collection('items');
-    const claimsCol = () => listDoc.collection('claims');
 
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k,fallback) => {
@@ -672,7 +672,6 @@
       const [activeTab,setActiveTab] = useState('my'); // 'my' | 'family'
 
       const [items,setItems] = useState([]);
-      const [claims,setClaims] = useState({});
       const [itemsLoading,setItemsLoading] = useState(true);
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
@@ -704,22 +703,6 @@
         return () => unsub();
       }, []);
 
-      // claims — слушаем всегда, чтобы сразу видеть забронированные подарки
-      useEffect(() => {
-        const unsub = claimsCol().onSnapshot(
-          snap => {
-            const map = {};
-            snap.forEach(doc => map[doc.id] = doc.data());
-            setClaims(map);
-          },
-          err => {
-            console.error('claims error', err);
-            setClaims({});
-          }
-        );
-        return () => unsub();
-      }, []);
-
       const myWishes = useMemo(
         () => items.filter(i => i.addedByUid === authUid),
         [items, authUid]
@@ -747,12 +730,10 @@
         return familyWishes.filter(w => w.ownerName === familyFilter);
       }, [familyFilter, familyWishes]);
 
+      // Подарки, которые дарю я
       const myGifts = useMemo(() => {
-        const ids = Object.entries(claims)
-          .filter(([id,c]) => c.claimerUid === authUid)
-          .map(([id]) => id);
-        return items.filter(i => ids.includes(i.id));
-      }, [claims, items, authUid]);
+        return items.filter(i => i.claimedByUid === authUid);
+      }, [items, authUid]);
 
       const handleAddWish = async ({ title, url, note, image }) => {
         setAddError('');
@@ -768,7 +749,10 @@
             image: image || null,
             ownerName: userName.trim(),
             addedByUid: authUid,
-            createdAt: Date.now()
+            createdAt: Date.now(),
+            claimedByUid: null,
+            claimedByName: null,
+            claimedAt: null
           });
         } catch (e) {
           console.error(e);
@@ -806,22 +790,20 @@
           setClaimError('Нельзя бронировать собственное желание.');
           return;
         }
+        if (wish.claimedByUid) {
+          setClaimError('Этот подарок уже кто-то забронировал.');
+          return;
+        }
 
         try {
-          const ref = claimsCol().doc(wish.id);
-          // создаём документ только если он ещё не существует
-          await ref.create({
-            claimerUid: authUid,
-            claimerName: userName.trim(),
-            createdAt: Date.now()
+          await itemsCol().doc(wish.id).update({
+            claimedByUid: authUid,
+            claimedByName: userName.trim(),
+            claimedAt: Date.now()
           });
         } catch (e) {
           console.error(e);
-          if (e && e.code === 'already-exists') {
-            setClaimError('Этот подарок уже кто-то забронировал.');
-          } else {
-            setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
-          }
+          setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
         }
       };
 
@@ -857,7 +839,7 @@
                       <WishCardMy
                         key={w.id}
                         wish={w}
-                        locked={!!claims[w.id]}
+                        locked={!!w.claimedByUid}
                         onDelete={handleDeleteWish}
                         onUpdate={handleUpdateWish}
                         onImageClick={setPreviewImage}
@@ -904,7 +886,10 @@
                       <WishCardFamily
                         key={w.id}
                         wish={w}
-                        claim={claims[w.id]}
+                        claim={w.claimedByUid ? {
+                          claimerUid: w.claimedByUid,
+                          claimerName: w.claimedByName || 'кто-то из семьи'
+                        } : null}
                         currentUserName={userName.trim()}
                         isMine={w.addedByUid === authUid}
                         onClaim={() => handleClaim(w)}
@@ -962,6 +947,6 @@
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+   </script>
 </body>
 </html>
