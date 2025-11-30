@@ -574,6 +574,7 @@
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
       const [previewImage, setPreviewImage] = useState(null);
+      const [familyFilter, setFamilyFilter] = useState(''); // Фильтр по имени
 
       // auth
       useEffect(() => {
@@ -618,10 +619,9 @@
       }, [authUid]);
 
       const myWishes = useMemo(
-  () => items.filter(i => i.addedByUid === authUid),
-  [items, authUid]
-);
-        
+        () => items.filter(i => i.addedByUid === authUid),
+        [items, authUid]
+      );
 
       const familyWishes = useMemo(
         () => items.filter(i => i.addedByUid !== authUid),
@@ -634,6 +634,26 @@
           .map(([id]) => id);
         return items.filter(i => ids.includes(i.id));
       }, [claims, items, authUid]);
+
+      // Список имён получателей (кроме текущего пользователя)
+      const recipientNames = useMemo(() => {
+        const set = new Set();
+        items.forEach(i => {
+          if (i.addedByUid !== authUid && i.ownerName) {
+            set.add(i.ownerName.trim());
+          }
+        });
+        return Array.from(set).sort((a,b)=>a.localeCompare(b,'ru'));
+      }, [items, authUid]);
+
+      // Отфильтрованные желания семьи по имени
+      const filteredFamilyWishes = useMemo(() => {
+        if (!familyFilter) return familyWishes;
+        const filterLower = familyFilter.toLowerCase();
+        return familyWishes.filter(w =>
+          (w.ownerName || '').toLowerCase() === filterLower
+        );
+      }, [familyWishes, familyFilter]);
 
       const handleAddWish = async ({ title, url, note, image }) => {
         setAddError('');
@@ -750,12 +770,28 @@
 
             {activeTab === 'family' && (
               <>
-                <section className="space-y-2">
-                  <div className="flex items-center justify-between">
+                <section className="space-y-3">
+                  <div className="flex items-center justify-between gap-3 flex-wrap">
                     <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                       Желания семьи
                       {itemsLoading && <span className="note">(загружается…)</span>}
                     </h2>
+
+                    {recipientNames.length > 0 && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-600">Показать подарки для:</span>
+                        <select
+                          className="input text-xs w-auto px-3 py-1"
+                          value={familyFilter}
+                          onChange={e => setFamilyFilter(e.target.value)}
+                        >
+                          <option value="">Всех</option>
+                          {recipientNames.map(name => (
+                            <option key={name} value={name}>{name}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
                   </div>
 
                   <p className="note">
@@ -766,7 +802,7 @@
                   {claimError && <div className="err">{claimError}</div>}
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {familyWishes.map(w => (
+                    {filteredFamilyWishes.map(w => (
                       <WishCardFamily
                         key={w.id}
                         wish={w}
@@ -779,8 +815,12 @@
                     ))}
                   </div>
 
-                  {familyWishes.length === 0 && !itemsLoading && (
-                    <p className="note">Пока никто, кроме вас, не добавил желаний.</p>
+                  {filteredFamilyWishes.length === 0 && !itemsLoading && (
+                    <p className="note">
+                      {familyFilter
+                        ? `Пока нет желаний для «${familyFilter}».`
+                        : 'Пока никто, кроме вас, не добавил желаний.'}
+                    </p>
                   )}
                 </section>
 
