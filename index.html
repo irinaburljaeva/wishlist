@@ -179,23 +179,27 @@
     }
 
     function Header({ userName }) {
-      return (
-        <header className="container-narrow pt-6 pb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
-              🎄
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">Новогодний семейный виш-лист</h1>
-              <p className="text-sm text-slate-600">
-                {userName ? <>Вы: <span className="font-semibold">{userName}</span></> : 'Укажите своё имя и добавьте желания.'}
-              </p>
-            </div>
-          </div>
-        </header>
-      );
-    }
-
+  return (
+    <header className="container-narrow pt-6 pb-4">
+      <div className="flex items-center gap-4">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
+          🎄
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Новогодний семейный виш-лист
+          </h1>
+          {/* ЭТУ СТРОКУ МЕНЯЕМ */}
+          <p className="text-sm text-slate-600 hidden sm:block">
+            {userName
+              ? <>Вы: <span className="font-semibold">{userName}</span></>
+              : 'Укажите своё имя и добавьте желания.'}
+          </p>
+        </div>
+      </div>
+    </header>
+  );
+}
     // Шаг 1: имя — с разворачиванием/сворачиванием
     function NameCard({ userName, setUserName }) {
       const [editing, setEditing] = useState(!userName);
