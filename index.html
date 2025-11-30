@@ -580,7 +580,7 @@
   const [showInfo, setShowInfo] = React.useState(false);
 
   const handleDisabledClick = (e) => {
-    // чтобы страница не скроллилась/клик не «проваливался»
+    // Чтобы клик не "проваливался" дальше
     e.preventDefault();
     e.stopPropagation();
     setShowInfo((v) => !v);
@@ -634,11 +634,12 @@
             {claimed ? (
               <>
                 <button
+                  type="button"
                   className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
-                  disabled
                   onClick={handleDisabledClick}
                   onMouseEnter={() => setShowInfo(true)}
                   onMouseLeave={() => setShowInfo(false)}
+                  aria-disabled="true"
                 >
                   Забронировано
                 </button>
@@ -651,6 +652,7 @@
               </>
             ) : (
               <button
+                type="button"
                 className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
                 onClick={onClaim}
                 disabled={isMine}
