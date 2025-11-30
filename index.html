@@ -266,36 +266,36 @@
     }
 
     function Tabs({ activeTab, setActiveTab }) {
-  return (
-    <div className="container-narrow mb-3">
-      <div className="card px-2 py-2 flex gap-2 bg-white/60 backdrop-blur-sm shadow-lg border border-white/40">
+      return (
+        <div className="container-narrow mb-3">
+          <div className="card px-2 py-2 flex gap-2 bg-white/60 backdrop-blur-sm shadow-lg border border-white/40">
 
-        <button
-          className={`btn flex-1 text-sm transition-all duration-200 ${
-            activeTab === 'my'
-              ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
-              : 'bg-white text-slate-700 shadow-sm'
-          } rounded-xl`}
-          onClick={() => setActiveTab('my')}
-        >
-          🎁 Мои желания
-        </button>
+            <button
+              className={`btn flex-1 text-sm transition-all duration-200 ${
+                activeTab === 'my'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
+                  : 'bg-white text-slate-700 shadow-sm'
+              } rounded-xl`}
+              onClick={() => setActiveTab('my')}
+            >
+              🎁 Мои желания
+            </button>
 
-        <button
-          className={`btn flex-1 text-sm transition-all duration-200 ${
-            activeTab === 'family'
-              ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
-              : 'bg-white text-slate-700 shadow-sm'
-          } rounded-xl`}
-          onClick={() => setActiveTab('family')}
-        >
-          🧑‍🎄 Подарки семье
-        </button>
+            <button
+              className={`btn flex-1 text-sm transition-all duration-200 ${
+                activeTab === 'family'
+                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
+                  : 'bg-white text-slate-700 shadow-sm'
+              } rounded-xl`}
+              onClick={() => setActiveTab('family')}
+            >
+              🧑‍🎄 Подарки семье
+            </button>
 
-      </div>
-    </div>
-  );
-}
+          </div>
+        </div>
+      );
+    }
 
     // ----- Форма добавления желания c загрузкой и сжатием изображения -----
     function AddWishForm({ onAdd, disabled, error }) {
@@ -569,7 +569,7 @@
       );
     }
 
-        function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine, onImageClick }) {
+    function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine, onImageClick }) {
       const claimed = !!claim;
       const iGift = claim && claim.claimerName === currentUserName;
 
@@ -650,6 +650,7 @@
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
       const [previewImage, setPreviewImage] = useState(null);
+      const [familyFilter, setFamilyFilter] = useState('all'); // 'all' или имя
 
       // auth
       useEffect(() => {
@@ -702,6 +703,23 @@
         () => items.filter(i => i.addedByUid !== authUid),
         [items, authUid]
       );
+
+      // список имён для фильтра
+      const familyNames = useMemo(() => {
+        const set = new Set();
+        items.forEach(item => {
+          if (item.addedByUid !== authUid && item.ownerName) {
+            set.add(item.ownerName);
+          }
+        });
+        return Array.from(set);
+      }, [items, authUid]);
+
+      // отфильтрованные желания семьи
+      const filteredFamilyWishes = useMemo(() => {
+        if (familyFilter === 'all') return familyWishes;
+        return familyWishes.filter(w => w.ownerName === familyFilter);
+      }, [familyFilter, familyWishes]);
 
       const myGifts = useMemo(() => {
         const ids = Object.entries(claims)
@@ -831,6 +849,20 @@
                       Желания семьи
                       {itemsLoading && <span className="note">(загружается…)</span>}
                     </h2>
+
+                    <div className="text-xs flex items-center gap-2">
+                      <span className="text-slate-500">Показать подарки для:</span>
+                      <select
+                        className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white shadow-sm"
+                        value={familyFilter}
+                        onChange={(e) => setFamilyFilter(e.target.value)}
+                      >
+                        <option value="all">Всех</option>
+                        {familyNames.map(name => (
+                          <option key={name} value={name}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
 
                   <p className="note">
@@ -841,7 +873,7 @@
                   {claimError && <div className="err">{claimError}</div>}
 
                   <div className="grid gap-3 md:grid-cols-2">
-                    {familyWishes.map(w => (
+                    {filteredFamilyWishes.map(w => (
                       <WishCardFamily
                         key={w.id}
                         wish={w}
@@ -854,8 +886,8 @@
                     ))}
                   </div>
 
-                  {familyWishes.length === 0 && !itemsLoading && (
-                    <p className="note">Пока никто, кроме вас, не добавил желаний.</p>
+                  {filteredFamilyWishes.length === 0 && !itemsLoading && (
+                    <p className="note">Пока нет желаний, подходящих под выбранный фильтр.</p>
                   )}
                 </section>
 
