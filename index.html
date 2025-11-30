@@ -105,7 +105,7 @@
     class="fixed inset-0 w-full h-full object-cover -z-20"
   />
   <!-- Полупрозрачная вуаль, чтобы интерфейс читался -->
-  <div class="fixed inset-0 bg-white/40 backdrop-blur-md -z-10"></div>
+  <div class="fixed inset-0 bg-white/50 backdrop-blur-md -z-10"></div>
 
   <!-- Приложение -->
   <div id="root"></div>
@@ -266,25 +266,36 @@
     }
 
     function Tabs({ activeTab, setActiveTab }) {
-      return (
-        <div className="container-narrow mb-3">
-          <div className="card px-2 py-2 flex gap-2">
-            <button
-              className={`btn flex-1 text-sm ${activeTab === 'my' ? 'btn-tab-active' : 'btn-tab-inactive'}`}
-              onClick={()=>setActiveTab('my')}
-            >
-              🎁 Мои желания
-            </button>
-            <button
-              className={`btn flex-1 text-sm ${activeTab === 'family' ? 'btn-tab-active' : 'btn-tab-inactive'}`}
-              onClick={()=>setActiveTab('family')}
-            >
-              🎅 Подарки семье
-            </button>
-          </div>
-        </div>
-      );
-    }
+  return (
+    <div className="container-narrow mb-3">
+      <div className="card px-2 py-2 flex gap-2 bg-white/60 backdrop-blur-sm shadow-lg border border-white/40">
+
+        <button
+          className={`btn flex-1 text-sm transition-all duration-200 ${
+            activeTab === 'my'
+              ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
+              : 'bg-white text-slate-700 shadow-sm'
+          } rounded-xl`}
+          onClick={() => setActiveTab('my')}
+        >
+          🎁 Мои желания
+        </button>
+
+        <button
+          className={`btn flex-1 text-sm transition-all duration-200 ${
+            activeTab === 'family'
+              ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
+              : 'bg-white text-slate-700 shadow-sm'
+          } rounded-xl`}
+          onClick={() => setActiveTab('family')}
+        >
+          🧑‍🎄 Подарки семье
+        </button>
+
+      </div>
+    </div>
+  );
+}
 
     // ----- Форма добавления желания c загрузкой и сжатием изображения -----
     function AddWishForm({ onAdd, disabled, error }) {
