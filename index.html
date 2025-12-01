@@ -573,7 +573,7 @@
       );
     }
 
-    function WishCardFamily({ wish, claim, onClaim, currentUserName, isMine, onImageClick }) {
+    function WishCardFamily({ wish, claim, onClaim, onUnclaim, currentUserName, isMine, onImageClick }) {
       const claimed = !!claim;
       const iGift = claim && claim.claimerName === currentUserName;
 
@@ -631,23 +631,37 @@
               {/* Правая колонка: кнопка / подсказка */}
               <div className="min-w-[130px] text-right space-y-2 relative">
                 {claimed ? (
-                  <>
-                    <button
-                      className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
-                      disabled
-                      onClick={handleDisabledClick}
-                      onMouseEnter={() => setShowInfo(true)}
-                      onMouseLeave={() => setShowInfo(false)}
-                    >
-                      Забронировано
-                    </button>
-
-                    {showInfo && (
-                      <div className="absolute right-0 -top-9 bg-slate-900 text-[11px] text-white px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-10">
-                        🎁 Уже дарит: {iGift ? 'Вы' : claim.claimerName}
+                  iGift ? (
+                    <>
+                      <div className="badge-soft badge w-full justify-end text-[11px]">
+                        🎁 Вы дарите этот подарок
                       </div>
-                    )}
-                  </>
+                      <button
+                        className="btn btn-ghost border border-slate-300 text-xs w-full md:w-[130px]"
+                        onClick={onUnclaim}
+                      >
+                        Снять бронь
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
+                        disabled
+                        onClick={handleDisabledClick}
+                        onMouseEnter={() => setShowInfo(true)}
+                        onMouseLeave={() => setShowInfo(false)}
+                      >
+                        Забронировано
+                      </button>
+
+                      {showInfo && (
+                        <div className="absolute right-0 -top-9 bg-slate-900 text-[11px] text-white px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-10">
+                          🎁 Уже дарит: {claim.claimerName}
+                        </div>
+                      )}
+                    </>
+                  )
                 ) : (
                   <button
                     className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
@@ -676,7 +690,7 @@
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
       const [previewImage, setPreviewImage] = useState(null);
-      const [familyFilter, setFamilyFilter] = useState('all'); // 'all' или имя
+      const [familyFilter, setFamilyFilter] = useState('all'); // 'all' | 'my_claims' | имя
 
       // auth
       useEffect(() => {
@@ -703,7 +717,7 @@
         return () => unsub();
       }, []);
 
-      // claims — слушаем всегда, чтобы сразу видеть забронированные подарки
+      // claims — слушаем всегда
       useEffect(() => {
         const unsub = claimsCol().onSnapshot(
           snap => {
@@ -743,8 +757,13 @@
       // отфильтрованные желания семьи
       const filteredFamilyWishes = useMemo(() => {
         if (familyFilter === 'all') return familyWishes;
+        if (familyFilter === 'my_claims') {
+          return familyWishes.filter(
+            w => claims[w.id] && claims[w.id].claimerUid === authUid
+          );
+        }
         return familyWishes.filter(w => w.ownerName === familyFilter);
-      }, [familyFilter, familyWishes]);
+      }, [familyFilter, familyWishes, claims, authUid]);
 
       const myGifts = useMemo(() => {
         const ids = Object.entries(claims)
@@ -830,6 +849,38 @@
         }
       };
 
+      const handleUnclaim = async (wish) => {
+        setClaimError('');
+        if (!window.confirm('Снять бронь с этого подарка? Его сможет забронировать кто-то другой.')) {
+          return;
+        }
+
+        const ref = claimsCol().doc(wish.id);
+
+        try {
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            if (!snap.exists) {
+              throw new Error('no-claim');
+            }
+            const data = snap.data();
+            if (data.claimerUid !== authUid) {
+              throw new Error('not-owner');
+            }
+            tx.delete(ref);
+          });
+        } catch (e) {
+          console.error(e);
+          if (e.message === 'no-claim') {
+            setClaimError('Бронь уже снята.');
+          } else if (e.message === 'not-owner') {
+            setClaimError('Снять бронь может только тот, кто её поставил.');
+          } else {
+            setClaimError('Не удалось снять бронь. Попробуйте ещё раз.');
+          }
+        }
+      };
+
       return (
         <div className="pb-10">
           <Header userName={userName} />
@@ -890,6 +941,7 @@
                         onChange={(e) => setFamilyFilter(e.target.value)}
                       >
                         <option value="all">Всех</option>
+                        <option value="my_claims">Мои брони</option>
                         {familyNames.map(name => (
                           <option key={name} value={name}>{name}</option>
                         ))}
@@ -913,6 +965,7 @@
                         currentUserName={userName.trim()}
                         isMine={w.addedByUid === authUid}
                         onClaim={() => handleClaim(w)}
+                        onUnclaim={() => handleUnclaim(w)}
                         onImageClick={setPreviewImage}
                       />
                     ))}
