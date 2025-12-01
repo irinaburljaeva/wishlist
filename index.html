@@ -976,19 +976,7 @@
                   )}
                 </section>
 
-                {myGifts.length > 0 && (
-                  <section className="space-y-1">
-                    <h3 className="text-sm font-semibold text-slate-800">Что вы уже дарите</h3>
-                    <ul className="list-disc list-inside text-xs text-slate-700">
-                      {myGifts.map(g => (
-                        <li key={g.id}>
-                          {g.title}{' '}
-                          <span className="text-slate-500">для {g.ownerName || 'без имени'}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
+            
               </>
             )}
           </main>
