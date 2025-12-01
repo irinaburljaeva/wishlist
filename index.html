@@ -111,7 +111,6 @@
   <div id="root"></div>
 
   <script type="text/babel">
-      
     const { useEffect, useState, useMemo } = React;
 
     // === Firebase init ===
@@ -132,6 +131,7 @@
     const LIST_ID = 'newyear2025';
     const listDoc  = db.collection('lists').doc(LIST_ID);
     const itemsCol = () => listDoc.collection('items');
+    const claimsCol = () => listDoc.collection('claims');
 
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k,fallback) => {
@@ -189,7 +189,6 @@
               <h1 className="text-2xl font-bold text-slate-900">
                 Новогодний семейный виш-лист
               </h1>
-              {/* на мобиле эту строку прячем, чтобы имя не дублировалось */}
               <p className="text-sm text-slate-600 hidden sm:block">
                 {userName
                   ? <>Вы: <span className="font-semibold">{userName}</span></>
@@ -672,6 +671,7 @@
       const [activeTab,setActiveTab] = useState('my'); // 'my' | 'family'
 
       const [items,setItems] = useState([]);
+      const [claims,setClaims] = useState({});
       const [itemsLoading,setItemsLoading] = useState(true);
       const [addError,setAddError] = useState('');
       const [claimError,setClaimError] = useState('');
@@ -703,6 +703,22 @@
         return () => unsub();
       }, []);
 
+      // claims — слушаем всегда, чтобы сразу видеть забронированные подарки
+      useEffect(() => {
+        const unsub = claimsCol().onSnapshot(
+          snap => {
+            const map = {};
+            snap.forEach(doc => map[doc.id] = doc.data());
+            setClaims(map);
+          },
+          err => {
+            console.error('claims error', err);
+            setClaims({});
+          }
+        );
+        return () => unsub();
+      }, []);
+
       const myWishes = useMemo(
         () => items.filter(i => i.addedByUid === authUid),
         [items, authUid]
@@ -730,10 +746,12 @@
         return familyWishes.filter(w => w.ownerName === familyFilter);
       }, [familyFilter, familyWishes]);
 
-      // Подарки, которые дарю я
       const myGifts = useMemo(() => {
-        return items.filter(i => i.claimedByUid === authUid);
-      }, [items, authUid]);
+        const ids = Object.entries(claims)
+          .filter(([id,c]) => c.claimerUid === authUid)
+          .map(([id]) => id);
+        return items.filter(i => ids.includes(i.id));
+      }, [claims, items, authUid]);
 
       const handleAddWish = async ({ title, url, note, image }) => {
         setAddError('');
@@ -749,10 +767,7 @@
             image: image || null,
             ownerName: userName.trim(),
             addedByUid: authUid,
-            createdAt: Date.now(),
-            claimedByUid: null,
-            claimedByName: null,
-            claimedAt: null
+            createdAt: Date.now()
           });
         } catch (e) {
           console.error(e);
@@ -790,20 +805,28 @@
           setClaimError('Нельзя бронировать собственное желание.');
           return;
         }
-        if (wish.claimedByUid) {
-          setClaimError('Этот подарок уже кто-то забронировал.');
-          return;
-        }
+
+        const ref = claimsCol().doc(wish.id);
 
         try {
-          await itemsCol().doc(wish.id).update({
-            claimedByUid: authUid,
-            claimedByName: userName.trim(),
-            claimedAt: Date.now()
+          await db.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            if (snap.exists) {
+              throw new Error('already-claimed');
+            }
+            tx.set(ref, {
+              claimerUid: authUid,
+              claimerName: userName.trim(),
+              createdAt: Date.now()
+            });
           });
         } catch (e) {
           console.error(e);
-          setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
+          if (e.message === 'already-claimed') {
+            setClaimError('Этот подарок уже кто-то забронировал.');
+          } else {
+            setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
+          }
         }
       };
 
@@ -823,7 +846,7 @@
                 />
 
                 <section className="space-y-2">
-                  <h2 className="text-sm font-semibold text-slate-800 flex items=center gap-2">
+                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
                     Мои желания
                     {itemsLoading && <span className="note">(загружается…)</span>}
                   </h2>
@@ -839,7 +862,7 @@
                       <WishCardMy
                         key={w.id}
                         wish={w}
-                        locked={!!w.claimedByUid}
+                        locked={!!claims[w.id]}
                         onDelete={handleDeleteWish}
                         onUpdate={handleUpdateWish}
                         onImageClick={setPreviewImage}
@@ -886,10 +909,7 @@
                       <WishCardFamily
                         key={w.id}
                         wish={w}
-                        claim={w.claimedByUid ? {
-                          claimerUid: w.claimedByUid,
-                          claimerName: w.claimedByName || 'кто-то из семьи'
-                        } : null}
+                        claim={claims[w.id]}
                         currentUserName={userName.trim()}
                         isMine={w.addedByUid === authUid}
                         onClaim={() => handleClaim(w)}
@@ -947,6 +967,6 @@
     }
 
     ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-   </script>
+  </script>
 </body>
 </html>
