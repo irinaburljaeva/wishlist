@@ -575,6 +575,8 @@
 
     function WishCardFamily({ wish, claim, onClaim, onUnclaim, currentUserName, isMine, onImageClick }) {
       const claimed = !!claim;
+      onUnclaim={() => handleUnclaim(w)}
+
       const iGift = claim && claim.claimerName === currentUserName;
 
       const [showInfo, setShowInfo] = React.useState(false);
@@ -630,21 +632,24 @@
 
               {/* Правая колонка: кнопка / подсказка */}
               <div className="min-w-[130px] text-right space-y-2 relative">
-                {claimed ? (
-                  iGift ? (
-                    <>
-                      <div className="badge-soft badge w-full justify-end text-[11px]">
-                        🎁 Вы дарите этот подарок
-                      </div>
-                      <button
-                        className="btn btn-ghost border border-slate-300 text-xs w-full md:w-[130px]"
-                        onClick={onUnclaim}
-                      >
-                        Снять бронь
-                      </button>
-                    </>
-                  ) : (
-                    <>
+               {claimed ? (
+  <div className="flex flex-col items-end gap-2 min-w-[160px]">
+    <div className="flex items-center gap-2">
+      <span className="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-900 whitespace-nowrap">
+        🎁 Вы дарите этот подарок
+      </span>
+    </div>
+
+    <button
+      className="btn text-xs w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
+      onClick={onUnclaim}
+    >
+      Снять бронь
+    </button>
+  </div>
+) : (
+  ...
+)}
                       <button
                         className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
                         disabled
