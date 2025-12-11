@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Подарки для Иры — семейный виш-лист</title>
+  <title>Подарки для Ирины — семейный виш-лист</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -48,8 +48,9 @@
       color:#111827;
     }
     .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
+    .btn-ghost { background:transparent; color:#0f172a; }
 
-    .input {
+    .input, .textarea {
       width:100%;
       border-radius:16px;
       border:1px solid #e2e8f0;
@@ -57,7 +58,7 @@
       outline:none;
       background:#f8fafc;
     }
-    .input:focus {
+    .input:focus, .textarea:focus {
       border-color:#fb923c;
       box-shadow:0 0 0 3px rgba(251,146,60,.25);
       background:#ffffff;
@@ -73,12 +74,16 @@
       font-size:11px;
       padding:4px 9px;
     }
+    .badge-soft {
+      background:#e2e8f0;
+      color:#334155;
+    }
     .err { color:#b91c1c; font-size:13px; }
     .note { color:#64748b; font-size:13px; }
   </style>
 </head>
 <body>
-  <!-- Фон -->
+  <!-- ФОНОВАЯ КАРТИНКА (можешь заменить на свою) -->
   <img
     src="D1EA6935-8F4B-495D-8B1F-C5BEE102DFE8.png"
     alt=""
@@ -91,7 +96,7 @@
   <script type="text/babel">
     const { useEffect, useState, useMemo } = React;
 
-    // === Firebase init ===
+    // === Firebase init (тот же проект, тот же список) ===
     const firebaseConfig = {
       apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
       authDomain: "wishlist-37819.firebaseapp.com",
@@ -100,20 +105,17 @@
       messagingSenderId: "72495355387",
       appId: "1:72495355387:web:0ff709125d3cf33c8c275e"
     };
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const auth = firebase.auth();
     const db = firebase.firestore();
     auth.signInAnonymously().catch(console.error);
 
-    // Тот же список, что и на главной
     const LIST_ID = 'newyear2025';
     const listDoc  = db.collection('lists').doc(LIST_ID);
     const itemsCol = () => listDoc.collection('items');
     const claimsCol = () => listDoc.collection('claims');
-
-    // Имя «владельца» этой страницы —
-    // ПОДСТРОКА: если захочешь «Ирина» или другого человека — меняешь тут
-    const WISH_OWNER_NAME = 'Ира';
 
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k,fallback) => {
@@ -121,19 +123,61 @@
       catch { return fallback; }
     };
 
+    const normalize = (s) => (s || '').trim().toLowerCase();
+    const IRA_KEY = 'ира'; // ownerName, по которому фильтруем подарки Ирины
+
+    // Сжатие изображений (для режима Иры)
+    async function compressImage(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+          const img = new Image();
+          img.onload = () => {
+            const MAX_WIDTH = 800;
+            const MAX_HEIGHT = 800;
+            const scale = Math.min(
+              MAX_WIDTH / img.width,
+              MAX_HEIGHT / img.height,
+              1
+            );
+
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+            if (dataUrl.length > 900000) {
+              reject('Изображение слишком большое даже после сжатия. Выберите файл поменьше.');
+              return;
+            }
+
+            resolve(dataUrl);
+          };
+          img.onerror = () => reject('Не удалось прочитать изображение.');
+          img.src = e.target.result;
+        };
+        reader.onerror = () => reject('Не удалось прочитать файл.');
+        reader.readAsDataURL(file);
+      });
+    }
+
     function Header() {
       return (
-        <header className="container-narrow pt-6 pb-4">
+        <header className="container-narrow pt-6 pb-3">
           <div className="flex items-center gap-4">
             <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
               🎄
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
-                Подарки для Иры
+                Подарки для Ирины
               </h1>
               <p className="text-sm text-slate-600">
-                Здесь собраны идеи подарков, которые Ира действительно хочет получить.
+                Здесь собраны идеи подарков для Иры на Новый год.
               </p>
             </div>
           </div>
@@ -141,79 +185,324 @@
       );
     }
 
-    // Имя дарителя
-    function GiverNameCard({ userName, setUserName }) {
-      const [editing, setEditing] = useState(!userName);
-
-      useEffect(() => {
-        if (!userName) setEditing(true);
-      }, [userName]);
-
-      if (editing) {
-        return (
-          <section className="container-narrow mb-4">
-            <div className="card px-5 py-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
-                🎁
-              </div>
-              <div className="flex-1">
-                <div className="text-sm font-semibold text-slate-800 mb-1">
-                  Как к вам обращаться?
-                </div>
-                <input
-                  className="input text-sm"
-                  placeholder="Например: Маша, Папа, Коллега…"
-                  value={userName}
-                  onChange={e => setUserName(e.target.value)}
-                />
-                <p className="note mt-1">
-                  Имя будет видно только внутри семейного списка, чтобы Ира потом знала, кому сказать спасибо. На этой странице имена не показываются.
-                </p>
-                <div className="flex justify-end mt-2">
-                  <button
-                    className="btn btn-primary text-xs"
-                    onClick={() => userName.trim() && setEditing(false)}
-                    disabled={!userName.trim()}
-                  >
-                    Готово
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        );
-      }
+    function WhoAreYouCard({ userName, setUserName }) {
+      const [temp, setTemp] = useState(userName || '');
 
       return (
-        <section className="container-narrow mb-3">
-          <button
-            className="card px-5 py-3 w-full flex items-center justify-between hover:shadow-xl transition-shadow"
-            onClick={() => setEditing(true)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-base">
-                🙂
+        <section className="container-narrow mb-4">
+          <div className="card px-5 py-4 flex items-start gap-4">
+            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
+              👋
+            </div>
+            <div className="flex-1 space-y-2">
+              <div className="text-sm font-semibold text-slate-800">
+                Давайте познакомимся
               </div>
-              <div className="text-left">
-                <div className="text-xs uppercase tracking-wide text-slate-400">
-                  Ваше имя
-                </div>
-                <div className="text-sm font-semibold text-slate-900">
-                  {userName || 'Не указано'}
-                </div>
+              <p className="note">
+                Напишите, как к вам обращаться. Если вы Ира — вы сможете редактировать этот список.
+                Если вы гость — вы сможете забронировать, что хотите подарить.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <input
+                  className="input text-sm"
+                  placeholder="Например: Ира, Антон, Мама…"
+                  value={temp}
+                  onChange={e => setTemp(e.target.value)}
+                />
+                <button
+                  className="btn btn-primary text-sm sm:w-auto w-full"
+                  onClick={() => setUserName(temp.trim())}
+                  disabled={!temp.trim()}
+                >
+                  Продолжить
+                </button>
               </div>
             </div>
-            <div className="text-xs text-sky-700 font-medium flex items-center gap-1">
-              Изменить
-              <span>✏️</span>
-            </div>
-          </button>
+          </div>
         </section>
       );
     }
 
-    function WishCardForIra({ wish, claim, onClaim, onUnclaim, isMineClaim, onImageClick }) {
+    // Форма добавления подарка (только для Иры)
+    function AddWishFormIra({ onAdd, disabled, error }) {
+      const [title,setTitle] = useState('');
+      const [url,setUrl] = useState('');
+      const [note,setNote] = useState('');
+      const [imageData,setImageData] = useState('');
+      const [imageError,setImageError] = useState('');
+      const [imageLoading,setImageLoading] = useState(false);
+
+      const submit = () => {
+        if (disabled) return;
+        if (!title.trim()) return;
+        onAdd({ title:title.trim(), url:url.trim(), note:note.trim(), image:imageData });
+        setTitle(''); setUrl(''); setNote(''); setImageData(''); setImageError('');
+      };
+
+      const handleFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+          setImageData('');
+          setImageError('');
+          return;
+        }
+        setImageLoading(true);
+        setImageError('');
+        try {
+          const compressed = await compressImage(file);
+          setImageData(compressed);
+        } catch (err) {
+          console.error(err);
+          setImageData('');
+          setImageError(typeof err === 'string'
+            ? err
+            : 'Не удалось обработать изображение. Попробуйте другой файл.');
+        } finally {
+          setImageLoading(false);
+        }
+      };
+
+      return (
+        <div className="card p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold text-slate-900 text-base">Добавить идею подарка</h2>
+            <span className="badge text-[11px]">
+              Список для Иры
+            </span>
+          </div>
+          <div className="space-y-3">
+            <input
+              className="input text-sm"
+              placeholder="Что вы хотите получить? (например, тёплый плед)"
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+            />
+
+            <input
+              className="input text-sm"
+              placeholder="Ссылка на товар (маркетплейс, сайт…)"
+              value={url}
+              onChange={e=>setUrl(e.target.value)}
+            />
+
+            <textarea
+              className="textarea text-sm resize-none"
+              rows="2"
+              placeholder="Комментарий: цвет, размер, нюансы…"
+              value={note}
+              onChange={e=>setNote(e.target.value)}
+            ></textarea>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-slate-800">
+                Изображение (необязательно)
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                className="input text-sm"
+                onChange={handleFileChange}
+              />
+              {imageLoading && <div className="note">Изображение сжимается…</div>}
+              {imageError && <div className="err">{imageError}</div>}
+              {imageData && !imageLoading && (
+                <img
+                  src={imageData}
+                  alt="Превью подарка"
+                  className="rounded-2xl mt-2 max-h-40 object-cover w-full"
+                />
+              )}
+            </div>
+
+            {error && <div className="err">{error}</div>}
+            <div className="flex justify-end">
+              <button className="btn btn-primary text-sm" onClick={submit} disabled={disabled}>
+                ➕ Добавить в список
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // Карточка для Иры: редактирование, НО без информации о бронях
+    function WishCardIra({ wish, locked, onDelete, onUpdate, onImageClick }) {
+      const [editing, setEditing] = useState(false);
+      const [title, setTitle] = useState(wish.title || '');
+      const [url, setUrl] = useState(wish.url || '');
+      const [note, setNote] = useState(wish.note || '');
+      const [imageData, setImageData] = useState(wish.image || '');
+      const [imageError,setImageError] = useState('');
+      const [imageLoading,setImageLoading] = useState(false);
+
+      useEffect(() => {
+        setTitle(wish.title || '');
+        setUrl(wish.url || '');
+        setNote(wish.note || '');
+        setImageData(wish.image || '');
+        setImageError('');
+        setImageLoading(false);
+        setEditing(false);
+      }, [wish.id]);
+
+      const handleSave = async () => {
+        if (!title.trim()) return;
+        await onUpdate(wish.id, {
+          title: title.trim(),
+          url: url.trim(),
+          note: note.trim(),
+          image: imageData || null
+        });
+        setEditing(false);
+      };
+
+      const handleDeleteClick = async () => {
+        if (!window.confirm('Удалить этот пункт из списка подарков?')) return;
+        await onDelete(wish.id);
+      };
+
+      const handleFileChange = async (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) {
+          setImageData(wish.image || '');
+          setImageError('');
+          return;
+        }
+        setImageLoading(true);
+        setImageError('');
+        try {
+          const compressed = await compressImage(file);
+          setImageData(compressed);
+        } catch (err) {
+          console.error(err);
+          setImageError(typeof err === 'string'
+            ? err
+            : 'Не удалось обработать изображение. Попробуйте другой файл.');
+        } finally {
+          setImageLoading(false);
+        }
+      };
+
+      if (editing) {
+        return (
+          <div className="card p-3 space-y-2">
+            <div className="text-xs uppercase text-slate-400 tracking-wide mb-1">
+              Редактирование пункта
+            </div>
+            <input
+              className="input text-sm mb-2"
+              value={title}
+              onChange={e=>setTitle(e.target.value)}
+              placeholder="Название подарка"
+            />
+            <input
+              className="input text-sm mb-2"
+              value={url}
+              onChange={e=>setUrl(e.target.value)}
+              placeholder="Ссылка (необязательно)"
+            />
+            <textarea
+              className="textarea text-sm mb-2"
+              rows="2"
+              value={note}
+              onChange={e=>setNote(e.target.value)}
+              placeholder="Комментарий"
+            />
+            <div className="space-y-2 mb-2">
+              <label className="text-xs font-medium text-slate-700">
+                Изображение
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                className="input text-sm"
+                onChange={handleFileChange}
+              />
+              {imageLoading && <div className="note">Изображение сжимается…</div>}
+              {imageError && <div className="err">{imageError}</div>}
+              {imageData && !imageLoading && (
+                <img
+                  src={imageData}
+                  alt=""
+                  className="w-full rounded-xl object-cover max-h-40 cursor-pointer"
+                  onClick={() => onImageClick(imageData)}
+                />
+              )}
+            </div>
+            <div className="flex gap-2 justify-end border-t border-slate-100 pt-2">
+              <button
+                className="btn btn-ghost text-xs border border-slate-300"
+                onClick={() => setEditing(false)}
+              >
+                Отмена
+              </button>
+              <button
+                className="btn btn-primary text-xs"
+                onClick={handleSave}
+              >
+                Сохранить
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="card p-3 flex flex-col gap-3">
+          {wish.image && (
+            <img
+              src={wish.image}
+              alt=""
+              className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
+              onClick={() => onImageClick(wish.image)}
+            />
+          )}
+          <div className="flex justify-between items-start gap-3">
+            <div>
+              <div className="font-semibold text-sm text-slate-900">{wish.title}</div>
+              {wish.note && <div className="text-xs text-slate-600 mt-1">{wish.note}</div>}
+              {wish.url && (
+                <a
+                  href={wish.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-sky-700 underline mt-1 inline-block"
+                >
+                  Открыть ссылку
+                </a>
+              )}
+            </div>
+            <span className="badge-soft badge text-[11px]">В списке Иры</span>
+          </div>
+          <div className="flex gap-1 justify-end border-t border-slate-100 pt-2">
+            <button
+              className="btn btn-ghost border border-slate-300 text-xs px-3 py-1"
+              onClick={() => setEditing(true)}
+            >
+              Изменить
+            </button>
+            <button
+              className="btn btn-ghost border border-red-200 text-xs px-3 py-1 text-red-600"
+              onClick={handleDeleteClick}
+            >
+              Удалить
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Карточка для гостей: можно бронировать и снимать свои брони, Ира это не увидит
+    function WishCardGuest({ wish, claim, currentUserName, onClaim, onUnclaim, onImageClick }) {
       const claimed = !!claim;
+      const iGift = claim && normalize(claim.claimerName) === normalize(currentUserName);
+      const [showInfo, setShowInfo] = React.useState(false);
+
+      const handleDisabledClick = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowInfo((v) => !v);
+      };
 
       return (
         <div className="card p-3">
@@ -228,7 +517,6 @@
             )}
 
             <div className="flex items-start gap-3">
-              {/* Левая колонка */}
               <div className="flex-1 space-y-1">
                 <div className="font-semibold text-sm text-slate-900">
                   {wish.title}
@@ -252,10 +540,9 @@
                 )}
               </div>
 
-              {/* Правая колонка */}
-              <div className="min-w-[150px] text-right space-y-2">
+              <div className="min-w-[150px] text-right space-y-2 relative">
                 {claimed ? (
-                  isMineClaim ? (
+                  iGift ? (
                     <div className="flex flex-col items-end gap-2">
                       <span className="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-900 whitespace-nowrap">
                         🎁 Вы дарите этот подарок
@@ -268,16 +555,27 @@
                       </button>
                     </div>
                   ) : (
-                    <button
-                      className="btn text-xs w-full bg-slate-200 text-slate-500 cursor-not-allowed"
-                      disabled
-                    >
-                      Забронировано
-                    </button>
+                    <>
+                      <button
+                        className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
+                        disabled
+                        onClick={handleDisabledClick}
+                        onMouseEnter={() => setShowInfo(true)}
+                        onMouseLeave={() => setShowInfo(false)}
+                      >
+                        Забронировано
+                      </button>
+
+                      {showInfo && (
+                        <div className="absolute right-0 -top-9 bg-slate-900 text-[11px] text-white px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-10">
+                          🎁 Уже дарит: {claim.claimerName}
+                        </div>
+                      )}
+                    </>
                   )
                 ) : (
                   <button
-                    className="btn btn-primary text-xs w-full transition-transform duration-150 active:scale-95"
+                    className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
                     onClick={onClaim}
                   >
                     Я подарю
@@ -291,12 +589,13 @@
     }
 
     function App() {
-      const [authUid, setAuthUid] = useState(null);
-      const [userName, setUserName] = useState(loadLocal('nywish:giverName',''));
-      const [items, setItems] = useState([]);
-      const [claims, setClaims] = useState({});
-      const [itemsLoading, setItemsLoading] = useState(true);
-      const [claimError, setClaimError] = useState('');
+      const [authUid,setAuthUid] = useState(null);
+      const [userName,setUserName] = useState(loadLocal('ira:name',''));
+      const [items,setItems] = useState([]);
+      const [claims,setClaims] = useState({});
+      const [itemsLoading,setItemsLoading] = useState(true);
+      const [addError,setAddError] = useState('');
+      const [claimError,setClaimError] = useState('');
       const [previewImage, setPreviewImage] = useState(null);
 
       useEffect(() => {
@@ -304,11 +603,9 @@
         return () => unsub();
       }, []);
 
-      useEffect(() => {
-        saveLocal('nywish:giverName', userName);
-      }, [userName]);
+      useEffect(()=>{ saveLocal('ira:name', userName); }, [userName]);
 
-      // загружаем все желания, потом фильтруем по ownerName
+      // Загрузить все подарки и брони — фильтровать будем на клиенте
       useEffect(() => {
         setItemsLoading(true);
         const unsub = itemsCol().orderBy('createdAt','desc')
@@ -339,16 +636,64 @@
         return () => unsub();
       }, []);
 
-      // Только подарки для Иры
+      const trimmedName = (userName || '').trim();
+      const isIraViewer = normalize(trimmedName).startsWith(IRA_KEY);
+
+      // Подарки, которые относятся к Ире (по полю ownerName)
       const iraWishes = useMemo(
-        () => items.filter(i => i.ownerName === WISH_OWNER_NAME),
+        () => items.filter(
+          i => i.ownerName && normalize(i.ownerName).startsWith(IRA_KEY)
+        ),
         [items]
       );
 
+      const handleAddWish = async ({ title, url, note, image }) => {
+        setAddError('');
+        if (!authUid) {
+          setAddError('Не удалось определить пользователя, попробуйте перезагрузить страницу.');
+          return;
+        }
+        try {
+          await itemsCol().add({
+            title,
+            url,
+            note,
+            image: image || null,
+            ownerName: 'Ира',       // фиксируем единообразно
+            addedByUid: authUid,
+            createdAt: Date.now()
+          });
+        } catch (e) {
+          console.error(e);
+          setAddError('Не удалось добавить. Проверьте подключение или Firestore Rules.');
+        }
+      };
+
+      const handleUpdateWish = async (wishId, updates) => {
+        setAddError('');
+        try {
+          await itemsCol().doc(wishId).update(updates);
+        } catch (e) {
+          console.error(e);
+          setAddError('Не удалось изменить. Проверьте Firestore Rules.');
+        }
+      };
+
+      const handleDeleteWish = async (wishId) => {
+        setAddError('');
+        try {
+          await itemsCol().doc(wishId).delete();
+        } catch (e) {
+          console.error(e);
+          setAddError('Не удалось удалить. Проверьте Firestore Rules.');
+        }
+      };
+
       const handleClaim = async (wish) => {
         setClaimError('');
-        if (!userName.trim()) {
-          setClaimError('Сначала укажите своё имя наверху.');
+        const name = trimmedName;
+        if (!name) {
+          setClaimError('Сначала укажите, как к вам обращаться.');
           return;
         }
 
@@ -361,8 +706,8 @@
               throw new Error('already-claimed');
             }
             tx.set(ref, {
-              claimerUid: authUid,
-              claimerName: userName.trim(),
+              claimerUid: authUid || null,
+              claimerName: name,
               createdAt: Date.now()
             });
           });
@@ -391,10 +736,15 @@
               throw new Error('no-claim');
             }
             const data = snap.data();
-            if (data.claimerUid !== authUid) {
+            // Разрешаем снять бронь только тому, кто её поставил (по uid или имени)
+            if (
+              (data.claimerUid && data.claimerUid === authUid) ||
+              (!data.claimerUid && normalize(data.claimerName) === normalize(trimmedName))
+            ) {
+              tx.delete(ref);
+            } else {
               throw new Error('not-owner');
             }
-            tx.delete(ref);
           });
         } catch (e) {
           console.error(e);
@@ -411,46 +761,91 @@
       return (
         <div className="pb-10">
           <Header />
-          <GiverNameCard userName={userName} setUserName={setUserName} />
+          <WhoAreYouCard userName={userName} setUserName={setUserName} />
 
-          <main className="container-narrow space-y-4">
-            <section className="space-y-2">
-              <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                Идеи подарков для Иры
-                {itemsLoading && <span className="note">(загружается…)</span>}
-              </h2>
+          {!trimmedName && (
+            <main className="container-narrow">
               <p className="note">
-                Выберите один или несколько подарков и нажмите «Я подарю». Так вы забронируете этот пункт,
-                чтобы другие не купили его тоже. Ира не увидит, кто именно дарит ей какой подарок.
+                После того, как вы укажете своё имя, откроется список подарков для Иры.
               </p>
+            </main>
+          )}
 
-              {claimError && <div className="err">{claimError}</div>}
+          {trimmedName && isIraViewer && (
+            <main className="container-narrow space-y-4">
+              <AddWishFormIra
+                onAdd={handleAddWish}
+                disabled={!authUid}
+                error={addError}
+              />
 
-              <div className="grid gap-3 md:grid-cols-2">
-                {iraWishes.map(w => {
-                  const claim = claims[w.id];
-                  const isMineClaim = claim && claim.claimerUid === authUid;
-                  return (
-                    <WishCardForIra
+              <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  Мой список подарков
+                  {itemsLoading && <span className="note">(загружается…)</span>}
+                </h2>
+                <p className="note">
+                  Этот список увидят только те, кому вы отправите ссылку. Информация о том, кто что дарит, здесь не показывается — пусть будет сюрприз.
+                </p>
+
+                {iraWishes.length === 0 && !itemsLoading && (
+                  <p className="note">
+                    Пока здесь пусто. Добавьте хотя бы один пункт.
+                  </p>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {iraWishes.map(w => (
+                    <WishCardIra
                       key={w.id}
                       wish={w}
-                      claim={claim}
-                      isMineClaim={isMineClaim}
+                      locked={false}  // 👈 для Иры бронь не показываем
+                      onDelete={handleDeleteWish}
+                      onUpdate={handleUpdateWish}
+                      onImageClick={setPreviewImage}
+                    />
+                  ))}
+                </div>
+              </section>
+            </main>
+          )}
+
+          {trimmedName && !isIraViewer && (
+            <main className="container-narrow space-y-4">
+              <section className="space-y-2">
+                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  Идеи подарков для Иры
+                  {itemsLoading && <span className="note">(загружается…)</span>}
+                </h2>
+                <p className="note">
+                  Выберите, что вы хотите подарить. После бронирования другие увидят, что этот подарок уже занят,
+                  а для Иры это останется сюрпризом 🎁
+                </p>
+
+                {claimError && <div className="err">{claimError}</div>}
+
+                {iraWishes.length === 0 && !itemsLoading && (
+                  <p className="note">
+                    Пока список пуст. Попросите Иру добавить сюда свои идеи подарков 😊
+                  </p>
+                )}
+
+                <div className="grid gap-3 md:grid-cols-2">
+                  {iraWishes.map(w => (
+                    <WishCardGuest
+                      key={w.id}
+                      wish={w}
+                      claim={claims[w.id]}
+                      currentUserName={trimmedName}
                       onClaim={() => handleClaim(w)}
                       onUnclaim={() => handleUnclaim(w)}
                       onImageClick={setPreviewImage}
                     />
-                  );
-                })}
-              </div>
-
-              {iraWishes.length === 0 && !itemsLoading && (
-                <p className="note">
-                  Пока список подарков пуст. Попросите Иру добавить желания в основном семейном виш-листе.
-                </p>
-              )}
-            </section>
-          </main>
+                  ))}
+                </div>
+              </section>
+            </main>
+          )}
 
           {previewImage && (
             <div
