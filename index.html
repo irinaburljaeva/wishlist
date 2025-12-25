@@ -767,15 +767,24 @@
 
       // отфильтрованные желания семьи
       const filteredFamilyWishes = useMemo(() => {
-        if (familyFilter === 'all') return familyWishes;
-        if (familyFilter === 'my_claims') {
-          return familyWishes.filter(
-            w => claims[w.id] && claims[w.id].claimerUid === authUid
-          );
-        }
-        return familyWishes.filter(w => w.ownerName === familyFilter);
-      }, [familyFilter, familyWishes, claims, authUid]);
+  // 1) сначала фильтруем
+  let arr = familyWishes;
 
+  if (familyFilter === 'my_claims') {
+    arr = arr.filter(w => claims[w.id] && claims[w.id].claimerUid === authUid);
+  } else if (familyFilter !== 'all') {
+    arr = arr.filter(w => w.ownerName === familyFilter);
+  }
+
+  // 2) потом сортируем: незабронированные вверх
+  //    (при равенстве оставляем порядок по createdAt desc, который уже пришёл из Firestore)
+  return arr.slice().sort((a, b) => {
+    const aClaimed = !!claims[a.id];
+    const bClaimed = !!claims[b.id];
+    if (aClaimed === bClaimed) return 0;
+    return aClaimed ? 1 : -1; // false (свободно) -> вверх
+  });
+}, [familyFilter, familyWishes, claims, authUid]);
       const myGifts = useMemo(() => {
         const ids = Object.entries(claims)
           .filter(([id,c]) => c.claimerUid === authUid)
