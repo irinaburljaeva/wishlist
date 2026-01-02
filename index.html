@@ -179,26 +179,36 @@
     }
 
     function Header({ userName }) {
-      return (
-        <header className="container-narrow pt-6 pb-4">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
-              🎄
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                Новогодний семейный виш-лист
-              </h1>
-              <p className="text-sm text-slate-600 hidden sm:block">
-                {userName
-                  ? <>Вы: <span className="font-semibold">{userName}</span></>
-                  : 'Укажите своё имя и добавьте желания.'}
-              </p>
-            </div>
+  return (
+    <header className="container-narrow pt-6 pb-4">
+      <div className="flex items-center gap-4">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-pink-300 flex items-center justify-content-center text-2xl shadow-lg flex items-center justify-center">
+          🎁
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900">
+            Семейный виш-лист подарков
+          </h1>
+
+          <div className="flex flex-wrap items-center gap-2 mt-1">
+            <span className="text-xs px-2 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm">
+              🛡️ 23 февраля
+            </span>
+            <span className="text-xs px-2 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm">
+              🌷 8 марта
+            </span>
+
+            <span className="text-sm text-slate-600 hidden sm:block">
+              {userName
+                ? <>Вы: <span className="font-semibold">{userName}</span></>
+                : 'Укажите своё имя и добавьте желания.'}
+            </span>
           </div>
-        </header>
-      );
-    }
+        </div>
+      </div>
+    </header>
+  );
+}
 
     // Шаг 1: имя — с разворачиванием/сворачиванием
     function NameCard({ userName, setUserName }) {
@@ -702,6 +712,7 @@
       const [claimError,setClaimError] = useState('');
       const [previewImage, setPreviewImage] = useState(null);
       const [familyFilter, setFamilyFilter] = useState('all'); // 'all' | 'my_claims' | имя
+      const [showCleanupNotice, setShowCleanupNotice] = useState(false);
 
       // auth
       useEffect(() => {
@@ -712,6 +723,21 @@
       // save name
       useEffect(()=>{ saveLocal('nywish:name', userName); }, [userName]);
 
+      useEffect(() => {
+  // Показываем один раз после 1 января текущего года (в каждом браузере отдельно)
+  const now = new Date();
+  const year = now.getFullYear();
+  const jan1 = new Date(year, 0, 1, 0, 0, 0, 0);
+
+
+  const key = `nywish:cleanup_shown:${year}`;
+
+  if (now.getTime() >= jan1.getTime() && !loadLocal(key, false)) {
+    setShowCleanupNotice(true);
+    saveLocal(key, true);
+  }
+}, []);
+      
       // items
       useEffect(() => {
         setItemsLoading(true);
@@ -1000,6 +1026,46 @@
               </>
             )}
           </main>
+
+          {showCleanupNotice && (
+  <div
+    className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4"
+    onClick={() => setShowCleanupNotice(false)}
+  >
+    <div
+      className="card w-full max-w-md p-5 bg-white"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="text-sm font-semibold text-slate-900">
+            Напоминание 😊
+          </div>
+          <p className="note mt-1">
+            Новый год позади, удалите подарки, которые вам уже подарили 😊
+          </p>
+        </div>
+
+        <button
+          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600"
+          onClick={() => setShowCleanupNotice(false)}
+          aria-label="Закрыть"
+        >
+          ✕
+        </button>
+      </div>
+
+      <div className="flex justify-end mt-4">
+        <button
+          className="btn btn-primary text-sm"
+          onClick={() => setShowCleanupNotice(false)}
+        >
+          Понятно 👍
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
           {previewImage && (
             <div
