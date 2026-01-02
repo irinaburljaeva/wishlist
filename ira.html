@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Подарки для Ирины — семейный виш-лист</title>
+  <title>Вот, что хочет Ира</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -170,15 +170,13 @@
       return (
         <header className="container-narrow pt-6 pb-3">
           <div className="flex items-center gap-4">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-rose-500 to-amber-300 flex items-center justify-center text-2xl shadow-lg">
-              🎄
-            </div>
+        
             <div>
               <h1 className="text-2xl font-bold text-slate-900">
-                Подарки для Ирины
+                Подарочки 
               </h1>
               <p className="text-sm text-slate-600">
-                Здесь собраны идеи подарков и большие мечты Иры на Новый год.
+                Здесь собраны идеи подарков и большие мечты Иры
               </p>
             </div>
           </div>
@@ -200,14 +198,13 @@
                 Давайте познакомимся
               </div>
               <p className="note">
-                Напишите, как к вам обращаться. Если вы Ира — вы сможете редактировать этот список
-                и добавлять большие мечты. Если вы гость — вы сможете забронировать подарок
+                Напишите ваше имя  — вы сможете забронировать подарок
                 или вложиться в мечту.
               </p>
               <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
                 <input
                   className="input text-sm"
-                  placeholder="Например: Ира, Антон, Мама…"
+                  placeholder="Например: Ира, Антон, Настя"
                   value={temp}
                   onChange={e => setTemp(e.target.value)}
                 />
@@ -268,7 +265,7 @@
         <div className="card p-4 mb-4">
           <div className="flex items-center justify-between mb-2">
             <h2 className="font-semibold text-slate-900 text-base">Добавить идею подарка</h2>
-            <span className="badge text-[11px]">Список для Иры</span>
+            <span className="badge text-[11px]">Список подарков</span>
           </div>
           <div className="space-y-3">
             <input
@@ -386,7 +383,7 @@
             <textarea
               className="textarea text-sm resize-none"
               rows="2"
-              placeholder="Коротко опишите мечту: зачем, почему это важно…"
+              placeholder="Коротко опишите вашу мечту"
               value={desc}
               onChange={e=>setDesc(e.target.value)}
             ></textarea>
@@ -430,7 +427,6 @@
       );
     }
 
-    // ----- Карточки Иры: обычные подарки -----
     function WishCardIra({ wish, onDelete, onUpdate, onImageClick }) {
       const [editing, setEditing] = useState(false);
       const [title, setTitle] = useState(wish.title || '');
@@ -911,7 +907,7 @@
 
           {!dream.qrImage && (
             <div className="note text-[11px]">
-              Для этой мечты пока нет QR-кода. Спросите у Иры, как лучше перевести деньги 😊
+              Для этой мечты пока нет QR-кода. Спросите у Иры, как лучше перевести деньги или подарите в конвертике 😊
             </div>
           )}
         </div>
@@ -1339,3 +1335,4 @@
   </script>
 </body>
 </html>
+
