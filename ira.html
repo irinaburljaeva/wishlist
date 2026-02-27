@@ -13,240 +13,172 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <!-- Firebase (compat) -->
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
 
   <style>
     body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-  min-height: 100vh;
-  margin: 0;
-  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 40%);
-  color: #0f172a;
-}
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      min-height: 100vh;
+      margin: 0;
+      background: linear-gradient(180deg, #fffaf5 0%, #ffffff 40%);
+      color: #0f172a;
+    }
 
-/* контейнер */
-.container-narrow {
-  max-width: 980px;
-  margin: 0 auto;
-  padding: 0 20px;
-}
+    .container-narrow {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
 
-/* карточки */
-.card {
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(12px);
-  border-radius: 28px;
-  box-shadow:
-    0 10px 30px rgba(15,23,42,.06),
-    0 2px 8px rgba(15,23,42,.04);
-  border: 1px solid rgba(255,180,90,.15);
-  transition: all .25s ease;
-}
+    .card {
+      background: rgba(255,255,255,0.85);
+      backdrop-filter: blur(12px);
+      border-radius: 28px;
+      box-shadow:
+        0 10px 30px rgba(15,23,42,.06),
+        0 2px 8px rgba(15,23,42,.04);
+      border: 1px solid rgba(255,180,90,.15);
+      transition: all .25s ease;
+    }
 
-.card:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 20px 50px rgba(15,23,42,.10),
-    0 5px 20px rgba(15,23,42,.06);
-}
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow:
+        0 20px 50px rgba(15,23,42,.10),
+        0 5px 20px rgba(15,23,42,.06);
+    }
 
-/* кнопки */
-.btn {
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  border-radius:999px;
-  padding:12px 18px;
-  font-size:14px;
-  font-weight:600;
-  transition: all .2s ease;
-  cursor:pointer;
-}
+    .btn {
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      border-radius:999px;
+      padding:12px 18px;
+      font-size:14px;
+      font-weight:600;
+      transition: all .2s ease;
+      cursor:pointer;
+    }
 
-.btn-primary {
-  background: linear-gradient(135deg,#fb923c,#facc15);
-  color:#111827;
-  box-shadow: 0 6px 20px rgba(251,146,60,.35);
-}
+    .btn-primary {
+      background: linear-gradient(135deg,#fb923c,#facc15);
+      color:#111827;
+      box-shadow: 0 6px 20px rgba(251,146,60,.35);
+    }
 
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(251,146,60,.45);
-}
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 30px rgba(251,146,60,.45);
+    }
 
-.btn-primary:active {
-  transform: scale(.97);
-}
+    .btn-primary:active { transform: scale(.97); }
+    .btn-primary:disabled { opacity:.5; cursor:not-allowed; box-shadow:none; }
 
-.btn-primary:disabled {
-  opacity:.5;
-  cursor:not-allowed;
-  box-shadow:none;
-}
+    .btn-ghost {
+      background:transparent;
+      color:#0f172a;
+      border:1px solid rgba(15,23,42,.15);
+    }
 
-.btn-ghost {
-  background:transparent;
-  color:#0f172a;
-  border:1px solid rgba(15,23,42,.15);
-}
+    .btn-ghost:hover { background:rgba(15,23,42,.05); }
 
-.btn-ghost:hover {
-  background:rgba(15,23,42,.05);
-}
+    .input,.textarea {
+      width:100%;
+      border-radius:18px;
+      border:1px solid rgba(15,23,42,.12);
+      padding:12px 16px;
+      outline:none;
+      background:#ffffff;
+      transition: all .2s ease;
+      font-size:14px;
+    }
 
-/* поля ввода */
-.input,
-.textarea {
-  width:100%;
-  border-radius:18px;
-  border:1px solid rgba(15,23,42,.12);
-  padding:12px 16px;
-  outline:none;
-  background:#ffffff;
-  transition: all .2s ease;
-  font-size:14px;
-}
+    .input:focus,.textarea:focus {
+      border-color:#fb923c;
+      box-shadow:0 0 0 4px rgba(251,146,60,.18);
+    }
 
-.input:focus,
-.textarea:focus {
-  border-color:#fb923c;
-  box-shadow:0 0 0 4px rgba(251,146,60,.18);
-}
+    .badge {
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      border-radius:999px;
+      background:linear-gradient(135deg,#fff7ed,#fef3c7);
+      color:#92400e;
+      font-size:11px;
+      padding:6px 10px;
+      font-weight:600;
+    }
 
-/* бейджи */
-.badge {
-  display:inline-flex;
-  align-items:center;
-  gap:6px;
-  border-radius:999px;
-  background:linear-gradient(135deg,#fff7ed,#fef3c7);
-  color:#92400e;
-  font-size:11px;
-  padding:6px 10px;
-  font-weight:600;
-}
+    .badge-soft {
+      background:#f1f5f9;
+      color:#334155;
+    }
 
-.badge-soft {
-  background:#f1f5f9;
-  color:#334155;
-}
+    .err { color:#b91c1c; font-size:13px; }
+    .note { color:#64748b; font-size:13px; }
 
-/* ошибки */
-.err {
-  color:#b91c1c;
-  font-size:13px;
-}
+    .progress-wrapper {
+      width:100%;
+      height:10px;
+      background:#f1f5f9;
+      border-radius:999px;
+      overflow:hidden;
+    }
 
-/* подсказки */
-.note {
-  color:#64748b;
-  font-size:13px;
-}
+    .progress-bar {
+      height:100%;
+      background:linear-gradient(90deg,#fb923c,#facc15);
+      transition: width .6s ease;
+    }
 
-/* изображения внутри карточек */
-.card img {
-  border-radius:20px;
-  transition: transform .3s ease;
-}
+    .modal-overlay {
+      position:fixed;
+      inset:0;
+      background:rgba(15,23,42,.65);
+      backdrop-filter: blur(6px);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      z-index:50;
+    }
 
-.card img:hover {
-  transform: scale(1.02);
-}
-
-/* модальное окно (используется в мечтах) */
-.modal-overlay {
-  position:fixed;
-  inset:0;
-  background:rgba(15,23,42,.65);
-  backdrop-filter: blur(6px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:50;
-}
-
-.modal-box {
-  background:#ffffff;
-  border-radius:32px;
-  padding:32px;
-  width:360px;
-  box-shadow:
-    0 20px 60px rgba(15,23,42,.25);
-  animation: fadeIn .25s ease;
-}
-
-@keyframes fadeIn {
-  from { opacity:0; transform:scale(.95); }
-  to { opacity:1; transform:scale(1); }
-}
-
-/* прогресс-бар */
-.progress-wrapper {
-  width:100%;
-  height:10px;
-  background:#f1f5f9;
-  border-radius:999px;
-  overflow:hidden;
-}
-
-.progress-bar {
-  height:100%;
-  background:linear-gradient(90deg,#fb923c,#facc15);
-  transition: width .6s ease;
-}
-
-/* сертификат стиль (для window.print) */
-.certificate-box {
-  border:4px solid #fb923c;
-  border-radius:36px;
-  padding:60px;
-  max-width:800px;
-  margin:40px auto;
-  background:#fffaf0;
-}
+    .modal-box {
+      background:#ffffff;
+      border-radius:32px;
+      padding:32px;
+      width:360px;
+      box-shadow:0 20px 60px rgba(15,23,42,.25);
+    }
   </style>
 </head>
 <body>
-  <!-- Мягкий фон -->
-  <div class="fixed inset-0 -z-20 bg-gradient-to-b from-amber-50 via-white to-white"></div>
-  <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.15),transparent_60%)]"></div>
 
-  <!-- HERO -->
   <section class="container-narrow pt-14 pb-10 text-center">
     <div class="space-y-4">
       <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
         💛 День рождения Иры
       </div>
-
       <h1 class="text-4xl font-bold tracking-tight">
         Вот, что хочет Ира
       </h1>
-
       <p class="text-slate-600 max-w-xl mx-auto">
-        Здесь собраны идеи подарков и большие мечты.  
-        Вы можете забронировать подарок или вложиться в мечту —  
-        красиво и с сертификатом ✨
+        Здесь собраны идеи подарков и большие мечты.
+        Можно забронировать подарок или вложиться в мечту ✨
       </p>
     </div>
   </section>
 
-  <!-- React приложение -->
   <main id="root" class="pb-20"></main>
-
-  <!-- Нежный футер -->
-  <footer class="container-narrow text-center text-xs text-slate-400 pb-10">
-    Сделано с любовью 🤍
-  </footer>
-
 
 <script type="text/babel">
 
-const { useEffect, useState, useMemo } = React;
+const { useEffect, useState } = React;
 
-/* ---------------- FIREBASE ---------------- */
+/* FIREBASE */
 
 const firebaseConfig = {
   apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
@@ -257,9 +189,7 @@ const firebaseConfig = {
   appId: "1:72495355387:web:0ff709125d3cf33c8c275e"
 };
 
-if (!firebase.apps.length) {
-  firebase.initializeApp(firebaseConfig);
-}
+if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
@@ -267,325 +197,155 @@ auth.signInAnonymously().catch(console.error);
 
 const LIST_ID = 'newyear2025';
 const listDoc  = db.collection('lists').doc(LIST_ID);
+const itemsCol = () => listDoc.collection('items');
+const claimsCol = () => listDoc.collection('claims');
 const dreamsCol = () => listDoc.collection('dreams');
 
-const normalize = (s) => (s || '').trim().toLowerCase();
+const normalize = s => (s||'').trim().toLowerCase();
 const IRA_KEY = 'ира';
 
-/* ---------------- CERTIFICATE ---------------- */
+/* CERTIFICATE */
 
-function openCertificate(dream, amount, name) {
-  const w = window.open('', '_blank');
+function openCertificate(dream, amount, name){
+  const w = window.open('','_blank');
   w.document.write(`
-    <html>
-    <head>
-      <title>Сертификат</title>
-      <style>
-        body {
-          font-family: -apple-system, sans-serif;
-          background:#fffaf0;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          height:100vh;
-          margin:0;
-        }
-        .box {
-          border:4px solid #fb923c;
-          border-radius:40px;
-          padding:60px;
-          text-align:center;
-          background:white;
-          width:700px;
-        }
-        h1 { font-size:28px; margin-bottom:30px; }
-        .amount { font-size:32px; margin:20px 0; font-weight:600; }
-      </style>
-    </head>
-    <body>
-      <div class="box">
-        <h1>СЕРТИФИКАТ</h1>
-        <p>${name} внёс(ла)</p>
-        <div class="amount">${Number(amount).toLocaleString()} ₽</div>
-        <p>в мечту Иры:</p>
-        <h2>${dream.title}</h2>
-        <p>${new Date().toLocaleDateString()}</p>
-      </div>
-      <script>window.print()</script>
-    </body>
-    </html>
-  `);
+  <html><head><title>Сертификат</title></head>
+  <body style="font-family:sans-serif;background:#fffaf0;display:flex;align-items:center;justify-content:center;height:100vh;">
+  <div style="border:4px solid #fb923c;border-radius:40px;padding:60px;text-align:center;background:white;width:700px;">
+  <h1>СЕРТИФИКАТ</h1>
+  <p>${name} внёс(ла)</p>
+  <div style="font-size:32px;margin:20px 0;font-weight:600;">${Number(amount).toLocaleString()} ₽</div>
+  <p>в мечту Иры:</p>
+  <h2>${dream.title}</h2>
+  <p>${new Date().toLocaleDateString()}</p>
+  </div>
+  <script>window.print()<\/script>
+  </body></html>`);
 }
 
-/* ---------------- DREAM CARD (GUEST) ---------------- */
+/* DREAM CARD GUEST */
 
-function DreamCardGuest({ dream, currentUserName }) {
+function DreamCardGuest({dream,currentUserName}){
 
   const [contributions,setContributions] = useState([]);
-  const [showModal,setShowModal] = useState(false);
+  const [show,setShow] = useState(false);
   const [amount,setAmount] = useState('');
 
-  useEffect(() => {
-    const unsub = dreamsCol()
-      .doc(dream.id)
+  useEffect(()=>{
+    const unsub = dreamsCol().doc(dream.id)
       .collection('contributions')
-      .onSnapshot(snap=>{
+      .onSnapshot(s=>{
         const arr=[];
-        snap.forEach(doc=>arr.push(doc.data()));
+        s.forEach(d=>arr.push(d.data()));
         setContributions(arr);
       });
     return ()=>unsub();
   },[dream.id]);
 
-  const total = contributions.reduce((sum,c)=>sum+c.amount,0);
-
+  const total = contributions.reduce((s,c)=>s+(Number(c.amount)||0),0);
   const percent = dream.targetAmount
-    ? Math.min(100, Math.round((total/dream.targetAmount)*100))
+    ? Math.min(100,Math.round((total/dream.targetAmount)*100))
     : 0;
 
-  const handleContribute = async () => {
-    if (!amount) return;
-
-    await dreamsCol()
-      .doc(dream.id)
+  const handle = async()=>{
+    if(!amount) return;
+    await dreamsCol().doc(dream.id)
       .collection('contributions')
       .add({
-        contributorName: currentUserName,
-        amount: Number(amount),
-        createdAt: Date.now()
+        contributorName:currentUserName,
+        amount:Number(amount),
+        createdAt:Date.now()
       });
-
-    openCertificate(dream, amount, currentUserName);
-
+    openCertificate(dream,amount,currentUserName);
     setAmount('');
-    setShowModal(false);
+    setShow(false);
   };
 
-  return (
+  return(
     <div className="card p-6 space-y-4">
-
       <div>
-        <div className="text-lg font-semibold">
-          {dream.title}
-        </div>
-        <div className="text-sm text-slate-600">
-          {dream.description}
-        </div>
+        <div className="text-lg font-semibold">{dream.title}</div>
+        <div className="text-sm text-slate-600">{dream.description}</div>
       </div>
 
-      {dream.targetAmount > 0 && (
-        <>
-          <div className="progress-wrapper">
-            <div
-              className="progress-bar"
-              style={{ width: percent + '%' }}
-            />
-          </div>
+      {dream.targetAmount>0 && <>
+        <div className="progress-wrapper">
+          <div className="progress-bar" style={{width:percent+'%'}}/>
+        </div>
+        <div className="text-xs text-slate-600">
+          Собрано {total.toLocaleString()} ₽ из {dream.targetAmount.toLocaleString()} ₽
+        </div>
+      </>}
 
-          <div className="text-xs text-slate-600">
-            Собрано {total.toLocaleString()} ₽ из {dream.targetAmount.toLocaleString()} ₽
-          </div>
-        </>
-      )}
-
-      <button
-        className="btn btn-primary w-full"
-        onClick={()=>setShowModal(true)}
-      >
-        💛 Вложиться в мечту
+      <button className="btn btn-primary w-full" onClick={()=>setShow(true)}>
+        💛 Вложиться
       </button>
 
-      {showModal && (
+      {show && (
         <div className="modal-overlay">
           <div className="modal-box space-y-4">
-
-            <div className="text-lg font-semibold">
-              Внести вклад
-            </div>
-
-            <input
-              className="input"
+            <input className="input"
               placeholder="Введите сумму"
               value={amount}
-              onChange={e=>setAmount(e.target.value)}
-            />
-
-            <button
-              className="btn btn-primary w-full"
-              onClick={handleContribute}
-            >
+              onChange={e=>setAmount(e.target.value)}/>
+            <button className="btn btn-primary w-full" onClick={handle}>
               Подтвердить
             </button>
-
-            <button
-              className="btn btn-ghost w-full"
-              onClick={()=>setShowModal(false)}
-            >
+            <button className="btn btn-ghost w-full" onClick={()=>setShow(false)}>
               Отмена
             </button>
-
           </div>
         </div>
       )}
-
     </div>
   );
 }
 
-/* ---------------- ADMIN VIEW ---------------- */
+/* APP */
 
-function AdminView({ dreams }) {
-
-  const [title,setTitle] = useState('');
-  const [description,setDescription] = useState('');
-  const [target,setTarget] = useState('');
-
-  const handleAdd = async () => {
-    if (!title.trim()) return;
-
-    await dreamsCol().add({
-      title,
-      description,
-      targetAmount: Number(target) || 0,
-      ownerName: 'Ира',
-      createdAt: Date.now()
-    });
-
-    setTitle('');
-    setDescription('');
-    setTarget('');
-  };
-
-  return (
-    <div className="space-y-6">
-
-      <div className="card p-6 space-y-3">
-        <div className="text-lg font-semibold">
-          Добавить мечту
-        </div>
-
-        <input
-          className="input"
-          placeholder="Название"
-          value={title}
-          onChange={e=>setTitle(e.target.value)}
-        />
-
-        <textarea
-          className="textarea"
-          placeholder="Описание"
-          value={description}
-          onChange={e=>setDescription(e.target.value)}
-        />
-
-        <input
-          className="input"
-          placeholder="Целевая сумма"
-          value={target}
-          onChange={e=>setTarget(e.target.value)}
-        />
-
-        <button
-          className="btn btn-primary w-full"
-          onClick={handleAdd}
-        >
-          ✨ Добавить
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {dreams.map(d=>(
-          <div key={d.id} className="card p-4">
-            <div className="font-semibold">{d.title}</div>
-            <div className="text-sm text-slate-500">
-              Цель: {d.targetAmount?.toLocaleString()} ₽
-            </div>
-          </div>
-        ))}
-      </div>
-
-    </div>
-  );
-}
-
-/* ---------------- GUEST VIEW ---------------- */
-
-function GuestView({ dreams, currentUserName }) {
-
-  return (
-    <div className="space-y-6">
-
-      <div className="text-lg font-semibold">
-        💭 Большие мечты Иры
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2">
-        {dreams.map(d=>(
-          <DreamCardGuest
-            key={d.id}
-            dream={d}
-            currentUserName={currentUserName}
-          />
-        ))}
-      </div>
-
-    </div>
-  );
-}
-
-/* ---------------- APP ---------------- */
-
-function App() {
+function App(){
 
   const [userName,setUserName] = useState('');
   const [dreams,setDreams] = useState([]);
-  const [loading,setLoading] = useState(true);
 
-  useEffect(() => {
+  useEffect(()=>{
     const unsub = dreamsCol().orderBy('createdAt','desc')
-      .onSnapshot(snap=>{
+      .onSnapshot(s=>{
         const arr=[];
-        snap.forEach(doc=>arr.push({id:doc.id,...doc.data()}));
+        s.forEach(d=>arr.push({id:d.id,...d.data()}));
         setDreams(arr);
-        setLoading(false);
       });
     return ()=>unsub();
-  }, []);
+  },[]);
 
-  const trimmedName = (userName || '').trim();
-  const isAdmin = normalize(trimmedName).startsWith(IRA_KEY);
+  const trimmed = userName.trim();
+  const isAdmin = normalize(trimmed).startsWith(IRA_KEY);
 
-  return (
+  return(
     <div className="container-narrow space-y-8">
-
       <div className="card p-6 space-y-3">
-        <div className="text-sm font-semibold">
-          Как вас зовут?
-        </div>
-
         <input
           className="input"
           value={userName}
           onChange={e=>setUserName(e.target.value)}
-          placeholder="Введите имя"
-        />
+          placeholder="Введите имя"/>
       </div>
 
-      {!trimmedName && <div className="note">Введите имя, чтобы продолжить</div>}
-
-      {trimmedName && (
-        loading
-          ? <div className="note">Загрузка...</div>
-          : isAdmin
-              ? <AdminView dreams={dreams} />
-              : <GuestView dreams={dreams} currentUserName={trimmedName} />
+      {trimmed && !isAdmin && (
+        <div className="grid gap-4 md:grid-cols-2">
+          {dreams.map(d=>(
+            <DreamCardGuest
+              key={d.id}
+              dream={d}
+              currentUserName={trimmed}/>
+          ))}
+        </div>
       )}
-
     </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 
 </script>
 </body>
