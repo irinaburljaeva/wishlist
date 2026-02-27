@@ -20,1318 +20,491 @@
 
   <style>
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
-      min-height: 100vh;
-      margin: 0;
-    }
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  background: linear-gradient(180deg, #fffaf5 0%, #ffffff 40%);
+  color: #0f172a;
+}
 
-    .container-narrow { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+/* контейнер */
+.container-narrow {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
 
-    .card {
-      background:#ffffff;
-      border-radius:24px;
-      box-shadow:0 20px 40px rgba(15,23,42,.10);
-      border:1px solid rgba(148,163,184,.25);
-    }
+/* карточки */
+.card {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(12px);
+  border-radius: 28px;
+  box-shadow:
+    0 10px 30px rgba(15,23,42,.06),
+    0 2px 8px rgba(15,23,42,.04);
+  border: 1px solid rgba(255,180,90,.15);
+  transition: all .25s ease;
+}
 
-    .btn {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:999px;
-      padding:10px 16px;
-      font-size:14px;
-      font-weight:600;
-    }
-    .btn-primary {
-      background:linear-gradient(135deg,#f97316,#facc15);
-      color:#111827;
-    }
-    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
-    .btn-ghost { background:transparent; color:#0f172a; }
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 20px 50px rgba(15,23,42,.10),
+    0 5px 20px rgba(15,23,42,.06);
+}
 
-    .input, .textarea {
-      width:100%;
-      border-radius:16px;
-      border:1px solid #e2e8f0;
-      padding:10px 14px;
-      outline:none;
-      background:#f8fafc;
-    }
-    .input:focus, .textarea:focus {
-      border-color:#fb923c;
-      box-shadow:0 0 0 3px rgba(251,146,60,.25);
-      background:#ffffff;
-    }
+/* кнопки */
+.btn {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  border-radius:999px;
+  padding:12px 18px;
+  font-size:14px;
+  font-weight:600;
+  transition: all .2s ease;
+  cursor:pointer;
+}
 
-    .badge {
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      border-radius:999px;
-      background:#fefce8;
-      color:#92400e;
-      font-size:11px;
-      padding:4px 9px;
-    }
-    .badge-soft {
-      background:#e2e8f0;
-      color:#334155;
-    }
-    .err { color:#b91c1c; font-size:13px; }
-    .note { color:#64748b; font-size:13px; }
+.btn-primary {
+  background: linear-gradient(135deg,#fb923c,#facc15);
+  color:#111827;
+  box-shadow: 0 6px 20px rgba(251,146,60,.35);
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 30px rgba(251,146,60,.45);
+}
+
+.btn-primary:active {
+  transform: scale(.97);
+}
+
+.btn-primary:disabled {
+  opacity:.5;
+  cursor:not-allowed;
+  box-shadow:none;
+}
+
+.btn-ghost {
+  background:transparent;
+  color:#0f172a;
+  border:1px solid rgba(15,23,42,.15);
+}
+
+.btn-ghost:hover {
+  background:rgba(15,23,42,.05);
+}
+
+/* поля ввода */
+.input,
+.textarea {
+  width:100%;
+  border-radius:18px;
+  border:1px solid rgba(15,23,42,.12);
+  padding:12px 16px;
+  outline:none;
+  background:#ffffff;
+  transition: all .2s ease;
+  font-size:14px;
+}
+
+.input:focus,
+.textarea:focus {
+  border-color:#fb923c;
+  box-shadow:0 0 0 4px rgba(251,146,60,.18);
+}
+
+/* бейджи */
+.badge {
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:999px;
+  background:linear-gradient(135deg,#fff7ed,#fef3c7);
+  color:#92400e;
+  font-size:11px;
+  padding:6px 10px;
+  font-weight:600;
+}
+
+.badge-soft {
+  background:#f1f5f9;
+  color:#334155;
+}
+
+/* ошибки */
+.err {
+  color:#b91c1c;
+  font-size:13px;
+}
+
+/* подсказки */
+.note {
+  color:#64748b;
+  font-size:13px;
+}
+
+/* изображения внутри карточек */
+.card img {
+  border-radius:20px;
+  transition: transform .3s ease;
+}
+
+.card img:hover {
+  transform: scale(1.02);
+}
+
+/* модальное окно (используется в мечтах) */
+.modal-overlay {
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.65);
+  backdrop-filter: blur(6px);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:50;
+}
+
+.modal-box {
+  background:#ffffff;
+  border-radius:32px;
+  padding:32px;
+  width:360px;
+  box-shadow:
+    0 20px 60px rgba(15,23,42,.25);
+  animation: fadeIn .25s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity:0; transform:scale(.95); }
+  to { opacity:1; transform:scale(1); }
+}
+
+/* прогресс-бар */
+.progress-wrapper {
+  width:100%;
+  height:10px;
+  background:#f1f5f9;
+  border-radius:999px;
+  overflow:hidden;
+}
+
+.progress-bar {
+  height:100%;
+  background:linear-gradient(90deg,#fb923c,#facc15);
+  transition: width .6s ease;
+}
+
+/* сертификат стиль (для window.print) */
+.certificate-box {
+  border:4px solid #fb923c;
+  border-radius:36px;
+  padding:60px;
+  max-width:800px;
+  margin:40px auto;
+  background:#fffaf0;
+}
   </style>
 </head>
 <body>
-  <!-- Фон -->
-  <img
-    src="D1EA6935-8F4B-495D-8B1F-C5BEE102DFE8.png"
-    alt=""
-    class="fixed inset-0 w-full h-full object-cover -z-20"
-  />
-  <div class="fixed inset-0 bg-white/50 backdrop-blur-md -z-10"></div>
+  <!-- Мягкий фон -->
+  <div class="fixed inset-0 -z-20 bg-gradient-to-b from-amber-50 via-white to-white"></div>
+  <div class="fixed inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(251,146,60,0.15),transparent_60%)]"></div>
 
-  <div id="root"></div>
+  <!-- HERO -->
+  <section class="container-narrow pt-14 pb-10 text-center">
+    <div class="space-y-4">
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 text-amber-900 text-xs font-semibold">
+        💛 День рождения Иры
+      </div>
 
-  <script type="text/babel">
-    const { useEffect, useState, useMemo } = React;
+      <h1 class="text-4xl font-bold tracking-tight">
+        Вот, что хочет Ира
+      </h1>
 
-    // === Firebase init ===
-    const firebaseConfig = {
-      apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
-      authDomain: "wishlist-37819.firebaseapp.com",
-      projectId: "wishlist-37819",
-      storageBucket: "wishlist-37819.firebasestorage.app",
-      messagingSenderId: "72495355387",
-      appId: "1:72495355387:web:0ff709125d3cf33c8c275e"
-    };
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    auth.signInAnonymously().catch(console.error);
+      <p class="text-slate-600 max-w-xl mx-auto">
+        Здесь собраны идеи подарков и большие мечты.  
+        Вы можете забронировать подарок или вложиться в мечту —  
+        красиво и с сертификатом ✨
+      </p>
+    </div>
+  </section>
 
-    const LIST_ID = 'newyear2025';
-    const listDoc  = db.collection('lists').doc(LIST_ID);
-    const itemsCol  = () => listDoc.collection('items');
-    const claimsCol = () => listDoc.collection('claims');
-    const dreamsCol = () => listDoc.collection('dreams'); // 💭 большие мечты
+  <!-- React приложение -->
+  <main id="root" class="pb-20"></main>
 
-    const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-    const loadLocal = (k,fallback) => {
-      try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
-      catch { return fallback; }
-    };
+  <!-- Нежный футер -->
+  <footer class="container-narrow text-center text-xs text-slate-400 pb-10">
+    Сделано с любовью 🤍
+  </footer>
 
-    const normalize = (s) => (s || '').trim().toLowerCase();
-    const IRA_KEY = 'ира';
 
-    // Сжатие изображений (для фото и QR)
-    async function compressImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = new Image();
-          img.onload = () => {
-            const MAX_WIDTH = 800;
-            const MAX_HEIGHT = 800;
-            const scale = Math.min(
-              MAX_WIDTH / img.width,
-              MAX_HEIGHT / img.height,
-              1
-            );
 
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
+<script type="text/babel">
 
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+const { useEffect, useState, useMemo } = React;
 
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+/* ---------------- FIREBASE ---------------- */
 
-            if (dataUrl.length > 900000) {
-              reject('Изображение слишком большое даже после сжатия. Выберите файл поменьше.');
-              return;
-            }
+const firebaseConfig = {
+  apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
+  authDomain: "wishlist-37819.firebaseapp.com",
+  projectId: "wishlist-37819",
+  storageBucket: "wishlist-37819.firebasestorage.app",
+  messagingSenderId: "72495355387",
+  appId: "1:72495355387:web:0ff709125d3cf33c8c275e"
+};
 
-            resolve(dataUrl);
-          };
-          img.onerror = () => reject('Не удалось прочитать изображение.');
-          img.src = e.target.result;
-        };
-        reader.onerror = () => reject('Не удалось прочитать файл.');
-        reader.readAsDataURL(file);
+if (!firebase.apps.length) {
+  firebase.initializeApp(firebaseConfig);
+}
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+auth.signInAnonymously().catch(console.error);
+
+const LIST_ID = 'newyear2025';
+const listDoc  = db.collection('lists').doc(LIST_ID);
+const itemsCol  = () => listDoc.collection('items');
+const claimsCol = () => listDoc.collection('claims');
+const dreamsCol = () => listDoc.collection('dreams');
+
+const normalize = (s) => (s || '').trim().toLowerCase();
+const IRA_KEY = 'ира';
+
+function openCertificate(dream, amount, name) {
+  const w = window.open('', '_blank');
+
+  w.document.write(`
+    <html>
+    <head>
+      <title>Сертификат</title>
+      <style>
+        body {
+          font-family: -apple-system, sans-serif;
+          background:#fffaf0;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          height:100vh;
+          margin:0;
+        }
+        .box {
+          border:4px solid #fb923c;
+          border-radius:40px;
+          padding:60px;
+          text-align:center;
+          background:white;
+          width:700px;
+        }
+        h1 { font-size:28px; margin-bottom:30px; }
+        .amount { font-size:32px; margin:20px 0; font-weight:600; }
+      </style>
+    </head>
+    <body>
+      <div class="box">
+        <h1>СЕРТИФИКАТ</h1>
+        <p>${name} внёс(ла)</p>
+        <div class="amount">${Number(amount).toLocaleString()} ₽</div>
+        <p>в мечту Иры:</p>
+        <h2>${dream.title}</h2>
+        <p>${new Date().toLocaleDateString()}</p>
+      </div>
+      <script>window.print()</script>
+    </body>
+    </html>
+  `);
+}
+
+/* ---------------- DREAM CARD (GUEST) ---------------- */
+
+function DreamCardGuest({ dream, currentUserName }) {
+
+  const [contributions,setContributions] = useState([]);
+  const [showModal,setShowModal] = useState(false);
+  const [amount,setAmount] = useState('');
+
+  useEffect(() => {
+    const unsub = dreamsCol()
+      .doc(dream.id)
+      .collection('contributions')
+      .onSnapshot(snap=>{
+        const arr=[];
+        snap.forEach(doc=>arr.push(doc.data()));
+        setContributions(arr);
       });
-    }
+    return ()=>unsub();
+  },[dream.id]);
 
-    function Header() {
-      return (
-        <header className="container-narrow pt-6 pb-3">
-          <div className="flex items-center gap-4">
-        
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">
-                Подарочки 
-              </h1>
-              <p className="text-sm text-slate-600">
-                Здесь собраны идеи подарков и большие мечты Иры
-              </p>
-            </div>
-          </div>
-        </header>
-      );
-    }
+  const total = contributions.reduce((sum,c)=>sum+c.amount,0);
 
-    function WhoAreYouCard({ userName, setUserName }) {
-      const [temp, setTemp] = useState(userName || '');
+  const percent = dream.targetAmount
+    ? Math.min(100, Math.round((total/dream.targetAmount)*100))
+    : 0;
 
-      return (
-        <section className="container-narrow mb-4">
-          <div className="card px-5 py-4 flex items-start gap-4">
-            <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
-              👋
-            </div>
-            <div className="flex-1 space-y-2">
-              <div className="text-sm font-semibold text-slate-800">
-                Давайте познакомимся
-              </div>
-              <p className="note">
-                Напишите ваше имя  — вы сможете забронировать подарок
-                или вложиться в мечту.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                <input
-                  className="input text-sm"
-                  placeholder="Например: Ира, Антон, Настя"
-                  value={temp}
-                  onChange={e => setTemp(e.target.value)}
-                />
-                <button
-                  className="btn btn-primary text-sm sm:w-auto w-full"
-                  onClick={() => setUserName(temp.trim())}
-                  disabled={!temp.trim()}
-                >
-                  Продолжить
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-      );
-    }
+  const handleContribute = async () => {
+    if (!amount) return;
 
-    // ----- Форма добавления обычного подарка (Ира) -----
-    function AddWishFormIra({ onAdd, disabled, error }) {
-      const [title,setTitle] = useState('');
-      const [url,setUrl] = useState('');
-      const [note,setNote] = useState('');
-      const [imageData,setImageData] = useState('');
-      const [imageError,setImageError] = useState('');
-      const [imageLoading,setImageLoading] = useState(false);
+    await dreamsCol()
+      .doc(dream.id)
+      .collection('contributions')
+      .add({
+        contributorName: currentUserName,
+        amount: Number(amount),
+        createdAt: Date.now()
+      });
 
-      const submit = () => {
-        if (disabled) return;
-        if (!title.trim()) return;
-        onAdd({ title:title.trim(), url:url.trim(), note:note.trim(), image:imageData });
-        setTitle(''); setUrl(''); setNote(''); setImageData(''); setImageError('');
-      };
+    openCertificate(dream, amount, currentUserName);
 
-      const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setImageData('');
-          setImageError('');
-          return;
-        }
-        setImageLoading(true);
-        setImageError('');
-        try {
-          const compressed = await compressImage(file);
-          setImageData(compressed);
-        } catch (err) {
-          console.error(err);
-          setImageData('');
-          setImageError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImageLoading(false);
-        }
-      };
+    setAmount('');
+    setShowModal(false);
+  };
 
-      return (
-        <div className="card p-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-slate-900 text-base">Добавить идею подарка</h2>
-            <span className="badge text-[11px]">Список подарков</span>
-          </div>
-          <div className="space-y-3">
-            <input
-              className="input text-sm"
-              placeholder="Что вы хотите получить? (например, тёплый плед)"
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-            />
+  return (
+    <div className="card p-6 space-y-4">
 
-            <input
-              className="input text-sm"
-              placeholder="Ссылка на товар (маркетплейс, сайт…)"
-              value={url}
-              onChange={e=>setUrl(e.target.value)}
-            />
-
-            <textarea
-              className="textarea text-sm resize-none"
-              rows="2"
-              placeholder="Комментарий: цвет, размер, нюансы…"
-              value={note}
-              onChange={e=>setNote(e.target.value)}
-            ></textarea>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-800">
-                Изображение (необязательно)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleFileChange}
-              />
-              {imageLoading && <div className="note">Изображение сжимается…</div>}
-              {imageError && <div className="err">{imageError}</div>}
-              {imageData && !imageLoading && (
-                <img
-                  src={imageData}
-                  alt="Превью подарка"
-                  className="rounded-2xl mt-2 max-h-40 object-cover w-full"
-                />
-              )}
-            </div>
-
-            {error && <div className="err">{error}</div>}
-            <div className="flex justify-end">
-              <button className="btn btn-primary text-sm" onClick={submit} disabled={disabled}>
-                ➕ Добавить в список
-              </button>
-            </div>
-          </div>
+      <div>
+        <div className="text-lg font-semibold">
+          {dream.title}
         </div>
-      );
-    }
-
-    // ----- Форма добавления большой мечты (Ира) -----
-    function AddDreamFormIra({ onAdd, disabled, error }) {
-      const [title,setTitle] = useState('');
-      const [desc,setDesc] = useState('');
-      const [link,setLink] = useState('');
-      const [qrImage,setQrImage] = useState('');
-      const [imgError,setImgError] = useState('');
-      const [imgLoading,setImgLoading] = useState(false);
-
-      const submit = () => {
-        if (disabled) return;
-        if (!title.trim()) return;
-        onAdd({
-          title: title.trim(),
-          description: desc.trim(),
-          link: link.trim(),
-          qrImage: qrImage || null
-        });
-        setTitle(''); setDesc(''); setLink(''); setQrImage(''); setImgError('');
-      };
-
-      const handleQrChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setQrImage('');
-          setImgError('');
-          return;
-        }
-        setImgLoading(true);
-        setImgError('');
-        try {
-          const compressed = await compressImage(file);
-          setQrImage(compressed);
-        } catch (err) {
-          console.error(err);
-          setQrImage('');
-          setImgError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImgLoading(false);
-        }
-      };
-
-      return (
-        <div className="card p-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-slate-900 text-base">Добавить большую мечту</h2>
-            <span className="badge text-[11px]">Сбор на подарок</span>
-          </div>
-          <div className="space-y-3">
-            <input
-              className="input text-sm"
-              placeholder="О чём мечтаете? (например, новый объектив, путешествие…) "
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-            />
-
-            <textarea
-              className="textarea text-sm resize-none"
-              rows="2"
-              placeholder="Коротко опишите вашу мечту"
-              value={desc}
-              onChange={e=>setDesc(e.target.value)}
-            ></textarea>
-
-            <input
-              className="input text-sm"
-              placeholder="Ссылка с подробностями (на сайт, на список, не обязательно)"
-              value={link}
-              onChange={e=>setLink(e.target.value)}
-            />
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-800">
-                QR-код для перевода (СБП, карта и т.п., необязательно)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleQrChange}
-              />
-              {imgLoading && <div className="note">Изображение сжимается…</div>}
-              {imgError && <div className="err">{imgError}</div>}
-              {qrImage && !imgLoading && (
-                <img
-                  src={qrImage}
-                  alt="QR-код"
-                  className="rounded-2xl mt-2 max-h-40 object-contain w-full bg-white"
-                />
-              )}
-            </div>
-
-            {error && <div className="err">{error}</div>}
-            <div className="flex justify-end">
-              <button className="btn btn-primary text-sm" onClick={submit} disabled={disabled}>
-                ✨ Добавить большую мечту
-              </button>
-            </div>
-          </div>
+        <div className="text-sm text-slate-600">
+          {dream.description}
         </div>
-      );
-    }
-
-    function WishCardIra({ wish, onDelete, onUpdate, onImageClick }) {
-      const [editing, setEditing] = useState(false);
-      const [title, setTitle] = useState(wish.title || '');
-      const [url, setUrl] = useState(wish.url || '');
-      const [note, setNote] = useState(wish.note || '');
-      const [imageData, setImageData] = useState(wish.image || '');
-      const [imageError,setImageError] = useState('');
-      const [imageLoading,setImageLoading] = useState(false);
-
-      useEffect(() => {
-        setTitle(wish.title || '');
-        setUrl(wish.url || '');
-        setNote(wish.note || '');
-        setImageData(wish.image || '');
-        setImageError('');
-        setImageLoading(false);
-        setEditing(false);
-      }, [wish.id]);
-
-      const handleSave = async () => {
-        if (!title.trim()) return;
-        await onUpdate(wish.id, {
-          title: title.trim(),
-          url: url.trim(),
-          note: note.trim(),
-          image: imageData || null
-        });
-        setEditing(false);
-      };
-
-      const handleDeleteClick = async () => {
-        if (!window.confirm('Удалить этот пункт из списка подарков?')) return;
-        await onDelete(wish.id);
-      };
-
-      const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setImageData(wish.image || '');
-          setImageError('');
-          return;
-        }
-        setImageLoading(true);
-        setImageError('');
-        try {
-          const compressed = await compressImage(file);
-          setImageData(compressed);
-        } catch (err) {
-          console.error(err);
-          setImageError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImageLoading(false);
-        }
-      };
-
-      if (editing) {
-        return (
-          <div className="card p-3 space-y-2">
-            <div className="text-xs uppercase text-slate-400 tracking-wide mb-1">
-              Редактирование пункта
-            </div>
-            <input
-              className="input text-sm mb-2"
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-              placeholder="Название подарка"
-            />
-            <input
-              className="input text-sm mb-2"
-              value={url}
-              onChange={e=>setUrl(e.target.value)}
-              placeholder="Ссылка (необязательно)"
-            />
-            <textarea
-              className="textarea text-sm mb-2"
-              rows="2"
-              value={note}
-              onChange={e=>setNote(e.target.value)}
-              placeholder="Комментарий"
-            />
-            <div className="space-y-2 mb-2">
-              <label className="text-xs font-medium text-slate-700">
-                Изображение
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleFileChange}
-              />
-            {imageLoading && <div className="note">Изображение сжимается…</div>}
-            {imageError && <div className="err">{imageError}</div>}
-            {imageData && !imageLoading && (
-              <img
-                src={imageData}
-                alt=""
-                className="w-full rounded-xl object-cover max-h-40 cursor-pointer"
-                onClick={() => onImageClick(imageData)}
-              />
-            )}
-            </div>
-            <div className="flex gap-2 justify-end border-t border-slate-100 pt-2">
-              <button
-                className="btn btn-ghost text-xs border border-slate-300"
-                onClick={() => setEditing(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-primary text-xs"
-                onClick={handleSave}
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="card p-3 flex flex-col gap-3">
-          {wish.image && (
-            <img
-              src={wish.image}
-              alt=""
-              className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
-              onClick={() => onImageClick(wish.image)}
-            />
-          )}
-          <div className="flex justify-between items-start gap-3">
-            <div>
-              <div className="font-semibold text-sm text-slate-900">{wish.title}</div>
-              {wish.note && <div className="text-xs text-slate-600 mt-1">{wish.note}</div>}
-              {wish.url && (
-                <a
-                  href={wish.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-sky-700 underline mt-1 inline-block"
-                >
-                  Открыть ссылку
-                </a>
-              )}
-            </div>
-            <span className="badge-soft badge text-[11px]">В списке Иры</span>
-          </div>
-          <div className="flex gap-1 justify-end border-t border-slate-100 pt-2">
-            <button
-              className="btn btn-ghost border border-slate-300 text-xs px-3 py-1"
-              onClick={() => setEditing(true)}
-            >
-              Изменить
-            </button>
-            <button
-              className="btn btn-ghost border border-red-200 text-xs px-3 py-1 text-red-600"
-              onClick={handleDeleteClick}
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // ----- Карточка большой мечты для Иры -----
-    function DreamCardIra({ dream, onDelete, onUpdate, onImageClick }) {
-      const [editing,setEditing] = useState(false);
-      const [title,setTitle] = useState(dream.title || '');
-      const [desc,setDesc]   = useState(dream.description || '');
-      const [link,setLink]   = useState(dream.link || '');
-      const [qrImage,setQrImage] = useState(dream.qrImage || '');
-      const [imgError,setImgError] = useState('');
-      const [imgLoading,setImgLoading] = useState(false);
-
-      useEffect(() => {
-        setTitle(dream.title || '');
-        setDesc(dream.description || '');
-        setLink(dream.link || '');
-        setQrImage(dream.qrImage || '');
-        setImgError('');
-        setImgLoading(false);
-        setEditing(false);
-      }, [dream.id]);
-
-      const handleSave = async () => {
-        if (!title.trim()) return;
-        await onUpdate(dream.id, {
-          title: title.trim(),
-          description: desc.trim(),
-          link: link.trim(),
-          qrImage: qrImage || null
-        });
-        setEditing(false);
-      };
-
-      const handleDelete = async () => {
-        if (!window.confirm('Удалить эту мечту из списка?')) return;
-        await onDelete(dream.id);
-      };
-
-      const handleQrChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setQrImage(dream.qrImage || '');
-          setImgError('');
-          return;
-        }
-        setImgLoading(true);
-        setImgError('');
-        try {
-          const compressed = await compressImage(file);
-          setQrImage(compressed);
-        } catch (err) {
-          console.error(err);
-          setImgError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImgLoading(false);
-        }
-      };
-
-      if (editing) {
-        return (
-          <div className="card p-3 space-y-2">
-            <div className="text-xs uppercase text-slate-400 tracking-wide mb-1">
-              Редактирование мечты
-            </div>
-            <input
-              className="input text-sm mb-2"
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-              placeholder="Название мечты"
-            />
-            <textarea
-              className="textarea text-sm mb-2"
-              rows="2"
-              value={desc}
-              onChange={e=>setDesc(e.target.value)}
-              placeholder="Описание"
-            />
-            <input
-              className="input text-sm mb-2"
-              value={link}
-              onChange={e=>setLink(e.target.value)}
-              placeholder="Ссылка с подробностями (необязательно)"
-            />
-            <div className="space-y-2 mb-2">
-              <label className="text-xs font-medium text-slate-700">
-                QR-код для перевода (необязательно)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleQrChange}
-              />
-              {imgLoading && <div className="note">Изображение сжимается…</div>}
-              {imgError && <div className="err">{imgError}</div>}
-              {qrImage && !imgLoading && (
-                <img
-                  src={qrImage}
-                  alt="QR-код"
-                  className="w-full rounded-xl object-contain max-h-40 cursor-pointer bg-white"
-                  onClick={() => onImageClick(qrImage)}
-                />
-              )}
-            </div>
-            <div className="flex gap-2 justify-end border-t border-slate-100 pt-2">
-              <button
-                className="btn btn-ghost text-xs border border-slate-300"
-                onClick={() => setEditing(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-primary text-xs"
-                onClick={handleSave}
-              >
-                Сохранить
-              </button>
-            </div>
-          </div>
-        );
-      }
-
-      return (
-        <div className="card p-3 flex flex-col gap-3">
-          <div className="flex justify-between items-start gap-3">
-            <div>
-              <div className="font-semibold text-sm text-slate-900">{dream.title}</div>
-              {dream.description && (
-                <div className="text-xs text-slate-600 mt-1">{dream.description}</div>
-              )}
-              {dream.link && (
-                <a
-                  href={dream.link}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-sky-700 underline mt-1 inline-block"
-                >
-                  Подробнее о мечте
-                </a>
-              )}
-            </div>
-            <span className="badge-soft badge text-[11px]">Большая мечта</span>
-          </div>
-
-          {dream.qrImage && (
-            <div className="bg-slate-50 rounded-2xl p-2 flex flex-col items-center gap-1">
-              <div className="text-[11px] text-slate-500 mb-1">
-                Этот QR-код увидят только те, кому вы отправите ссылку на страницу.
-              </div>
-              <img
-                src={dream.qrImage}
-                alt="QR-код"
-                className="w-40 h-40 object-contain cursor-pointer bg-white rounded-xl"
-                onClick={() => onImageClick(dream.qrImage)}
-              />
-            </div>
-          )}
-
-          <div className="flex gap-1 justify-end border-t border-slate-100 pt-2">
-            <button
-              className="btn btn-ghost border border-slate-300 text-xs px-3 py-1"
-              onClick={() => setEditing(true)}
-            >
-              Изменить
-            </button>
-            <button
-              className="btn btn-ghost border border-red-200 text-xs px-3 py-1 text-red-600"
-              onClick={handleDelete}
-            >
-              Удалить
-            </button>
-          </div>
-        </div>
-      );
-    }
-
-    // ----- Карточки для гостей: обычные подарки -----
-    function WishCardGuest({ wish, claim, currentUserName, onClaim, onUnclaim, onImageClick }) {
-      const claimed = !!claim;
-      const iGift = claim && normalize(claim.claimerName) === normalize(currentUserName);
-      const [showInfo, setShowInfo] = React.useState(false);
-
-      const handleDisabledClick = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        setShowInfo((v) => !v);
-      };
-
-      return (
-        <div className="card p-3">
-          <div className="flex flex-col gap-2">
-            {wish.image && (
-              <img
-                src={wish.image}
-                alt=""
-                className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
-                onClick={() => onImageClick(wish.image)}
-              />
-            )}
-
-            <div className="flex items-start gap-3">
-              <div className="flex-1 space-y-1">
-                <div className="font-semibold text-sm text-slate-900">
-                  {wish.title}
-                </div>
-
-                {wish.note && (
-                  <div className="text-xs text-slate-600">
-                    {wish.note}
-                  </div>
-                )}
-
-                {wish.url && (
-                  <a
-                    href={wish.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-xs text-sky-700 underline inline-block"
-                  >
-                    Открыть ссылку
-                  </a>
-                )}
-              </div>
-
-              <div className="min-w-[150px] text-right space-y-2 relative">
-                {claimed ? (
-                  iGift ? (
-                    <div className="flex flex-col items-end gap-2">
-                      <span className="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-900 whitespace-nowrap">
-                        🎁 Вы дарите этот подарок
-                      </span>
-                      <button
-                        className="btn text-xs w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
-                        onClick={onUnclaim}
-                      >
-                        Снять бронь
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <button
-                        className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
-                        disabled
-                        onClick={handleDisabledClick}
-                        onMouseEnter={() => setShowInfo(true)}
-                        onMouseLeave={() => setShowInfo(false)}
-                      >
-                        Забронировано
-                      </button>
-
-                      {showInfo && (
-                        <div className="absolute right-0 -top-9 bg-slate-900 text-[11px] text-white px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-10">
-                          🎁 Уже дарит: {claim.claimerName}
-                        </div>
-                      )}
-                    </>
-                  )
-                ) : (
-                  <button
-                    className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
-                    onClick={onClaim}
-                  >
-                    Я подарю
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ----- Карточки больших мечт для гостей -----
-    function DreamCardGuest({ dream, onImageClick }) {
-      return (
-        <div className="card p-3 flex flex-col gap-3">
-          <div>
-            <div className="font-semibold text-sm text-slate-900">
-              {dream.title}
-            </div>
-            {dream.description && (
-              <div className="text-xs text-slate-600 mt-1">
-                {dream.description}
-              </div>
-            )}
-            {dream.link && (
-              <a
-                href={dream.link}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-sky-700 underline mt-1 inline-block"
-              >
-                Подробнее о мечте
-              </a>
-            )}
-          </div>
-
-          {dream.qrImage && (
-            <div className="bg-slate-50 rounded-2xl p-3 flex flex-col items-center gap-2">
-              <div className="text-[11px] text-slate-500 text-center">
-                Хотите вложиться в эту мечту? Отсканируйте QR-код камерой банка
-                или сохраните картинку.
-              </div>
-              <img
-                src={dream.qrImage}
-                alt="QR-код для перевода"
-                className="w-40 h-40 object-contain cursor-pointer bg-white rounded-xl"
-                onClick={() => onImageClick(dream.qrImage)}
-              />
-            </div>
-          )}
-
-          {!dream.qrImage && (
-            <div className="note text-[11px]">
-              Для этой мечты пока нет QR-кода. Спросите у Иры, как лучше перевести деньги или подарите в конвертике 😊
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // ---------- Основное приложение ----------
-    function App() {
-      const [authUid,setAuthUid] = useState(null);
-      const [userName,setUserName] = useState(loadLocal('ira:name',''));
-      const [items,setItems] = useState([]);
-      const [claims,setClaims] = useState({});
-      const [dreams,setDreams] = useState([]);
-      const [itemsLoading,setItemsLoading] = useState(true);
-      const [dreamsLoading,setDreamsLoading] = useState(true);
-      const [addError,setAddError] = useState('');
-      const [dreamError,setDreamError] = useState('');
-      const [claimError,setClaimError] = useState('');
-      const [previewImage, setPreviewImage] = useState(null);
-
-      useEffect(() => {
-        const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
-        return () => unsub();
-      }, []);
-
-      useEffect(()=>{ saveLocal('ira:name', userName); }, [userName]);
-
-      // Обычные подарки
-      useEffect(() => {
-        setItemsLoading(true);
-        const unsub = itemsCol().orderBy('createdAt','desc')
-          .onSnapshot(
-            snap => {
-              const arr = [];
-              snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
-              setItems(arr);
-              setItemsLoading(false);
-            },
-            err => { console.error(err); setItemsLoading(false); }
-          );
-        return () => unsub();
-      }, []);
-
-      // Брони
-      useEffect(() => {
-        const unsub = claimsCol().onSnapshot(
-          snap => {
-            const map = {};
-            snap.forEach(doc => map[doc.id] = doc.data());
-            setClaims(map);
-          },
-          err => {
-            console.error('claims error', err);
-            setClaims({});
-          }
-        );
-        return () => unsub();
-      }, []);
-
-      // Большие мечты
-      useEffect(() => {
-        setDreamsLoading(true);
-        const unsub = dreamsCol().orderBy('createdAt','desc')
-          .onSnapshot(
-            snap => {
-              const arr = [];
-              snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
-              setDreams(arr);
-              setDreamsLoading(false);
-            },
-            err => { console.error(err); setDreamsLoading(false); }
-          );
-        return () => unsub();
-      }, []);
-
-      const trimmedName = (userName || '').trim();
-      const isIraViewer = normalize(trimmedName).startsWith(IRA_KEY);
-
-      // Подарки Иры (ownerName начинается с "Ира")
-      const iraWishes = useMemo(
-        () => items.filter(
-          i => i.ownerName && normalize(i.ownerName).startsWith(IRA_KEY)
-        ),
-        [items]
-      );
-
-      const handleAddWish = async ({ title, url, note, image }) => {
-        setAddError('');
-        if (!authUid) {
-          setAddError('Не удалось определить пользователя, попробуйте перезагрузить страницу.');
-          return;
-        }
-        try {
-          await itemsCol().add({
-            title,
-            url,
-            note,
-            image: image || null,
-            ownerName: 'Ира',
-            addedByUid: authUid,
-            createdAt: Date.now()
-          });
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось добавить. Проверьте подключение или Firestore Rules.');
-        }
-      };
-
-      const handleUpdateWish = async (wishId, updates) => {
-        setAddError('');
-        try {
-          await itemsCol().doc(wishId).update(updates);
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось изменить. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleDeleteWish = async (wishId) => {
-        setAddError('');
-        try {
-          await itemsCol().doc(wishId).delete();
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось удалить. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleAddDream = async ({ title, description, link, qrImage }) => {
-        setDreamError('');
-        if (!authUid) {
-          setDreamError('Не удалось определить пользователя, попробуйте перезагрузить страницу.');
-          return;
-        }
-        try {
-          await dreamsCol().add({
-            title,
-            description,
-            link,
-            qrImage: qrImage || null,
-            ownerName: 'Ира',
-            addedByUid: authUid,
-            createdAt: Date.now()
-          });
-        } catch (e) {
-          console.error(e);
-          setDreamError('Не удалось добавить мечту. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleUpdateDream = async (dreamId, updates) => {
-        setDreamError('');
-        try {
-          await dreamsCol().doc(dreamId).update(updates);
-        } catch (e) {
-          console.error(e);
-          setDreamError('Не удалось изменить мечту. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleDeleteDream = async (dreamId) => {
-        setDreamError('');
-        try {
-          await dreamsCol().doc(dreamId).delete();
-        } catch (e) {
-          console.error(e);
-          setDreamError('Не удалось удалить мечту. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleClaim = async (wish) => {
-        setClaimError('');
-        const name = trimmedName;
-        if (!name) {
-          setClaimError('Сначала укажите, как к вам обращаться.');
-          return;
-        }
-
-        const ref = claimsCol().doc(wish.id);
-
-        try {
-          await db.runTransaction(async (tx) => {
-            const snap = await tx.get(ref);
-            if (snap.exists) {
-              throw new Error('already-claimed');
-            }
-            tx.set(ref, {
-              claimerUid: authUid || null,
-              claimerName: name,
-              createdAt: Date.now()
-            });
-          });
-        } catch (e) {
-          console.error(e);
-          if (e.message === 'already-claimed') {
-            setClaimError('Этот подарок уже кто-то забронировал.');
-          } else {
-            setClaimError('Не удалось забронировать. Попробуйте ещё раз.');
-          }
-        }
-      };
-
-      const handleUnclaim = async (wish) => {
-        setClaimError('');
-        if (!window.confirm('Снять бронь с этого подарка? Его сможет забронировать кто-то другой.')) {
-          return;
-        }
-
-        const ref = claimsCol().doc(wish.id);
-
-        try {
-          await db.runTransaction(async (tx) => {
-            const snap = await tx.get(ref);
-            if (!snap.exists) {
-              throw new Error('no-claim');
-            }
-            const data = snap.data();
-            if (
-              (data.claimerUid && data.claimerUid === authUid) ||
-              (!data.claimerUid && normalize(data.claimerName) === normalize(trimmedName))
-            ) {
-              tx.delete(ref);
-            } else {
-              throw new Error('not-owner');
-            }
-          });
-        } catch (e) {
-          console.error(e);
-          if (e.message === 'no-claim') {
-            setClaimError('Бронь уже снята.');
-          } else if (e.message === 'not-owner') {
-            setClaimError('Снять бронь может только тот, кто её поставил.');
-          } else {
-            setClaimError('Не удалось снять бронь. Попробуйте ещё раз.');
-          }
-        }
-      };
-
-      return (
-        <div className="pb-10">
-          <Header />
-          <WhoAreYouCard userName={userName} setUserName={setUserName} />
-
-          {!trimmedName && (
-            <main className="container-narrow">
-              <p className="note">
-                После того, как вы укажете своё имя, откроется список подарков и больших мечт.
-              </p>
-            </main>
-          )}
-
-          {/* Режим Иры */}
-          {trimmedName && isIraViewer && (
-            <main className="container-narrow space-y-4">
-              <AddWishFormIra
-                onAdd={handleAddWish}
-                disabled={!authUid}
-                error={addError}
-              />
-
-              <section className="space-y-2">
-                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  Мой список подарков
-                  {itemsLoading && <span className="note">(загружается…)</span>}
-                </h2>
-                <p className="note">
-                  Этот список увидят только те, кому вы отправите ссылку. Информация о том, кто что дарит,
-                  здесь не показывается — пусть будет сюрприз.
-                </p>
-
-                {iraWishes.length === 0 && !itemsLoading && (
-                  <p className="note">
-                    Пока здесь пусто. Добавьте хотя бы один пункт.
-                  </p>
-                )}
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {iraWishes.map(w => (
-                    <WishCardIra
-                      key={w.id}
-                      wish={w}
-                      onDelete={handleDeleteWish}
-                      onUpdate={handleUpdateWish}
-                      onImageClick={setPreviewImage}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-2">
-                <AddDreamFormIra
-                  onAdd={handleAddDream}
-                  disabled={!authUid}
-                  error={dreamError}
-                />
-
-                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  Мои большие мечты
-                  {dreamsLoading && <span className="note">(загружается…)</span>}
-                </h2>
-                <p className="note">
-                  Здесь можно собрать идеи дорогих подарков, на которые близкие могут скинуться.
-                  Гости увидят название, описание и (если есть) QR-код для перевода.
-                </p>
-
-                {dreams.filter(d => d.ownerName && normalize(d.ownerName).startsWith(IRA_KEY)).length === 0 &&
-                  !dreamsLoading && (
-                    <p className="note">
-                      Пока больших мечт нет. Добавьте хотя бы одну 😉
-                    </p>
-                )}
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {dreams
-                    .filter(d => d.ownerName && normalize(d.ownerName).startsWith(IRA_KEY))
-                    .map(d => (
-                      <DreamCardIra
-                        key={d.id}
-                        dream={d}
-                        onDelete={handleDeleteDream}
-                        onUpdate={handleUpdateDream}
-                        onImageClick={setPreviewImage}
-                      />
-                    ))}
-                </div>
-              </section>
-            </main>
-          )}
-
-          {/* Режим гостя */}
-          {trimmedName && !isIraViewer && (
-            <main className="container-narrow space-y-4">
-              <section className="space-y-2">
-                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  Идеи подарков для Иры
-                  {itemsLoading && <span className="note">(загружается…)</span>}
-                </h2>
-                <p className="note">
-                  Выберите, что вы хотите подарить. После бронирования другие увидят, что этот подарок занят,
-                  а для Иры это останется сюрпризом 🎁
-                </p>
-
-                {claimError && <div className="err">{claimError}</div>}
-
-                {iraWishes.length === 0 && !itemsLoading && (
-                  <p className="note">
-                    Пока список пуст. Скажите Ире, что ждёте вдохновения 🙂
-                  </p>
-                )}
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {iraWishes.map(w => (
-                    <WishCardGuest
-                      key={w.id}
-                      wish={w}
-                      claim={claims[w.id]}
-                      currentUserName={trimmedName}
-                      onClaim={() => handleClaim(w)}
-                      onUnclaim={() => handleUnclaim(w)}
-                      onImageClick={setPreviewImage}
-                    />
-                  ))}
-                </div>
-              </section>
-
-              <section className="space-y-2">
-                <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                  Большие мечты Иры
-                  {dreamsLoading && <span className="note">(загружается…)</span>}
-                </h2>
-                <p className="note">
-                  Если хотите не просто подарить вещь, а вложиться в мечту — выберите один из вариантов ниже.
-                  Для некоторых мечт есть QR-код для перевода.
-                </p>
-
-                {dreams.filter(d => d.ownerName && normalize(d.ownerName).startsWith(IRA_KEY)).length === 0 &&
-                  !dreamsLoading && (
-                    <p className="note">
-                      Ира пока не добавила сюда большие мечты.
-                    </p>
-                )}
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  {dreams
-                    .filter(d => d.ownerName && normalize(d.ownerName).startsWith(IRA_KEY))
-                    .map(d => (
-                      <DreamCardGuest
-                        key={d.id}
-                        dream={d}
-                        onImageClick={setPreviewImage}
-                      />
-                    ))}
-                </div>
-              </section>
-            </main>
-          )}
-
-          {previewImage && (
+      </div>
+
+      {dream.targetAmount > 0 && (
+        <>
+          <div className="progress-wrapper">
             <div
-              className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-              onClick={() => setPreviewImage(null)}
-            >
-              <div className="relative max-h-full max-w-full">
-                <button
-                  className="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-slate-700 shadow-lg text-sm"
-                  onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
-                  aria-label="Закрыть"
-                >
-                  ✕
-                </button>
-                <img
-                  src={previewImage}
-                  alt="Подарок"
-                  className="max-h-full max-w-full rounded-2xl shadow-2xl bg-white"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      );
-    }
+              className="progress-bar"
+              style={{ width: percent + '%' }}
+            />
+          </div>
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+          <div className="text-xs text-slate-600">
+            Собрано {total.toLocaleString()} ₽ из {dream.targetAmount.toLocaleString()} ₽
+          </div>
+        </>
+      )}
+
+      <button
+        className="btn btn-primary w-full"
+        onClick={()=>setShowModal(true)}
+      >
+        💛 Вложиться в мечту
+      </button>
+
+      {showModal && (
+        <div className="modal-overlay">
+          <div className="modal-box space-y-4">
+
+            <div className="text-lg font-semibold">
+              Внести вклад
+            </div>
+
+            <input
+              className="input"
+              placeholder="Введите сумму"
+              value={amount}
+              onChange={e=>setAmount(e.target.value)}
+            />
+
+            <button
+              className="btn btn-primary w-full"
+              onClick={handleContribute}
+            >
+              Подтвердить
+            </button>
+
+            <button
+              className="btn btn-ghost w-full"
+              onClick={()=>setShowModal(false)}
+            >
+              Отмена
+            </button>
+
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+/* ---------------- APP ---------------- */
+
+function App() {
+
+  const [authUid,setAuthUid] = useState(null);
+  const [userName,setUserName] = useState('');
+  const [dreams,setDreams] = useState([]);
+  const [dreamsLoading,setDreamsLoading] = useState(true);
+
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
+    return () => unsub();
+  }, []);
+
+  useEffect(() => {
+    const unsub = dreamsCol().orderBy('createdAt','desc')
+      .onSnapshot(snap=>{
+        const arr=[];
+        snap.forEach(doc=>arr.push({id:doc.id,...doc.data()}));
+        setDreams(arr);
+        setDreamsLoading(false);
+      });
+    return ()=>unsub();
+  }, []);
+
+  const trimmedName = (userName || '').trim();
+  const isIraViewer = normalize(trimmedName).startsWith(IRA_KEY);
+
+  return (
+    <div className="container-narrow space-y-6">
+
+      <div className="card p-6 space-y-3">
+        <div className="text-sm font-semibold">
+          Как вас зовут?
+        </div>
+
+        <input
+          className="input"
+          value={userName}
+          onChange={e=>setUserName(e.target.value)}
+          placeholder="Введите имя"
+        />
+      </div>
+
+      {trimmedName && !isIraViewer && (
+        <div className="space-y-4">
+
+          <div className="text-lg font-semibold">
+            💭 Большие мечты Иры
+          </div>
+
+          {dreamsLoading && <div className="note">Загрузка...</div>}
+
+          <div className="grid gap-4 md:grid-cols-2">
+            {dreams.map(d=>(
+              <DreamCardGuest
+                key={d.id}
+                dream={d}
+                currentUserName={trimmedName}
+              />
+            ))}
+          </div>
+
+        </div>
+      )}
+
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   </script>
 </body>
 </html>
