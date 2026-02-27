@@ -306,6 +306,7 @@ function DreamCardGuest({dream,currentUserName}){
 function App(){
 
   const [userName,setUserName] = useState('');
+  const [confirmedName,setConfirmedName] = useState('');
   const [dreams,setDreams] = useState([]);
 
   useEffect(()=>{
@@ -318,29 +319,58 @@ function App(){
     return ()=>unsub();
   },[]);
 
-  const trimmed = userName.trim();
+  const trimmed = confirmedName.trim();
   const isAdmin = normalize(trimmed).startsWith(IRA_KEY);
 
   return(
     <div className="container-narrow space-y-8">
-      <div className="card p-6 space-y-3">
-        <input
-          className="input"
-          value={userName}
-          onChange={e=>setUserName(e.target.value)}
-          placeholder="Введите имя"/>
-      </div>
 
-      {trimmed && !isAdmin && (
+      {!confirmedName && (
+        <div className="card p-6 space-y-4">
+          <div className="text-sm font-semibold">
+            Как вас зовут?
+          </div>
+
+          <input
+            className="input"
+            value={userName}
+            onChange={e=>setUserName(e.target.value)}
+            placeholder="Введите имя"
+          />
+
+          <button
+            className="btn btn-primary w-full"
+            disabled={!userName.trim()}
+            onClick={()=>setConfirmedName(userName.trim())}
+          >
+            Продолжить
+          </button>
+        </div>
+      )}
+
+      {confirmedName && !isAdmin && (
         <div className="grid gap-4 md:grid-cols-2">
           {dreams.map(d=>(
             <DreamCardGuest
               key={d.id}
               dream={d}
-              currentUserName={trimmed}/>
+              currentUserName={confirmedName}
+            />
           ))}
         </div>
       )}
+
+      {confirmedName && isAdmin && (
+        <div className="card p-6">
+          <div className="text-lg font-semibold mb-4">
+            Режим Иры
+          </div>
+          <div className="note">
+            Здесь позже можно добавить админ-панель.
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
