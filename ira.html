@@ -242,7 +242,6 @@
   </footer>
 
 
-
 <script type="text/babel">
 
 const { useEffect, useState, useMemo } = React;
@@ -268,16 +267,15 @@ auth.signInAnonymously().catch(console.error);
 
 const LIST_ID = 'newyear2025';
 const listDoc  = db.collection('lists').doc(LIST_ID);
-const itemsCol  = () => listDoc.collection('items');
-const claimsCol = () => listDoc.collection('claims');
 const dreamsCol = () => listDoc.collection('dreams');
 
 const normalize = (s) => (s || '').trim().toLowerCase();
 const IRA_KEY = 'ира';
 
+/* ---------------- CERTIFICATE ---------------- */
+
 function openCertificate(dream, amount, name) {
   const w = window.open('', '_blank');
-
   w.document.write(`
     <html>
     <head>
@@ -434,19 +432,114 @@ function DreamCardGuest({ dream, currentUserName }) {
   );
 }
 
+/* ---------------- ADMIN VIEW ---------------- */
+
+function AdminView({ dreams }) {
+
+  const [title,setTitle] = useState('');
+  const [description,setDescription] = useState('');
+  const [target,setTarget] = useState('');
+
+  const handleAdd = async () => {
+    if (!title.trim()) return;
+
+    await dreamsCol().add({
+      title,
+      description,
+      targetAmount: Number(target) || 0,
+      ownerName: 'Ира',
+      createdAt: Date.now()
+    });
+
+    setTitle('');
+    setDescription('');
+    setTarget('');
+  };
+
+  return (
+    <div className="space-y-6">
+
+      <div className="card p-6 space-y-3">
+        <div className="text-lg font-semibold">
+          Добавить мечту
+        </div>
+
+        <input
+          className="input"
+          placeholder="Название"
+          value={title}
+          onChange={e=>setTitle(e.target.value)}
+        />
+
+        <textarea
+          className="textarea"
+          placeholder="Описание"
+          value={description}
+          onChange={e=>setDescription(e.target.value)}
+        />
+
+        <input
+          className="input"
+          placeholder="Целевая сумма"
+          value={target}
+          onChange={e=>setTarget(e.target.value)}
+        />
+
+        <button
+          className="btn btn-primary w-full"
+          onClick={handleAdd}
+        >
+          ✨ Добавить
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {dreams.map(d=>(
+          <div key={d.id} className="card p-4">
+            <div className="font-semibold">{d.title}</div>
+            <div className="text-sm text-slate-500">
+              Цель: {d.targetAmount?.toLocaleString()} ₽
+            </div>
+          </div>
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
+/* ---------------- GUEST VIEW ---------------- */
+
+function GuestView({ dreams, currentUserName }) {
+
+  return (
+    <div className="space-y-6">
+
+      <div className="text-lg font-semibold">
+        💭 Большие мечты Иры
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {dreams.map(d=>(
+          <DreamCardGuest
+            key={d.id}
+            dream={d}
+            currentUserName={currentUserName}
+          />
+        ))}
+      </div>
+
+    </div>
+  );
+}
+
 /* ---------------- APP ---------------- */
 
 function App() {
 
-  const [authUid,setAuthUid] = useState(null);
   const [userName,setUserName] = useState('');
   const [dreams,setDreams] = useState([]);
-  const [dreamsLoading,setDreamsLoading] = useState(true);
-
-  useEffect(() => {
-    const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
-    return () => unsub();
-  }, []);
+  const [loading,setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = dreamsCol().orderBy('createdAt','desc')
@@ -454,16 +547,16 @@ function App() {
         const arr=[];
         snap.forEach(doc=>arr.push({id:doc.id,...doc.data()}));
         setDreams(arr);
-        setDreamsLoading(false);
+        setLoading(false);
       });
     return ()=>unsub();
   }, []);
 
   const trimmedName = (userName || '').trim();
-  const isIraViewer = normalize(trimmedName).startsWith(IRA_KEY);
+  const isAdmin = normalize(trimmedName).startsWith(IRA_KEY);
 
   return (
-    <div className="container-narrow space-y-6">
+    <div className="container-narrow space-y-8">
 
       <div className="card p-6 space-y-3">
         <div className="text-sm font-semibold">
@@ -478,26 +571,14 @@ function App() {
         />
       </div>
 
-      {trimmedName && !isIraViewer && (
-        <div className="space-y-4">
+      {!trimmedName && <div className="note">Введите имя, чтобы продолжить</div>}
 
-          <div className="text-lg font-semibold">
-            💭 Большие мечты Иры
-          </div>
-
-          {dreamsLoading && <div className="note">Загрузка...</div>}
-
-          <div className="grid gap-4 md:grid-cols-2">
-            {dreams.map(d=>(
-              <DreamCardGuest
-                key={d.id}
-                dream={d}
-                currentUserName={trimmedName}
-              />
-            ))}
-          </div>
-
-        </div>
+      {trimmedName && (
+        loading
+          ? <div className="note">Загрузка...</div>
+          : isAdmin
+              ? <AdminView dreams={dreams} />
+              : <GuestView dreams={dreams} currentUserName={trimmedName} />
       )}
 
     </div>
@@ -505,7 +586,8 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+
+</script>
 </body>
 </html>
 
