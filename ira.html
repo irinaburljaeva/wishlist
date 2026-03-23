@@ -5,239 +5,69 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Вот, что хочет Ира</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
-
-  <!-- Tailwind -->
-
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React -->
-
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Firebase (compat) -->
-
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
-
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
-
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
-      --cream: #fdf6ee;
-      --blush: #f4c4b0;
-      --rose: #e8856a;
-      --deep: #3b2a2a;
-      --gold: #c9924a;
-      --gold-light: #f0d5a8;
-      --sage: #8aab96;
+      --cream: #fdf6ee; --blush: #f4c4b0; --rose: #e8856a;
+      --deep: #3b2a2a; --gold: #c9924a; --gold-light: #f0d5a8; --sage: #8aab96;
     }
-
     * { box-sizing: border-box; }
-
-    body {
-      font-family: 'Nunito', sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      background: var(--cream);
-      color: var(--deep);
-    }
-
+    body { font-family: 'Nunito', sans-serif; min-height: 100vh; margin: 0; background: var(--cream); color: var(--deep); }
     .serif { font-family: 'Playfair Display', serif; }
-
     .container-narrow { max-width: 960px; margin: 0 auto; padding: 0 16px; }
-
-    /* Card */
-    .card {
-      background: rgba(255,255,255,0.82);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      border: 1px solid rgba(201,146,74,0.18);
-      box-shadow: 0 8px 30px rgba(59,42,42,0.07);
-    }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 999px;
-      padding: 10px 20px;
-      font-size: 14px;
-      font-weight: 700;
-      font-family: 'Nunito', sans-serif;
-      cursor: pointer;
-      border: none;
-      transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s;
-    }
+    .card { background: rgba(255,255,255,0.82); backdrop-filter: blur(10px); border-radius: 20px; border: 1px solid rgba(201,146,74,0.18); box-shadow: 0 8px 30px rgba(59,42,42,0.07); }
+    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 10px 20px; font-size: 14px; font-weight: 700; font-family: 'Nunito', sans-serif; cursor: pointer; border: none; transition: transform 0.15s, box-shadow 0.15s, opacity 0.15s; }
     .btn:active { transform: scale(0.97); }
-    .btn-primary {
-      background: linear-gradient(135deg, var(--rose), var(--gold));
-      color: #fff;
-      box-shadow: 0 4px 14px rgba(232,133,106,0.4);
-    }
+    .btn-primary { background: linear-gradient(135deg, var(--rose), var(--gold)); color: #fff; box-shadow: 0 4px 14px rgba(232,133,106,0.4); }
     .btn-primary:hover { box-shadow: 0 6px 20px rgba(232,133,106,0.5); transform: translateY(-1px); }
     .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; box-shadow: none; }
     .btn-ghost { background: transparent; color: var(--deep); }
-    .btn-outline {
-      background: white;
-      color: var(--deep);
-      border: 1.5px solid rgba(59,42,42,0.18);
-    }
-
-    /* Inputs */
-    .input, .textarea {
-      width: 100%;
-      border-radius: 14px;
-      border: 1.5px solid rgba(201,146,74,0.25);
-      padding: 10px 14px;
-      outline: none;
-      background: rgba(255,255,255,0.7);
-      font-family: 'Nunito', sans-serif;
-      font-size: 14px;
-      color: var(--deep);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .input:focus, .textarea:focus {
-      border-color: var(--rose);
-      box-shadow: 0 0 0 3px rgba(232,133,106,0.18);
-      background: white;
-    }
-
-    /* Badge */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
-      border-radius: 999px;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      letter-spacing: 0.03em;
-    }
-    .badge-dream {
-      background: linear-gradient(135deg, #f0d5a8, #e8cba0);
-      color: var(--gold);
-    }
-    .badge-gift {
-      background: rgba(138,171,150,0.15);
-      color: var(--sage);
-      border: 1px solid rgba(138,171,150,0.3);
-    }
-
+    .btn-outline { background: white; color: var(--deep); border: 1.5px solid rgba(59,42,42,0.18); }
+    .input, .textarea { width: 100%; border-radius: 14px; border: 1.5px solid rgba(201,146,74,0.25); padding: 10px 14px; outline: none; background: rgba(255,255,255,0.7); font-family: 'Nunito', sans-serif; font-size: 14px; color: var(--deep); transition: border-color 0.2s, box-shadow 0.2s; }
+    .input:focus, .textarea:focus { border-color: var(--rose); box-shadow: 0 0 0 3px rgba(232,133,106,0.18); background: white; }
+    .badge { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; font-size: 11px; font-weight: 700; padding: 4px 10px; letter-spacing: 0.03em; }
+    .badge-dream { background: linear-gradient(135deg, #f0d5a8, #e8cba0); color: var(--gold); }
+    .badge-gift { background: rgba(138,171,150,0.15); color: var(--sage); border: 1px solid rgba(138,171,150,0.3); }
     .err { color: #b91c1c; font-size: 13px; }
     .note { color: #7c6b6b; font-size: 13px; }
-
-    /* Section header decoration */
-    .section-title {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      color: var(--deep);
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .section-title::after {
-      content: '';
-      flex: 1;
-      height: 1px;
-      background: linear-gradient(to right, rgba(201,146,74,0.3), transparent);
-    }
-
-    /* Certificate styles */
-    @keyframes certIn {
-      from { opacity: 0; transform: scale(0.92) translateY(20px); }
-      to   { opacity: 1; transform: scale(1) translateY(0); }
-    }
-    .cert-modal {
-      animation: certIn 0.35s cubic-bezier(.22,.68,0,1.2) both;
-    }
-
-    /* Floating petals bg */
-    @keyframes float1 {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-18px) rotate(8deg); }
-    }
-    @keyframes float2 {
-      0%,100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-12px) rotate(-5deg); }
-    }
-
-    /* Dream contribution modal */
-    .modal-overlay {
-      background: rgba(59,42,42,0.45);
-      backdrop-filter: blur(4px);
-    }
-
-    /* Contribute amount buttons */
-    .amount-btn {
-      border: 2px solid rgba(201,146,74,0.3);
-      border-radius: 12px;
-      padding: 8px 14px;
-      font-family: 'Nunito', sans-serif;
-      font-weight: 700;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
-      background: white;
-      color: var(--deep);
-    }
-    .amount-btn:hover, .amount-btn.selected {
-      background: linear-gradient(135deg, var(--rose), var(--gold));
-      color: white;
-      border-color: transparent;
-      box-shadow: 0 3px 10px rgba(232,133,106,0.3);
-    }
-
-    /* Print styles */
+    .section-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--deep); display: flex; align-items: center; gap: 12px; }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(to right, rgba(201,146,74,0.3), transparent); }
+    @keyframes certIn { from { opacity: 0; transform: scale(0.92) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .cert-modal { animation: certIn 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+    @keyframes float1 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-18px) rotate(8deg); } }
+    @keyframes float2 { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-12px) rotate(-5deg); } }
+    .modal-overlay { background: rgba(59,42,42,0.45); backdrop-filter: blur(4px); }
+    .amount-btn { border: 2px solid rgba(201,146,74,0.3); border-radius: 12px; padding: 8px 14px; font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.15s; background: white; color: var(--deep); }
+    .amount-btn:hover, .amount-btn.selected { background: linear-gradient(135deg, var(--rose), var(--gold)); color: white; border-color: transparent; box-shadow: 0 3px 10px rgba(232,133,106,0.3); }
     @media print {
       body > *:not(#cert-print-area) { display: none !important; }
-      #cert-print-area {
-        display: block !important;
-        position: fixed;
-        inset: 0;
-        background: white;
-        z-index: 9999;
-        padding: 0;
-      }
-      #cert-print-area .cert-inner {
-        width: 100vw;
-        height: 100vh;
-        margin: 0;
-      }
-    }
-
-    .wavy-border {
-      border-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='6'%3E%3Cpath d='M0 3 Q5 0 10 3 Q15 6 20 3' stroke='%23c9924a' stroke-width='1' fill='none'/%3E%3C/svg%3E") 6 round;
+      #cert-print-area { display: block !important; position: fixed; inset: 0; background: white; z-index: 9999; padding: 0; }
     }
   </style>
-
 </head>
 <body>
-  <!-- Decorative background -->
   <div class="fixed inset-0 -z-20 pointer-events-none overflow-hidden">
     <div style="position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 20% 10%, #fde8da 0%, transparent 60%), radial-gradient(ellipse 60% 50% at 80% 80%, #f0e4d4 0%, transparent 60%), #fdf6ee;"></div>
     <svg style="position:absolute;top:-40px;right:-40px;opacity:0.12;animation:float1 8s ease-in-out infinite" width="300" height="300" viewBox="0 0 300 300"><circle cx="150" cy="150" r="120" fill="#e8856a"/><circle cx="150" cy="50" r="45" fill="#e8856a"/><circle cx="150" cy="250" r="45" fill="#e8856a"/><circle cx="50" cy="150" r="45" fill="#e8856a"/><circle cx="250" cy="150" r="45" fill="#e8856a"/></svg>
     <svg style="position:absolute;bottom:-60px;left:-40px;opacity:0.09;animation:float2 10s ease-in-out infinite" width="350" height="350" viewBox="0 0 100 100"><polygon points="50,5 95,25 95,75 50,95 5,75 5,25" fill="#c9924a"/></svg>
-    <svg style="position:absolute;top:40%;left:5%;opacity:0.07;animation:float1 12s ease-in-out infinite 2s" width="120" height="120" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#e8856a" stroke-width="8"/></svg>
   </div>
 
   <div id="root"></div>
-  <!-- Print area (hidden normally) -->
   <div id="cert-print-area" style="display:none"></div>
 
   <script type="text/babel">
     const { useEffect, useState, useMemo, useRef } = React;
 
-    // === Firebase init ===
+    // === Firebase ===
     const firebaseConfig = {
       apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
       authDomain: "wishlist-37819.firebaseapp.com",
@@ -259,7 +89,6 @@
 
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; }};
-
     const normalize = s => (s||'').trim().toLowerCase();
     const IRA_KEY = 'ира';
 
@@ -271,11 +100,10 @@
           img.onload = () => {
             const scale = Math.min(800/img.width, 800/img.height, 1);
             const canvas = document.createElement('canvas');
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
+            canvas.width = img.width * scale; canvas.height = img.height * scale;
             canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
             const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-            if (dataUrl.length > 900000) { reject('Изображение слишком большое. Выберите файл поменьше.'); return; }
+            if (dataUrl.length > 900000) { reject('Изображение слишком большое.'); return; }
             resolve(dataUrl);
           };
           img.onerror = () => reject('Не удалось прочитать изображение.');
@@ -286,73 +114,59 @@
       });
     }
 
-    // ===== CERTIFICATE GENERATOR =====
-    function generateCertificateHTML(guestName, dreamTitle, amount, date) {
-      const d = date || new Date();
-      const dateStr = d.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+    // ===== CERTIFICATE =====
+    function generateCertificateHTML(guestName, dreamTitle, amount) {
+      const dateStr = new Date().toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+      const suffix = guestName.slice(-1) === 'а' ? 'а' : '';
       return `<!DOCTYPE html><html lang="ru"><head>
 <meta charset="utf-8">
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Nunito:wght@300;400;600;700&display=swap" rel="stylesheet">
 <style>
-  *{margin:0;padding:0;box-sizing:border-box}
-  body{width:794px;height:561px;background:#fdf6ee;font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center}
-  .cert{width:750px;height:520px;background:white;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:48px}
-  .outer-border{position:absolute;inset:10px;border:1.5px solid #c9924a;border-radius:4px;pointer-events:none}
-  .inner-border{position:absolute;inset:16px;border:0.5px solid rgba(201,146,74,0.4);border-radius:2px;pointer-events:none}
-  .corner{position:absolute;width:40px;height:40px}
-  .corner svg{width:40px;height:40px}
-  .tl{top:6px;left:6px} .tr{top:6px;right:6px;transform:scaleX(-1)} .bl{bottom:6px;left:6px;transform:scaleY(-1)} .br{bottom:6px;right:6px;transform:scale(-1)}
-  .seal{width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,#f0d5a8,#c9924a);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 4px 16px rgba(201,146,74,0.4);border:3px solid rgba(255,255,255,0.8)}
-  .title{font-family:'Playfair Display',serif;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:#c9924a;font-weight:400}
-  .main-title{font-family:'Playfair Display',serif;font-size:28px;color:#3b2a2a;text-align:center;line-height:1.25}
-  .main-title em{font-style:italic;color:#e8856a}
-  .subtitle{font-family:'Nunito',sans-serif;font-size:14px;color:#7c6b6b;text-align:center;line-height:1.6;max-width:500px}
-  .amount-block{background:linear-gradient(135deg,#fde8da,#f0d5a8);border-radius:12px;padding:10px 28px;border:1px solid rgba(201,146,74,0.25)}
-  .amount-label{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#c9924a;text-align:center;margin-bottom:2px}
-  .amount-value{font-family:'Playfair Display',serif;font-size:22px;color:#3b2a2a;text-align:center}
-  .divider{width:120px;height:1px;background:linear-gradient(to right,transparent,#c9924a,transparent)}
-  .footer{display:flex;justify-content:space-between;width:100%;padding-top:10px;border-top:0.5px solid rgba(201,146,74,0.3)}
-  .footer-item{display:flex;flex-direction:column;gap:2px}
-  .footer-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#c9924a}
-  .footer-value{font-family:'Playfair Display',serif;font-size:13px;color:#3b2a2a}
-</style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:794px;height:561px;background:#fdf6ee;font-family:'Nunito',sans-serif;display:flex;align-items:center;justify-content:center}
+.cert{width:750px;height:520px;background:white;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:48px}
+.outer-border{position:absolute;inset:10px;border:1.5px solid #c9924a;border-radius:4px;pointer-events:none}
+.inner-border{position:absolute;inset:16px;border:0.5px solid rgba(201,146,74,0.4);border-radius:2px;pointer-events:none}
+.corner{position:absolute;width:40px;height:40px}.corner svg{width:40px;height:40px}
+.tl{top:6px;left:6px}.tr{top:6px;right:6px;transform:scaleX(-1)}.bl{bottom:6px;left:6px;transform:scaleY(-1)}.br{bottom:6px;right:6px;transform:scale(-1)}
+.seal{width:70px;height:70px;border-radius:50%;background:radial-gradient(circle,#f0d5a8,#c9924a);display:flex;align-items:center;justify-content:center;font-size:30px;box-shadow:0 4px 16px rgba(201,146,74,0.4);border:3px solid rgba(255,255,255,0.8)}
+.title{font-family:'Playfair Display',serif;font-size:11px;letter-spacing:0.25em;text-transform:uppercase;color:#c9924a}
+.main-title{font-family:'Playfair Display',serif;font-size:28px;color:#3b2a2a;text-align:center;line-height:1.25}
+.main-title em{font-style:italic;color:#e8856a}
+.subtitle{font-size:14px;color:#7c6b6b;text-align:center;line-height:1.6;max-width:500px}
+.amount-block{background:linear-gradient(135deg,#fde8da,#f0d5a8);border-radius:12px;padding:10px 28px;border:1px solid rgba(201,146,74,0.25)}
+.amount-label{font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:#c9924a;text-align:center;margin-bottom:2px}
+.amount-value{font-family:'Playfair Display',serif;font-size:22px;color:#3b2a2a;text-align:center}
+.divider{width:120px;height:1px;background:linear-gradient(to right,transparent,#c9924a,transparent)}
+.footer{display:flex;justify-content:space-between;width:100%;padding-top:10px;border-top:0.5px solid rgba(201,146,74,0.3)}
+.footer-item{display:flex;flex-direction:column;gap:2px}
+.footer-label{font-size:9px;letter-spacing:0.15em;text-transform:uppercase;color:#c9924a}
+.footer-value{font-family:'Playfair Display',serif;font-size:13px;color:#3b2a2a}
+</style></head><body>
 
-</head><body>
 <div class="cert">
-  <div class="outer-border"></div>
-  <div class="inner-border"></div>
-  <div class="corner tl"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/><path d="M8 2 L8 8 L2 8" stroke="rgba(201,146,74,0.4)" stroke-width="0.8" fill="none"/></svg></div>
-  <div class="corner tr"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/><path d="M8 2 L8 8 L2 8" stroke="rgba(201,146,74,0.4)" stroke-width="0.8" fill="none"/></svg></div>
-  <div class="corner bl"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/><path d="M8 2 L8 8 L2 8" stroke="rgba(201,146,74,0.4)" stroke-width="0.8" fill="none"/></svg></div>
-  <div class="corner br"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/><path d="M8 2 L8 8 L2 8" stroke="rgba(201,146,74,0.4)" stroke-width="0.8" fill="none"/></svg></div>
-
+  <div class="outer-border"></div><div class="inner-border"></div>
+  <div class="corner tl"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/></svg></div>
+  <div class="corner tr"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/></svg></div>
+  <div class="corner bl"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/></svg></div>
+  <div class="corner br"><svg viewBox="0 0 40 40"><path d="M2 2 L2 20 M2 2 L20 2" stroke="#c9924a" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="2" cy="2" r="2" fill="#c9924a"/></svg></div>
   <div class="seal">✨</div>
   <div class="title">Сертификат участия в мечте</div>
-  <div class="main-title">
-    <em>${guestName}</em> вложил${guestName.slice(-1) === 'а' ? 'а' : ''}<br>в большую мечту
-  </div>
+  <div class="main-title"><em>${guestName}</em> вложил${suffix}<br>в большую мечту</div>
   <div class="divider"></div>
-  <div class="subtitle">Настоящим подтверждается, что <strong>${guestName}</strong> внёс${guestName.slice(-1) === 'а' ? 'ла' : ''} свой вклад в осуществление мечты <strong>«${dreamTitle}»</strong> и является соавтором этого радостного события.</div>
+  <div class="subtitle">Настоящим подтверждается, что <strong>${guestName}</strong> внёс${suffix === 'а' ? 'ла' : ''} свой вклад в осуществление мечты <strong>«${dreamTitle}»</strong> и является соавтором этого радостного события.</div>
   <div class="amount-block">
     <div class="amount-label">Вклад в мечту</div>
     <div class="amount-value">${amount} ₽</div>
   </div>
   <div class="footer">
-    <div class="footer-item">
-      <span class="footer-label">Получатель мечты</span>
-      <span class="footer-value">Ира 🌸</span>
-    </div>
-    <div class="footer-item" style="align-items:center">
-      <span class="footer-label">Мечта</span>
-      <span class="footer-value" style="text-align:center;font-size:12px">${dreamTitle.length > 30 ? dreamTitle.slice(0,30)+'…' : dreamTitle}</span>
-    </div>
-    <div class="footer-item" style="align-items:flex-end">
-      <span class="footer-label">Дата</span>
-      <span class="footer-value">${dateStr}</span>
-    </div>
+    <div class="footer-item"><span class="footer-label">Получатель мечты</span><span class="footer-value">Ира 🌸</span></div>
+    <div class="footer-item" style="align-items:center"><span class="footer-label">Мечта</span><span class="footer-value" style="text-align:center;font-size:12px">${dreamTitle.length > 30 ? dreamTitle.slice(0,30)+'…' : dreamTitle}</span></div>
+    <div class="footer-item" style="align-items:flex-end"><span class="footer-label">Дата</span><span class="footer-value">${dateStr}</span></div>
   </div>
 </div>
-</body>
+</body></html>`;
+    }
 
 function printCertificate(guestName, dreamTitle, amount) {
   const html = generateCertificateHTML(guestName, dreamTitle, amount);
@@ -365,153 +179,81 @@ function printCertificate(guestName, dreamTitle, amount) {
 
 // ===== CONTRIBUTE MODAL =====
 function ContributeModal({ dream, guestName, onClose }) {
-  const [step, setStep] = useState('amount'); // 'amount' | 'qr' | 'cert'
+  const [step, setStep] = useState('amount');
   const [amount, setAmount] = useState('');
   const [customAmount, setCustomAmount] = useState('');
   const presets = [500, 1000, 2000, 5000];
   const finalAmount = amount || customAmount;
 
-  const handlePrint = () => {
-    printCertificate(guestName, dream.title, finalAmount + ' ₽');
-  };
-
   return (
-    <div
-      className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4"
-      onClick={onClose}
-    >
-      <div
-        className="cert-modal card w-full max-w-md p-6 relative"
-        onClick={e => e.stopPropagation()}
-        style={{background:'white', maxHeight:'90vh', overflowY:'auto'}}
-      >
-        <button
-          style={{position:'absolute',top:14,right:14,width:30,height:30,borderRadius:'50%',border:'1.5px solid rgba(59,42,42,0.15)',background:'white',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,color:'#7c6b6b'}}
-          onClick={onClose}
-        >✕</button>
+    <div className="fixed inset-0 z-50 modal-overlay flex items-center justify-center p-4" onClick={onClose}>
+      <div className="cert-modal card w-full max-w-md p-6 relative" onClick={e => e.stopPropagation()} style={{background:'white',maxHeight:'90vh',overflowY:'auto'}}>
+        <button style={{position:'absolute',top:14,right:14,width:30,height:30,borderRadius:'50%',border:'1.5px solid rgba(59,42,42,0.15)',background:'white',cursor:'pointer',fontSize:14,color:'#7c6b6b'}} onClick={onClose}>✕</button>
 
-        {step === 'amount' && (
-          <>
-            <div style={{marginBottom:6}} className="note">Вы вкладываетесь в мечту</div>
-            <div className="serif" style={{fontSize:20,color:'var(--deep)',marginBottom:20,lineHeight:1.3}}>«{dream.title}»</div>
-            
-            <div style={{marginBottom:16}}>
-              <div style={{fontSize:13,fontWeight:700,marginBottom:10,color:'var(--deep)'}}>Выберите сумму вклада:</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:12}}>
-                {presets.map(p => (
-                  <button
-                    key={p}
-                    className={`amount-btn ${amount == p ? 'selected' : ''}`}
-                    onClick={() => { setAmount(p); setCustomAmount(''); }}
-                  >{p.toLocaleString('ru')} ₽</button>
-                ))}
-              </div>
-              <div style={{display:'flex',alignItems:'center',gap:8}}>
-                <input
-                  className="input"
-                  type="number"
-                  placeholder="Своя сумма, ₽"
-                  value={customAmount}
-                  onChange={e => { setCustomAmount(e.target.value); setAmount(''); }}
-                  style={{flex:1}}
-                />
-              </div>
+        {step === 'amount' && (<>
+          <div className="note" style={{marginBottom:6}}>Вы вкладываетесь в мечту</div>
+          <div className="serif" style={{fontSize:20,color:'var(--deep)',marginBottom:20,lineHeight:1.3}}>«{dream.title}»</div>
+          <div style={{marginBottom:16}}>
+            <div style={{fontSize:13,fontWeight:700,marginBottom:10,color:'var(--deep)'}}>Выберите сумму вклада:</div>
+            <div style={{display:'flex',flexWrap:'wrap',gap:8,marginBottom:12}}>
+              {presets.map(p => (
+                <button key={p} className={`amount-btn ${amount == p ? 'selected' : ''}`} onClick={() => { setAmount(p); setCustomAmount(''); }}>{p.toLocaleString('ru')} ₽</button>
+              ))}
             </div>
-
-            {dream.qrImage && (
-              <div style={{background:'rgba(201,146,74,0.07)',borderRadius:14,padding:14,marginBottom:16,textAlign:'center'}}>
-                <div className="note" style={{marginBottom:8}}>Отсканируйте QR-код чтобы перевести деньги</div>
-                <img
-                  src={dream.qrImage}
-                  alt="QR"
-                  style={{width:150,height:150,objectFit:'contain',background:'white',borderRadius:10,padding:4,margin:'0 auto',display:'block'}}
-                />
-              </div>
-            )}
-            {!dream.qrImage && (
-              <div className="note" style={{marginBottom:16,padding:'10px 14px',background:'rgba(201,146,74,0.07)',borderRadius:12}}>
-                💬 Уточните у Иры, как перевести деньги — она подскажет!
-              </div>
-            )}
-
-            <button
-              className="btn btn-primary"
-              style={{width:'100%'}}
-              disabled={!finalAmount || Number(finalAmount) < 1}
-              onClick={() => setStep('cert')}
-            >
-              Получить сертификат ✨
-            </button>
-          </>
-        )}
-
-        {step === 'cert' && (
-          <>
-            <div style={{textAlign:'center',marginBottom:16}}>
-              <div style={{fontSize:48,marginBottom:8}}>🎉</div>
-              <div className="serif" style={{fontSize:22,color:'var(--deep)',marginBottom:6}}>
-                Спасибо, {guestName}!
-              </div>
-              <div className="note">
-                Вы вложили <strong>{Number(finalAmount).toLocaleString('ru')} ₽</strong> в мечту «{dream.title}»
-              </div>
+            <input className="input" type="number" placeholder="Своя сумма, ₽" value={customAmount} onChange={e => { setCustomAmount(e.target.value); setAmount(''); }} />
+          </div>
+          {dream.qrImage && (
+            <div style={{background:'rgba(201,146,74,0.07)',borderRadius:14,padding:14,marginBottom:16,textAlign:'center'}}>
+              <div className="note" style={{marginBottom:8}}>Отсканируйте QR-код чтобы перевести деньги</div>
+              <img src={dream.qrImage} alt="QR" style={{width:150,height:150,objectFit:'contain',background:'white',borderRadius:10,padding:4,margin:'0 auto',display:'block'}} />
             </div>
+          )}
+          {!dream.qrImage && <div className="note" style={{marginBottom:16,padding:'10px 14px',background:'rgba(201,146,74,0.07)',borderRadius:12}}>💬 Уточните у Иры, как перевести деньги!</div>}
+          <button className="btn btn-primary" style={{width:'100%'}} disabled={!finalAmount || Number(finalAmount) < 1} onClick={() => setStep('cert')}>Получить сертификат ✨</button>
+        </>)}
 
-            <div style={{background:'linear-gradient(135deg,#fde8da,#f0d5a8)',borderRadius:16,padding:20,marginBottom:20,border:'1px solid rgba(201,146,74,0.25)'}}>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,textAlign:'center',color:'#3b2a2a',marginBottom:6}}>
-                Ваш сертификат готов к печати
-              </div>
-              <div className="note" style={{textAlign:'center',fontSize:12}}>
-                Распечатайте, вложите в открытку и подарите Ире в день рождения 🌸
-              </div>
+        {step === 'cert' && (<>
+          <div style={{textAlign:'center',marginBottom:16}}>
+            <div style={{fontSize:48,marginBottom:8}}>🎉</div>
+            <div className="serif" style={{fontSize:22,color:'var(--deep)',marginBottom:6}}>Спасибо, {guestName}!</div>
+            <div className="note">Вы вложили <strong>{Number(finalAmount).toLocaleString('ru')} ₽</strong> в мечту «{dream.title}»</div>
+          </div>
+          <div style={{background:'linear-gradient(135deg,#fde8da,#f0d5a8)',borderRadius:16,padding:20,marginBottom:20,border:'1px solid rgba(201,146,74,0.25)'}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,textAlign:'center',color:'#3b2a2a',marginBottom:6}}>Ваш сертификат готов к печати</div>
+            <div className="note" style={{textAlign:'center',fontSize:12}}>Распечатайте, вложите в открытку и подарите Ире в день рождения 🌸</div>
+          </div>
+          <div style={{border:'1.5px solid rgba(201,146,74,0.3)',borderRadius:14,padding:16,marginBottom:20,background:'white',textAlign:'center'}}>
+            <div style={{fontSize:9,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--gold)',marginBottom:6}}>Сертификат участия в мечте</div>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:'var(--deep)',marginBottom:4}}><em style={{color:'var(--rose)'}}>{guestName}</em> вложил{guestName.slice(-1)==='а'?'а':''}<br/>в большую мечту</div>
+            <div style={{width:60,height:1,background:'linear-gradient(to right,transparent,#c9924a,transparent)',margin:'8px auto'}}></div>
+            <div style={{fontSize:11,color:'#7c6b6b',marginBottom:8}}>«{dream.title}»</div>
+            <div style={{display:'inline-block',background:'linear-gradient(135deg,#fde8da,#f0d5a8)',borderRadius:8,padding:'4px 12px'}}>
+              <div style={{fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--gold)'}}>Вклад</div>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:'var(--deep)'}}>{Number(finalAmount).toLocaleString('ru')} ₽</div>
             </div>
-
-            {/* Mini preview */}
-            <div style={{border:'1.5px solid rgba(201,146,74,0.3)',borderRadius:14,padding:16,marginBottom:20,background:'white',position:'relative',textAlign:'center'}}>
-              <div style={{position:'absolute',top:8,right:8,fontSize:16}}>✨</div>
-              <div style={{fontSize:9,letterSpacing:'0.2em',textTransform:'uppercase',color:'var(--gold)',marginBottom:6}}>Сертификат участия в мечте</div>
-              <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:'var(--deep)',marginBottom:4}}>
-                <em style={{color:'var(--rose)'}}>{guestName}</em> вложил{guestName.slice(-1)==='а'?'а':''}<br/>в большую мечту
-              </div>
-              <div style={{width:60,height:1,background:'linear-gradient(to right,transparent,#c9924a,transparent)',margin:'8px auto'}}></div>
-              <div style={{fontSize:11,color:'#7c6b6b',marginBottom:8}}>«{dream.title}»</div>
-              <div style={{display:'inline-block',background:'linear-gradient(135deg,#fde8da,#f0d5a8)',borderRadius:8,padding:'4px 12px'}}>
-                <div style={{fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:'var(--gold)'}}>Вклад</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:15,color:'var(--deep)'}}>{Number(finalAmount).toLocaleString('ru')} ₽</div>
-              </div>
-            </div>
-
-            <div style={{display:'flex',gap:10}}>
-              <button className="btn btn-outline" style={{flex:1}} onClick={onClose}>
-                Закрыть
-              </button>
-              <button className="btn btn-primary" style={{flex:2}} onClick={handlePrint}>
-                🖨️ Печатать сертификат
-              </button>
-            </div>
-          </>
-        )}
+          </div>
+          <div style={{display:'flex',gap:10}}>
+            <button className="btn btn-outline" style={{flex:1}} onClick={onClose}>Закрыть</button>
+            <button className="btn btn-primary" style={{flex:2}} onClick={() => printCertificate(guestName, dream.title, finalAmount)}>🖨️ Печатать сертификат</button>
+          </div>
+        </>)}
       </div>
     </div>
   );
 }
 
-// ===== HEADER =====
 function Header() {
   return (
     <header className="container-narrow pt-8 pb-4">
       <div style={{textAlign:'center'}}>
         <div style={{fontSize:40,marginBottom:8}}>🌸</div>
-        <h1 className="serif" style={{fontSize:'2rem',color:'var(--deep)',marginBottom:4}}>
-          Подарочки для Иры
-        </h1>
+        <h1 className="serif" style={{fontSize:'2rem',color:'var(--deep)',marginBottom:4}}>Подарочки для Иры</h1>
         <p className="note">Здесь собраны идеи подарков и большие мечты</p>
       </div>
     </header>
   );
 }
 
-// ===== WHO ARE YOU =====
 function WhoAreYouCard({ userName, setUserName }) {
   const [temp, setTemp] = useState(userName || '');
   return (
@@ -522,19 +264,8 @@ function WhoAreYouCard({ userName, setUserName }) {
           <div style={{fontWeight:700,color:'var(--deep)',marginBottom:4}}>Давайте познакомимся</div>
           <p className="note" style={{marginBottom:12}}>Напишите ваше имя — вы сможете забронировать подарок или вложиться в мечту.</p>
           <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-            <input
-              className="input"
-              style={{flex:1,minWidth:180}}
-              placeholder="Например: Антон, Настя, Маша"
-              value={temp}
-              onChange={e => setTemp(e.target.value)}
-              onKeyDown={e => e.key==='Enter' && temp.trim() && setUserName(temp.trim())}
-            />
-            <button
-              className="btn btn-primary"
-              onClick={() => setUserName(temp.trim())}
-              disabled={!temp.trim()}
-            >Продолжить</button>
+            <input className="input" style={{flex:1,minWidth:180}} placeholder="Например: Антон, Настя, Маша" value={temp} onChange={e => setTemp(e.target.value)} onKeyDown={e => e.key==='Enter' && temp.trim() && setUserName(temp.trim())} />
+            <button className="btn btn-primary" onClick={() => setUserName(temp.trim())} disabled={!temp.trim()}>Продолжить</button>
           </div>
         </div>
       </div>
@@ -542,7 +273,6 @@ function WhoAreYouCard({ userName, setUserName }) {
   );
 }
 
-// ===== IRA: ADD WISH FORM =====
 function AddWishFormIra({ onAdd, disabled, error }) {
   const [title,setTitle]=useState('');const [url,setUrl]=useState('');const [note,setNote]=useState('');
   const [imageData,setImageData]=useState('');const [imageError,setImageError]=useState('');const [imageLoading,setImageLoading]=useState(false);
@@ -559,7 +289,7 @@ function AddWishFormIra({ onAdd, disabled, error }) {
         <span className="badge badge-gift">🎁 Список подарков</span>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
-        <input className="input" placeholder="Что хотите получить? (например, тёплый плед)" value={title} onChange={e=>setTitle(e.target.value)} />
+        <input className="input" placeholder="Что хотите получить?" value={title} onChange={e=>setTitle(e.target.value)} />
         <input className="input" placeholder="Ссылка на товар" value={url} onChange={e=>setUrl(e.target.value)} />
         <textarea className="textarea" style={{resize:'none'}} rows="2" placeholder="Комментарий: цвет, размер, нюансы…" value={note} onChange={e=>setNote(e.target.value)} />
         <div>
@@ -578,7 +308,6 @@ function AddWishFormIra({ onAdd, disabled, error }) {
   );
 }
 
-// ===== IRA: ADD DREAM FORM =====
 function AddDreamFormIra({ onAdd, disabled, error }) {
   const [title,setTitle]=useState('');const [desc,setDesc]=useState('');const [link,setLink]=useState('');
   const [qrImage,setQrImage]=useState('');const [imgError,setImgError]=useState('');const [imgLoading,setImgLoading]=useState(false);
@@ -586,7 +315,7 @@ function AddDreamFormIra({ onAdd, disabled, error }) {
   const handleQrChange = async e => {
     const file=e.target.files&&e.target.files[0]; if(!file){setQrImage('');setImgError('');return;}
     setImgLoading(true);setImgError('');
-    try{const c=await compressImage(file);setQrImage(c);}catch(err){setQrImage('');setImgError(typeof err==='string'?err:'Не удалось обработать изображение.');}finally{setImgLoading(false);}
+    try{const c=await compressImage(file);setQrImage(c);}catch(err){setQrImage('');setImgError(typeof err==='string'?err:'Не удалось обработать.');}finally{setImgLoading(false);}
   };
   return (
     <div className="card p-5 mb-4">
@@ -595,7 +324,7 @@ function AddDreamFormIra({ onAdd, disabled, error }) {
         <span className="badge badge-dream">✨ Сбор</span>
       </div>
       <div style={{display:'flex',flexDirection:'column',gap:10}}>
-        <input className="input" placeholder="О чём мечтаете? (путешествие, объектив…)" value={title} onChange={e=>setTitle(e.target.value)} />
+        <input className="input" placeholder="О чём мечтаете?" value={title} onChange={e=>setTitle(e.target.value)} />
         <textarea className="textarea" style={{resize:'none'}} rows="2" placeholder="Коротко опишите мечту" value={desc} onChange={e=>setDesc(e.target.value)} />
         <input className="input" placeholder="Ссылка с подробностями (необязательно)" value={link} onChange={e=>setLink(e.target.value)} />
         <div>
@@ -614,7 +343,6 @@ function AddDreamFormIra({ onAdd, disabled, error }) {
   );
 }
 
-// ===== IRA: WISH CARD =====
 function WishCardIra({ wish, onDelete, onUpdate, onImageClick }) {
   const [editing,setEditing]=useState(false);
   const [title,setTitle]=useState(wish.title||'');const [url,setUrl]=useState(wish.url||'');const [note,setNote]=useState(wish.note||'');
@@ -662,7 +390,6 @@ function WishCardIra({ wish, onDelete, onUpdate, onImageClick }) {
   );
 }
 
-// ===== IRA: DREAM CARD =====
 function DreamCardIra({ dream, onDelete, onUpdate, onImageClick }) {
   const [editing,setEditing]=useState(false);
   const [title,setTitle]=useState(dream.title||'');const [desc,setDesc]=useState(dream.description||'');
@@ -719,7 +446,6 @@ function DreamCardIra({ dream, onDelete, onUpdate, onImageClick }) {
   );
 }
 
-// ===== GUEST: WISH CARD =====
 function WishCardGuest({ wish, claim, currentUserName, onClaim, onUnclaim, onImageClick }) {
   const claimed = !!claim;
   const iMine = claim && normalize(claim.claimerName) === normalize(currentUserName);
@@ -742,11 +468,7 @@ function WishCardGuest({ wish, claim, currentUserName, onClaim, onUnclaim, onIma
           </div>
         ) : (
           <div style={{position:'relative'}}>
-            <div
-              style={{fontSize:12,fontWeight:700,color:'#64748b',background:'#e2e8f0',padding:'6px 16px',borderRadius:999,cursor:'default'}}
-              onMouseEnter={()=>setShowTip(true)}
-              onMouseLeave={()=>setShowTip(false)}
-            >Занято</div>
+            <div style={{fontSize:12,fontWeight:700,color:'#64748b',background:'#e2e8f0',padding:'6px 16px',borderRadius:999,cursor:'default'}} onMouseEnter={()=>setShowTip(true)} onMouseLeave={()=>setShowTip(false)}>Занято</div>
             {showTip&&<div style={{position:'absolute',right:0,bottom:'calc(100% + 6px)',background:'#1e293b',color:'white',fontSize:11,padding:'5px 10px',borderRadius:8,whiteSpace:'nowrap',zIndex:10}}>🎁 Дарит: {claim.claimerName}</div>}
           </div>
         )) : (
@@ -757,7 +479,6 @@ function WishCardGuest({ wish, claim, currentUserName, onClaim, onUnclaim, onIma
   );
 }
 
-// ===== GUEST: DREAM CARD =====
 function DreamCardGuest({ dream, guestName, onImageClick }) {
   const [showContribute, setShowContribute] = useState(false);
   return (
@@ -771,42 +492,28 @@ function DreamCardGuest({ dream, guestName, onImageClick }) {
           </div>
           <span className="badge badge-dream" style={{flexShrink:0}}>✨ Мечта</span>
         </div>
-
         <div style={{background:'linear-gradient(135deg,rgba(201,146,74,0.1),rgba(232,133,106,0.08))',borderRadius:14,padding:16,textAlign:'center',border:'1px solid rgba(201,146,74,0.2)'}}>
           <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'var(--deep)',marginBottom:4}}>Хотите вложиться в эту мечту?</div>
           <div className="note" style={{fontSize:12,marginBottom:12}}>После перевода вы получите красивый сертификат для Иры</div>
-          <button
-            className="btn btn-primary"
-            style={{fontSize:13,padding:'9px 24px'}}
-            onClick={() => setShowContribute(true)}
-          >✨ Вложиться и получить сертификат</button>
+          <button className="btn btn-primary" style={{fontSize:13,padding:'9px 24px'}} onClick={() => setShowContribute(true)}>✨ Вложиться и получить сертификат</button>
         </div>
       </div>
-
-      {showContribute && (
-        <ContributeModal
-          dream={dream}
-          guestName={guestName}
-          onClose={() => setShowContribute(false)}
-        />
-      )}
+      {showContribute && <ContributeModal dream={dream} guestName={guestName} onClose={() => setShowContribute(false)} />}
     </>
   );
 }
 
-// ===== IMAGE PREVIEW =====
 function ImagePreview({ src, onClose }) {
   return (
     <div style={{position:'fixed',inset:0,zIndex:50,background:'rgba(59,42,42,0.75)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={onClose}>
       <div style={{position:'relative',maxWidth:'100%',maxHeight:'100%'}} onClick={e=>e.stopPropagation()}>
-        <button style={{position:'absolute',top:-12,right:-12,width:30,height:30,borderRadius:'50%',background:'white',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,boxShadow:'0 2px 8px rgba(0,0,0,0.2)',color:'var(--deep)'}} onClick={onClose}>✕</button>
+        <button style={{position:'absolute',top:-12,right:-12,width:30,height:30,borderRadius:'50%',background:'white',border:'none',cursor:'pointer',fontSize:14,boxShadow:'0 2px 8px rgba(0,0,0,0.2)',color:'var(--deep)'}} onClick={onClose}>✕</button>
         <img src={src} alt="" style={{maxHeight:'85vh',maxWidth:'85vw',borderRadius:18,boxShadow:'0 20px 60px rgba(0,0,0,0.3)',background:'white'}} />
       </div>
     </div>
   );
 }
 
-// ===== APP =====
 function App() {
   const [authUid,setAuthUid]=useState(null);
   const [userName,setUserName]=useState(loadLocal('ira:name',''));
@@ -817,7 +524,6 @@ function App() {
 
   useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
   useEffect(()=>{ saveLocal('ira:name',userName); },[userName]);
-
   useEffect(()=>{
     setItemsLoading(true);
     const u=itemsCol().orderBy('createdAt','desc').onSnapshot(snap=>{const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));setItems(a);setItemsLoading(false);},err=>{console.error(err);setItemsLoading(false);});
@@ -873,36 +579,23 @@ function App() {
     <div style={{paddingBottom:60}}>
       <Header />
       <WhoAreYouCard userName={userName} setUserName={setUserName} />
+      {!trimmedName && <div className="container-narrow"><p className="note" style={{textAlign:'center'}}>Укажите имя выше, чтобы открыть список подарков 🎁</p></div>}
 
-      {!trimmedName && (
-        <div className="container-narrow">
-          <p className="note" style={{textAlign:'center'}}>Укажите имя выше, чтобы открыть список подарков 🎁</p>
-        </div>
-      )}
-
-      {/* IRA MODE */}
       {trimmedName && isIra && (
         <main className="container-narrow" style={{display:'flex',flexDirection:'column',gap:24}}>
-          {/* Gifts section */}
           <section>
             <div className="section-title" style={{marginBottom:16}}>Подарки</div>
             <AddWishFormIra onAdd={handleAddWish} disabled={!authUid} error={addError} />
-            <div style={{marginBottom:8}}>
-              <p className="note">Гости не видят, кто что забронировал — сюрприз сохранится 🎁</p>
-            </div>
+            <p className="note" style={{marginBottom:8}}>Гости не видят, кто что забронировал — сюрприз сохранится 🎁</p>
             {iraWishes.length===0&&!itemsLoading&&<p className="note">Пока ничего не добавлено.</p>}
             <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))'}}>
               {iraWishes.map(w=><WishCardIra key={w.id} wish={w} onDelete={handleDeleteWish} onUpdate={handleUpdateWish} onImageClick={setPreviewImage} />)}
             </div>
           </section>
-
-          {/* Dreams section */}
           <section>
             <div className="section-title" style={{marginBottom:16}}>Большие мечты</div>
             <AddDreamFormIra onAdd={handleAddDream} disabled={!authUid} error={dreamError} />
-            <div style={{marginBottom:8}}>
-              <p className="note">Гости смогут вложиться в любую сумму и получат сертификат для печати 🌸</p>
-            </div>
+            <p className="note" style={{marginBottom:8}}>Гости смогут вложиться в любую сумму и получат сертификат 🌸</p>
             {iraDreams.length===0&&!dreamsLoading&&<p className="note">Пока больших мечт нет.</p>}
             <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))'}}>
               {iraDreams.map(d=><DreamCardIra key={d.id} dream={d} onDelete={handleDeleteDream} onUpdate={handleUpdateDream} onImageClick={setPreviewImage} />)}
@@ -911,32 +604,23 @@ function App() {
         </main>
       )}
 
-      {/* GUEST MODE */}
       {trimmedName && !isIra && (
         <main className="container-narrow" style={{display:'flex',flexDirection:'column',gap:28}}>
-          {/* Gifts */}
           <section>
             <div className="section-title" style={{marginBottom:12}}>🎁 Идеи подарков</div>
             <p className="note" style={{marginBottom:16}}>Выберите что хотите подарить — другие увидят что подарок занят, а для Иры это останется сюрпризом!</p>
             {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
             {iraWishes.length===0&&!itemsLoading&&<p className="note">Ира пока не добавила подарки.</p>}
             <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))'}}>
-              {iraWishes.map(w=>(
-                <WishCardGuest key={w.id} wish={w} claim={claims[w.id]} currentUserName={trimmedName}
-                  onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImageClick={setPreviewImage} />
-              ))}
+              {iraWishes.map(w=><WishCardGuest key={w.id} wish={w} claim={claims[w.id]} currentUserName={trimmedName} onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImageClick={setPreviewImage} />)}
             </div>
           </section>
-
-          {/* Dreams */}
           <section>
             <div className="section-title" style={{marginBottom:12}}>✨ Большие мечты</div>
             <p className="note" style={{marginBottom:16}}>Вложитесь в мечту на любую сумму — вы получите красивый сертификат, который можно распечатать и подарить!</p>
             {iraDreams.length===0&&!dreamsLoading&&<p className="note">Ира пока не добавила мечты.</p>}
             <div style={{display:'grid',gap:12,gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))'}}>
-              {iraDreams.map(d=>(
-                <DreamCardGuest key={d.id} dream={d} guestName={trimmedName} onImageClick={setPreviewImage} />
-              ))}
+              {iraDreams.map(d=><DreamCardGuest key={d.id} dream={d} guestName={trimmedName} onImageClick={setPreviewImage} />)}
             </div>
           </section>
         </main>
@@ -948,6 +632,7 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+
 
   </script>
 </body>
