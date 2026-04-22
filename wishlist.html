@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Вишлист</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg: #0a0a0f; --surface: #13131a; --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.08); --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f5; --text2: #8888aa;
+      --accent: #ff3cac; --accent2: #7b2fff; --accent3: #00d2ff; --gold: #ffd166;
+    }
+    * { box-sizing: border-box; }
+    body { font-family: 'Golos Text', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; margin: 0; overflow-x: hidden; }
+    .mesh-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+    .mesh-bg::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,60,172,0.15) 0%, transparent 60%), radial-gradient(ellipse 50% 50% at 80% 80%, rgba(123,47,255,0.12) 0%, transparent 60%); animation: meshMove 12s ease-in-out infinite alternate; }
+    @keyframes meshMove { 0% { opacity:1; transform:scale(1); } 100% { opacity:0.7; transform:scale(1.06); } }
+    .bg-photo { position: fixed; inset: 0; z-index: -1; background-image: url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png'); background-size: cover; background-position: center; opacity: 0.06; }
+    .app-wrap { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; padding: 0 16px 80px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 18px; transition: border-color 0.2s; }
+    .card:hover { border-color: var(--border2); }
+    .input { width: 100%; background: var(--surface2); border: 1px solid var(--border2); border-radius: 14px; padding: 11px 14px; color: var(--text); font-family: 'Golos Text', sans-serif; font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .input::placeholder { color: var(--text2); }
+    .input:focus { border-color: #ff3cac; box-shadow: 0 0 0 3px rgba(255,60,172,0.15); background: #1a1a24; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; border-radius: 999px; padding: 10px 20px; font-family: 'Golos Text', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.18s; }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary { background: linear-gradient(135deg, #ff3cac, #7b2fff); color: white; box-shadow: 0 4px 20px rgba(255,60,172,0.3); }
+    .btn-primary:hover { box-shadow: 0 6px 24px rgba(255,60,172,0.45); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 3px 10px; font-size: 11px; font-weight: 600; }
+    .badge-purple { background: rgba(123,47,255,0.15); color: #a78bfa; border: 1px solid rgba(123,47,255,0.25); }
+    .badge-claimed { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+    .badge-muted { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+    .err { color: #f87171; font-size: 13px; }
+    .note { color: var(--text2); font-size: 13px; }
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+    .wish-claimed { opacity: 0.55; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+    .fade-up { animation: fadeUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+  </style>
+</head>
+<body>
+  <div class="bg-photo"></div>
+  <div class="mesh-bg"></div>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useEffect, useState, useMemo } = React;
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
+      authDomain: "wishlist-37819.firebaseapp.com",
+      projectId: "wishlist-37819",
+      storageBucket: "wishlist-37819.firebasestorage.app",
+      messagingSenderId: "72495355387",
+      appId: "1:72495355387:web:0ff709125d3cf33c8c275e"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    auth.signInAnonymously().catch(console.error);
+
+    const LIST_ID = 'newyear2025';
+    const listDoc   = db.collection('lists').doc(LIST_ID);
+    const itemsCol  = () => listDoc.collection('items');
+    const claimsCol = () => listDoc.collection('claims');
+
+    const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+    const loadLocal = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } };
+
+    // Get ?user= from URL
+    const TARGET_USER = new URLSearchParams(window.location.search).get('user') || '';
+
+    // Generate color pair from name
+    function nameColors(name) {
+      const pairs = [['#ff3cac','#7b2fff'],['#00d2ff','#7b2fff'],['#4ade80','#00d2ff'],['#ffd166','#ff9a3c'],['#f87171','#ff3cac'],['#a78bfa','#00d2ff']];
+      const idx = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % pairs.length;
+      return pairs[idx];
+    }
+
+    function WishCard({ wish, claim, currentUserName, authUid, onClaim, onUnclaim, onImageClick }) {
+      const claimed = !!claim;
+      const iGift = claim && claim.claimerName === currentUserName;
+      const [showTip, setShowTip] = useState(false);
+
+      return (
+        <div className={`card fade-up ${claimed && !iGift ? 'wish-claimed' : ''}`}>
+          {wish.image && <img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:220,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
+          <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:15,color:'var(--text)',marginBottom:4}}>{wish.title}</div>
+              {claimed && <span className="badge badge-claimed" style={{marginBottom:6,display:'inline-flex'}}>✓ Занято</span>}
+              {wish.note && <div className="note" style={{marginTop:4,marginBottom:4}}>{wish.note}</div>}
+              {wish.url && <a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none'}}>Открыть ↗</a>}
+            </div>
+            <div style={{flexShrink:0,position:'relative'}}>
+              {claimed ? (iGift ? (
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
+                  <span className="badge badge-claimed">🎁 Вы дарите</span>
+                  <button className="btn btn-ghost" style={{fontSize:12,padding:'6px 12px'}} onClick={onUnclaim}>Снять</button>
+                </div>
+              ) : (
+                <div onMouseEnter={()=>setShowTip(true)} onMouseLeave={()=>setShowTip(false)} style={{position:'relative'}}>
+                  <button className="btn" style={{fontSize:12,padding:'8px 14px',background:'rgba(255,255,255,0.05)',color:'var(--text2)',border:'1px solid var(--border2)',cursor:'default'}}>Занято</button>
+                  {showTip && <div style={{position:'absolute',right:0,bottom:'calc(100% + 8px)',background:'#1c1c28',border:'1px solid var(--border2)',color:'var(--text)',fontSize:11,padding:'6px 10px',borderRadius:10,whiteSpace:'nowrap',zIndex:10,boxShadow:'0 8px 24px rgba(0,0,0,0.4)'}}>🎁 Дарит: {claim.claimerName}</div>}
+                </div>
+              )) : (
+                <button className="btn btn-primary" style={{fontSize:12,padding:'8px 16px'}} onClick={onClaim}>Я подарю 🎁</button>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function App() {
+      const [authUid, setAuthUid] = useState(null);
+      const [visitorName, setVisitorName] = useState(loadLocal('nywish:name',''));
+      const [tempName, setTempName] = useState(visitorName);
+      const [editingName, setEditingName] = useState(!visitorName);
+      const [items, setItems] = useState([]);
+      const [claims, setClaims] = useState({});
+      const [loading, setLoading] = useState(true);
+      const [claimError, setClaimError] = useState('');
+      const [previewImage, setPreviewImage] = useState(null);
+
+      useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
+      useEffect(()=>{ saveLocal('nywish:name', visitorName); },[visitorName]);
+
+      useEffect(()=>{
+        setLoading(true);
+        const u = itemsCol().where('ownerName','==',TARGET_USER).orderBy('createdAt','desc')
+          .onSnapshot(snap=>{const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));setItems(a);setLoading(false);},
+          err=>{console.error(err);setLoading(false);});
+        return u;
+      },[]);
+
+      useEffect(()=>{
+        const u = claimsCol().onSnapshot(snap=>{const m={};snap.forEach(d=>m[d.id]=d.data());setClaims(m);},
+          err=>{console.error(err);setClaims({});});
+        return u;
+      },[]);
+
+      const [c1, c2] = nameColors(TARGET_USER);
+
+      const handleClaim = async wish => {
+        setClaimError('');
+        if(!visitorName.trim()){setClaimError('Сначала укажите своё имя.');return;}
+        const ref = claimsCol().doc(wish.id);
+        try {
+          await db.runTransaction(async tx=>{
+            const s = await tx.get(ref);
+            if(s.exists) throw new Error('taken');
+            tx.set(ref,{claimerUid:authUid,claimerName:visitorName.trim(),createdAt:Date.now()});
+          });
+        } catch(e) { setClaimError(e.message==='taken'?'Уже забронировано.':'Не удалось забронировать.'); }
+      };
+
+      const handleUnclaim = async wish => {
+        setClaimError('');
+        if(!window.confirm('Снять бронь?')) return;
+        const ref = claimsCol().doc(wish.id);
+        try {
+          await db.runTransaction(async tx=>{
+            const s = await tx.get(ref);
+            if(!s.exists) throw new Error('none');
+            if(s.data().claimerUid !== authUid) throw new Error('not-owner');
+            tx.delete(ref);
+          });
+        } catch(e) { setClaimError(e.message==='not-owner'?'Только вы можете снять свою бронь.':'Не удалось снять бронь.'); }
+      };
+
+      if (!TARGET_USER) return (
+        <div className="app-wrap" style={{paddingTop:60,textAlign:'center'}}>
+          <div style={{fontSize:48,marginBottom:16}}>🤔</div>
+          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:16,color:'var(--text)',marginBottom:8}}>Пользователь не указан</div>
+          <div className="note" style={{marginBottom:24}}>Перейдите на эту страницу через главный список</div>
+          <a href="index.html" className="btn btn-primary" style={{textDecoration:'none'}}>← На главную</a>
+        </div>
+      );
+
+      return (
+        <div className="app-wrap">
+          {/* Header */}
+          <header style={{padding:'28px 0 20px'}}>
+            <a href="index.html" style={{display:'inline-flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text2)',textDecoration:'none',marginBottom:16,transition:'color 0.2s'}}
+              onMouseEnter={e=>e.currentTarget.style.color='var(--text)'} onMouseLeave={e=>e.currentTarget.style.color='var(--text2)'}>
+              ← Все вишлисты
+            </a>
+            <div style={{display:'flex',alignItems:'center',gap:16}}>
+              <div style={{width:56,height:56,borderRadius:18,flexShrink:0,background:`linear-gradient(135deg,${c1},${c2})`,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:700,color:'white',boxShadow:`0 6px 20px ${c1}55`}}>
+                {TARGET_USER.slice(0,2).toUpperCase()}
+              </div>
+              <div>
+                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:900,background:`linear-gradient(135deg,${c1},${c2})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text',lineHeight:1.1}}>
+                  {TARGET_USER}
+                </div>
+                <div style={{fontSize:12,color:'var(--text2)',marginTop:4}}>
+                  {loading ? 'загружается…' : `${items.length} ${items.length===1?'желание':items.length<5?'желания':'желаний'}`}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Visitor name */}
+          {editingName ? (
+            <div className="card fade-up" style={{marginBottom:12}}>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:11,fontWeight:700,color:'var(--text2)',marginBottom:10,letterSpacing:'0.06em',textTransform:'uppercase'}}>Как вас зовут?</div>
+              <input className="input" placeholder="Ваше имя" value={tempName} onChange={e=>setTempName(e.target.value)}
+                onKeyDown={e=>{if(e.key==='Enter'&&tempName.trim()){setVisitorName(tempName.trim());setEditingName(false);}}}
+                style={{marginBottom:10}} />
+              <div style={{display:'flex',justifyContent:'flex-end'}}>
+                <button className="btn btn-primary" style={{fontSize:13}} disabled={!tempName.trim()} onClick={()=>{setVisitorName(tempName.trim());setEditingName(false);}}>Продолжить →</button>
+              </div>
+            </div>
+          ) : (
+            <div style={{background:'var(--surface)',border:'1px solid var(--border2)',borderRadius:16,padding:'12px 16px',marginBottom:12,display:'flex',alignItems:'center',gap:12,cursor:'pointer'}}
+              onClick={()=>setEditingName(true)}>
+              <div style={{width:32,height:32,borderRadius:10,background:'linear-gradient(135deg,rgba(255,60,172,0.2),rgba(123,47,255,0.2))',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>👤</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:11,color:'var(--text2)',marginBottom:1}}>Вы смотрите как</div>
+                <div style={{fontWeight:600,fontSize:14}}>{visitorName}</div>
+              </div>
+              <div style={{fontSize:12,color:'var(--text2)'}}>изменить ✏️</div>
+            </div>
+          )}
+
+          {/* Info */}
+          <div style={{background:'rgba(255,255,255,0.03)',border:'1px solid var(--border)',borderRadius:14,padding:'12px 14px',marginBottom:16,fontSize:13,color:'var(--text2)',lineHeight:1.5}}>
+            🎁 Здесь вы можете забронировать подарок — {TARGET_USER} не увидит кто что дарит, сюрприз сохранится!
+          </div>
+
+          {claimError && <div className="err" style={{marginBottom:10}}>{claimError}</div>}
+
+          {/* Wishes */}
+          {loading && <p className="note">Загружается…</p>}
+          {!loading && items.length === 0 && (
+            <div style={{textAlign:'center',padding:'40px 0'}}>
+              <div style={{fontSize:48,marginBottom:12}}>🎀</div>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:14,color:'var(--text)',marginBottom:8}}>{TARGET_USER} пока не добавил{TARGET_USER.slice(-1)==='а'?'а':''} желания</div>
+              <div className="note">Загляните позже!</div>
+            </div>
+          )}
+
+          <div style={{display:'grid',gap:10}}>
+            {items.map(w => (
+              <WishCard key={w.id} wish={w} claim={claims[w.id]} currentUserName={visitorName.trim()} authUid={authUid}
+                onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImageClick={setPreviewImage} />
+            ))}
+          </div>
+
+          {previewImage && (
+            <div style={{position:'fixed',inset:0,zIndex:50,background:'rgba(0,0,0,0.8)',backdropFilter:'blur(8px)',display:'flex',alignItems:'center',justifyContent:'center',padding:16}} onClick={()=>setPreviewImage(null)}>
+              <div style={{position:'relative',maxWidth:'100%',maxHeight:'100%'}} onClick={e=>e.stopPropagation()}>
+                <button style={{position:'absolute',top:-12,right:-12,width:32,height:32,borderRadius:'50%',background:'var(--surface)',border:'1px solid var(--border2)',cursor:'pointer',color:'var(--text)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPreviewImage(null)}>✕</button>
+                <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'85vw',borderRadius:20,boxShadow:'0 30px 80px rgba(0,0,0,0.6)'}} />
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
