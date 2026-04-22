@@ -3,117 +3,348 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Подарки, подарочки </title>
+  <title>Подарки, подарочки</title>
 
-  <!-- Tailwind -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- React -->
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Firebase (compat) -->
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
 
   <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131a;
+      --surface2: #1c1c28;
+      --border: rgba(255,255,255,0.08);
+      --border2: rgba(255,255,255,0.14);
+      --text: #f0f0f5;
+      --text2: #8888aa;
+      --accent: #ff3cac;
+      --accent2: #7b2fff;
+      --accent3: #00d2ff;
+      --gold: #ffd166;
+    }
+
+    * { box-sizing: border-box; }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+      font-family: 'Golos Text', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       margin: 0;
+      overflow-x: hidden;
     }
 
-    .container-narrow { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+    /* Animated mesh background */
+    .mesh-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .mesh-bg::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,60,172,0.18) 0%, transparent 60%),
+        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(123,47,255,0.15) 0%, transparent 60%),
+        radial-gradient(ellipse 40% 30% at 60% 10%, rgba(0,210,255,0.10) 0%, transparent 50%);
+      animation: meshMove 12s ease-in-out infinite alternate;
+    }
+    @keyframes meshMove {
+      0%   { opacity: 1; transform: scale(1) translate(0,0); }
+      100% { opacity: 0.7; transform: scale(1.08) translate(-2%, 2%); }
+    }
 
+    /* Noise overlay */
+    .mesh-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.4;
+    }
+
+    /* Background photo with overlay */
+    .bg-photo {
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      background-image: url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.07;
+    }
+
+    .app-wrap {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 16px 80px;
+    }
+
+    /* Header */
+    .header {
+      padding: 28px 0 20px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .header-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: clamp(1.3rem, 5vw, 1.8rem);
+      font-weight: 900;
+      line-height: 1.1;
+      background: linear-gradient(135deg, #ff3cac, #7b2fff, #00d2ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .header-sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 11px;
+      color: var(--text2);
+    }
+
+    /* Name card */
+    .name-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 20px;
+      padding: 16px 18px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .name-card:hover { border-color: rgba(255,60,172,0.35); box-shadow: 0 0 0 1px rgba(255,60,172,0.15); }
+    .name-avatar {
+      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
+      background: linear-gradient(135deg, #ff3cac22, #7b2fff22);
+      border: 1px solid rgba(255,60,172,0.3);
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 5px;
+      margin-bottom: 16px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 8px;
+      border-radius: 13px;
+      font-family: 'Golos Text', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      text-align: center;
+      color: var(--text2);
+      background: transparent;
+    }
+    .tab.active {
+      background: linear-gradient(135deg, #ff3cac, #7b2fff);
+      color: white;
+      box-shadow: 0 4px 20px rgba(255,60,172,0.35);
+    }
+    .tab-ira.active {
+      background: linear-gradient(135deg, #ffd166, #ff9a3c);
+      color: #1a0a00;
+      box-shadow: 0 4px 20px rgba(255,209,102,0.4);
+    }
+
+    /* Cards */
     .card {
-      background:#ffffff;
-      border-radius:24px;
-      box-shadow:0 20px 40px rgba(15,23,42,.10);
-      border:1px solid rgba(148,163,184,.25);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      transition: border-color 0.2s;
     }
+    .card:hover { border-color: var(--border2); }
 
-    .btn {
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      border-radius:999px;
-      padding:10px 16px;
-      font-size:14px;
-      font-weight:600;
-    }
-    .btn-primary {
-      background:linear-gradient(135deg,#f97316,#facc15);
-      color:#111827;
-    }
-    .btn-primary:disabled { opacity:.6; cursor:not-allowed; }
-    .btn-ghost { background:transparent; color:#0f172a; }
-
-    .btn-tab-active,
-    .btn-tab-inactive {
-      transition: all .18s ease-out;
-    }
-    .btn-tab-active {
-      background:linear-gradient(135deg,#020617,#0f172a);
-      color:#fefce8;
-      transform: translateY(-1px);
-      box-shadow:0 10px 25px rgba(15,23,42,.45);
-    }
-    .btn-tab-inactive {
-      background:transparent;
-      color:#334155;
-    }
-
+    /* Inputs */
     .input, .textarea {
-      width:100%;
-      border-radius:16px;
-      border:1px solid #e2e8f0;
-      padding:10px 14px;
-      outline:none;
-      background:#f8fafc;
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 14px;
+      padding: 11px 14px;
+      color: var(--text);
+      font-family: 'Golos Text', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
+    .input::placeholder, .textarea::placeholder { color: var(--text2); }
     .input:focus, .textarea:focus {
-      border-color:#fb923c;
-      box-shadow:0 0 0 3px rgba(251,146,60,.25);
-      background:#ffffff;
+      border-color: #ff3cac;
+      box-shadow: 0 0 0 3px rgba(255,60,172,0.15);
+      background: #1a1a24;
+    }
+    .textarea { resize: none; }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 999px; padding: 10px 20px;
+      font-family: 'Golos Text', sans-serif; font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none; transition: all 0.18s;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn-primary {
+      background: linear-gradient(135deg, #ff3cac, #7b2fff);
+      color: white;
+      box-shadow: 0 4px 20px rgba(255,60,172,0.3);
+    }
+    .btn-primary:hover { box-shadow: 0 6px 24px rgba(255,60,172,0.45); transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
+    .btn-ghost {
+      background: var(--surface2); color: var(--text2);
+      border: 1px solid var(--border2);
+    }
+    .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+    .btn-danger { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* Badge */
+    .badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      border-radius: 999px; padding: 3px 10px;
+      font-size: 11px; font-weight: 600;
+    }
+    .badge-pink { background: rgba(255,60,172,0.15); color: #ff3cac; border: 1px solid rgba(255,60,172,0.25); }
+    .badge-purple { background: rgba(123,47,255,0.15); color: #a78bfa; border: 1px solid rgba(123,47,255,0.25); }
+    .badge-cyan { background: rgba(0,210,255,0.12); color: #00d2ff; border: 1px solid rgba(0,210,255,0.2); }
+    .badge-gold { background: rgba(255,209,102,0.15); color: #ffd166; border: 1px solid rgba(255,209,102,0.25); }
+    .badge-muted { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
+    .badge-claimed { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
+
+    .err { color: #f87171; font-size: 13px; }
+    .note { color: var(--text2); font-size: 13px; }
+
+    /* Section title */
+    .section-title {
+      font-family: 'Unbounded', sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text2);
+      margin-bottom: 12px;
     }
 
-    .badge {
-      display:inline-flex;
-      align-items:center;
-      gap:6px;
-      border-radius:999px;
-      background:#fefce8;
-      color:#92400e;
-      font-size:11px;
-      padding:4px 9px;
+    /* Ira banner */
+    .ira-banner {
+      background: linear-gradient(135deg, rgba(255,209,102,0.12), rgba(255,154,60,0.08));
+      border: 1px solid rgba(255,209,102,0.25);
+      border-radius: 20px;
+      padding: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
     }
-    .badge-soft {
-      background:#e2e8f0;
-      color:#334155;
+    .ira-banner:hover {
+      border-color: rgba(255,209,102,0.5);
+      box-shadow: 0 0 30px rgba(255,209,102,0.12);
+      transform: translateY(-2px);
     }
-    .err { color:#b91c1c; font-size:13px; }
-    .note { color:#64748b; font-size:13px; }
+    .ira-banner-icon {
+      width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
+      background: linear-gradient(135deg, #ffd166, #ff9a3c);
+      display: flex; align-items: center; justify-content: center; font-size: 26px;
+      box-shadow: 0 4px 16px rgba(255,209,102,0.3);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; inset: 0; z-index: 50;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px);
+      display: flex; align-items: center; justify-content: center; padding: 16px;
+    }
+    .modal-card {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 24px;
+      padding: 24px;
+      width: 100%; max-width: 440px;
+      max-height: 90vh; overflow-y: auto;
+    }
+
+    /* Divider */
+    .divider { height: 1px; background: var(--border); margin: 14px 0; }
+
+    /* Claimed state */
+    .wish-claimed { opacity: 0.55; }
+
+    /* Select */
+    select {
+      background: var(--surface2);
+      border: 1px solid var(--border2);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 6px 10px;
+      font-family: 'Golos Text', sans-serif;
+      font-size: 12px;
+      outline: none;
+      cursor: pointer;
+    }
+    select:focus { border-color: #ff3cac; }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--surface); }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
   </style>
 </head>
 <body>
-  <!-- ФОНОВАЯ КАРТИНКА -->
-  <img
-    src="E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png"
-    alt=""
-    class="fixed inset-0 w-full h-full object-cover -z-20"
-  />
-  <!-- Полупрозрачная вуаль, чтобы интерфейс читался -->
-  <div class="fixed inset-0 bg-white/50 backdrop-blur-md -z-10"></div>
-
-  <!-- Приложение -->
+  <div class="bg-photo"></div>
+  <div class="mesh-bg"></div>
   <div id="root"></div>
 
   <script type="text/babel">
     const { useEffect, useState, useMemo } = React;
 
-    // === Firebase init ===
     const firebaseConfig = {
       apiKey: "AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
       authDomain: "wishlist-37819.firebaseapp.com",
@@ -127,48 +358,27 @@
     const db = firebase.firestore();
     auth.signInAnonymously().catch(console.error);
 
-    // Один общий список на Новый год
     const LIST_ID = 'newyear2025';
-    const listDoc  = db.collection('lists').doc(LIST_ID);
-    const itemsCol = () => listDoc.collection('items');
+    const listDoc   = db.collection('lists').doc(LIST_ID);
+    const itemsCol  = () => listDoc.collection('items');
     const claimsCol = () => listDoc.collection('claims');
 
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-    const loadLocal = (k,fallback) => {
-      try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : fallback; }
-      catch { return fallback; }
-    };
+    const loadLocal = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } };
 
-    // ====== СЖАТИЕ ИЗОБРАЖЕНИЙ ЧЕРЕЗ CANVAS ======
     async function compressImage(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = e => {
           const img = new Image();
           img.onload = () => {
-            const MAX_WIDTH = 800;
-            const MAX_HEIGHT = 800;
-            const scale = Math.min(
-              MAX_WIDTH / img.width,
-              MAX_HEIGHT / img.height,
-              1
-            );
-
+            const scale = Math.min(800/img.width, 800/img.height, 1);
             const canvas = document.createElement('canvas');
-            canvas.width = img.width * scale;
-            canvas.height = img.height * scale;
-
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-
-            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-            if (dataUrl.length > 900000) {
-              reject('Изображение слишком большое даже после сжатия. Выберите файл поменьше.');
-              return;
-            }
-
-            resolve(dataUrl);
+            canvas.width = img.width*scale; canvas.height = img.height*scale;
+            canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
+            const d = canvas.toDataURL('image/jpeg', 0.7);
+            if (d.length > 900000) { reject('Изображение слишком большое.'); return; }
+            resolve(d);
           };
           img.onerror = () => reject('Не удалось прочитать изображение.');
           img.src = e.target.result;
@@ -178,917 +388,313 @@
       });
     }
 
+    // ===== HEADER =====
     function Header({ userName }) {
-  return (
-    <header className="container-narrow pt-6 pb-4">
-      <div className="flex items-center gap-4">
-        <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-sky-500 to-pink-300 flex items-center justify-content-center text-2xl shadow-lg flex items-center justify-center">
-          🎁
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            Семейный виш-лист подарков
-          </h1>
-
-          <div className="flex flex-wrap items-center gap-2 mt-1">
-            <span className="text-xs px-2 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm">
-              🛡️ 23 февраля
-            </span>
-            <span className="text-xs px-2 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm">
-              🌷 8 марта
-            </span>
-               <span className="text-xs px-2 py-1 rounded-full bg-white/70 border border-white/60 shadow-sm">
-              🎄 Новый год
-            </span>
-
-            <span className="text-sm text-slate-600 hidden sm:block">
-              {userName
-                ? <>Вы: <span className="font-semibold">{userName}</span></>
-                : 'Укажите своё имя и добавьте желания.'}
-            </span>
+      return (
+        <header className="header">
+          <div>
+            <div className="header-title">Подарки,<br/>подарочки 🎁</div>
+            <div className="header-sub">
+              <span className="pill">🛡️ 23 февраля</span>
+              <span className="pill">🌷 8 марта</span>
+              <span className="pill">🎄 Новый год</span>
+            </div>
           </div>
-        </div>
-      </div>
-    </header>
-  );
-}
+          {userName && (
+            <div style={{flexShrink:0,textAlign:'right'}}>
+              <div style={{fontSize:11,color:'var(--text2)',marginBottom:3}}>вы вошли как</div>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:13,fontWeight:700,color:'var(--text)'}}>{userName}</div>
+            </div>
+          )}
+        </header>
+      );
+    }
 
-    // Шаг 1: имя — с разворачиванием/сворачиванием
+    // ===== NAME CARD =====
     function NameCard({ userName, setUserName }) {
       const [editing, setEditing] = useState(!userName);
+      const [temp, setTemp] = useState(userName || '');
 
-      useEffect(() => {
-        if (!userName) setEditing(true);
-      }, [userName]);
+      useEffect(() => { if (!userName) setEditing(true); }, [userName]);
 
-      if (editing) {
-        return (
-          <section className="container-narrow mb-4">
-            <div className="card px-5 py-4 flex items-center gap-4">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center text-xl">
-                👤
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between gap-2 mb-1">
-                  <div className="text-sm font-semibold text-slate-800">Шаг 1. Как вас зовут?</div>
-                </div>
-                <input
-                  className="input text-sm"
-                  placeholder="Например: Ира, Валера, Мама…"
-                  value={userName}
-                  onChange={e => setUserName(e.target.value)}
-                />
-                <div className="flex items-center justify-between mt-1 gap-2">
-                  <p className="note">
-                    Имя будет видно рядом с вашими желаниями и подарками, которые вы бронируете.
-                  </p>
-                  <button
-                    className="btn btn-primary text-xs whitespace-nowrap"
-                    onClick={() => {
-                      if (userName.trim()) setEditing(false);
-                    }}
-                    disabled={!userName.trim()}
-                  >
-                    Готово
-                  </button>
-                </div>
-              </div>
-            </div>
-          </section>
-        );
-      }
+      if (editing) return (
+        <div className="card fade-up" style={{marginBottom:12}}>
+          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:10,letterSpacing:'0.06em',textTransform:'uppercase'}}>Как вас зовут?</div>
+          <input className="input" placeholder="Например: Ира, Валера, Мама…" value={temp} onChange={e=>setTemp(e.target.value)}
+            onKeyDown={e=>e.key==='Enter'&&temp.trim()&&(setUserName(temp.trim()),setEditing(false))} style={{marginBottom:10}} />
+          <div style={{display:'flex',justifyContent:'flex-end'}}>
+            <button className="btn btn-primary" style={{fontSize:13}} onClick={()=>{if(temp.trim()){setUserName(temp.trim());setEditing(false);}}} disabled={!temp.trim()}>
+              Продолжить →
+            </button>
+          </div>
+        </div>
+      );
 
       return (
-        <section className="container-narrow mb-3">
-          <button
-            className="card px-5 py-3 w-full flex items-center justify-between hover:shadow-xl transition-shadow"
-            onClick={() => setEditing(true)}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center text-base">
-                👤
-              </div>
-              <div className="text-left">
-                <div className="text-xs uppercase tracking-wide text-slate-400">Ваше имя</div>
-                <div className="text-sm font-semibold text-slate-900">{userName || 'Не указано'}</div>
-              </div>
-            </div>
-            <div className="text-xs text-sky-700 font-medium flex items-center gap-1">
-              Изменить
-              <span>✏️</span>
-            </div>
-          </button>
-        </section>
+        <div className="name-card fade-up" onClick={()=>setEditing(true)}>
+          <div className="name-avatar">👤</div>
+          <div style={{flex:1}}>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:2}}>Ваше имя</div>
+            <div style={{fontWeight:600,color:'var(--text)'}}>{userName}</div>
+          </div>
+          <div style={{fontSize:12,color:'var(--text2)'}}>изменить ✏️</div>
+        </div>
       );
     }
 
-    function Tabs({ activeTab, setActiveTab }) {
+    // ===== TABS =====
+    function Tabs({ active, setActive }) {
       return (
-        <div className="container-narrow mb-3">
-          <div className="card px-2 py-2 flex gap-2 bg-white/60 backdrop-blur-sm shadow-lg border border-white/40">
+        <div className="tabs">
+          <button className={`tab ${active==='my'?'active':''}`} onClick={()=>setActive('my')}>🎁 Мои желания</button>
+          <button className={`tab ${active==='family'?'active':''}`} onClick={()=>setActive('family')}>Семье</button>
+          <button className={`tab tab-ira ${active==='ira'?'active':''}`} onClick={()=>setActive('ira')}>✨ Ире</button>
+        </div>
+      );
+    }
 
-            <button
-              className={`btn flex-1 text-sm transition-all duration-200 ${
-                activeTab === 'my'
-                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
-                  : 'bg-white text-slate-700 shadow-sm'
-              } rounded-xl`}
-              onClick={() => setActiveTab('my')}
-            >
-              🎁 Мои желания
-            </button>
+    // ===== IRA TAB =====
+    function IraTab() {
+      return (
+        <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:14}}>
+          <a href="ira.html" className="ira-banner">
+            <div className="ira-banner-icon">🌸</div>
+            <div style={{flex:1}}>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:14,fontWeight:700,color:'var(--gold)',marginBottom:4}}>
+                Список желаний Иры
+              </div>
+              <div style={{fontSize:13,color:'rgba(255,209,102,0.7)',lineHeight:1.4}}>
+                Подарки и большие мечты — вложитесь в мечту и получите красивый сертификат 🎀
+              </div>
+            </div>
+            <div style={{fontSize:20,flexShrink:0}}>→</div>
+          </a>
 
-            <button
-              className={`btn flex-1 text-sm transition-all duration-200 ${
-                activeTab === 'family'
-                  ? 'bg-gradient-to-r from-amber-400 to-orange-400 text-slate-900 shadow-md scale-[1.02]'
-                  : 'bg-white text-slate-700 shadow-sm'
-              } rounded-xl`}
-              onClick={() => setActiveTab('family')}
-            >
-              Подарки семье
-            </button>
-
+          <div className="card" style={{background:'rgba(255,209,102,0.05)',border:'1px solid rgba(255,209,102,0.15)'}}>
+            <div style={{fontSize:13,color:'rgba(255,209,102,0.6)',lineHeight:1.6}}>
+              💡 На странице Иры вы найдёте конкретные подарки которые можно забронировать, и большие мечты — в них можно вложить любую сумму и получить красивый сертификат для распечатки.
+            </div>
           </div>
         </div>
       );
     }
 
-    // ----- Форма добавления желания c загрузкой и сжатием изображения -----
+    // ===== ADD WISH FORM =====
     function AddWishForm({ onAdd, disabled, error }) {
-      const [title,setTitle] = useState('');
-      const [url,setUrl] = useState('');
-      const [note,setNote] = useState('');
-      const [imageData,setImageData] = useState('');
-      const [imageError,setImageError] = useState('');
-      const [imageLoading,setImageLoading] = useState(false);
-
-      const submit = () => {
-        if(disabled) return;
-        if(!title.trim()) return;
-        onAdd({ title:title.trim(), url:url.trim(), note:note.trim(), image:imageData });
-        setTitle(''); setUrl(''); setNote(''); setImageData('');
-        setImageError('');
+      const [title,setTitle]=useState('');const [url,setUrl]=useState('');const [note,setNote]=useState('');
+      const [img,setImg]=useState('');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
+      const submit = () => { if(disabled||!title.trim())return; onAdd({title:title.trim(),url:url.trim(),note:note.trim(),image:img}); setTitle('');setUrl('');setNote('');setImg('');setImgErr(''); };
+      const handleFile = async e => {
+        const f=e.target.files?.[0]; if(!f){setImg('');setImgErr('');return;}
+        setImgLoad(true);setImgErr('');
+        try{setImg(await compressImage(f));}catch(err){setImg('');setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
       };
-
-      const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setImageData('');
-          setImageError('');
-          return;
-        }
-        setImageLoading(true);
-        setImageError('');
-        try {
-          const compressed = await compressImage(file);
-          setImageData(compressed);
-        } catch (err) {
-          console.error(err);
-          setImageData('');
-          setImageError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImageLoading(false);
-        }
-      };
-
       return (
-        <div className="card p-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="font-semibold text-slate-900 text-base">Добавить желание</h2>
-            <span className="badge text-[11px]">Видят все, но брони по вам вы не увидите</span>
+        <div className="card fade-up" style={{marginBottom:12}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.06em'}}>Добавить желание</div>
+            <span className="badge badge-pink">только для вас</span>
           </div>
-          <div className="space-y-3">
-            <input
-              className="input text-sm"
-              placeholder="Что вы хотите получить? (например, тёплый плед)"
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-            />
-
-            <input
-              className="input text-sm"
-              placeholder="Ссылка на товар (маркетплейс, сайт…)"
-              value={url}
-              onChange={e=>setUrl(e.target.value)}
-            />
-
-            <textarea
-              className="textarea text-sm resize-none"
-              rows="2"
-              placeholder="Комментарий: цвет, размер, нюансы…"
-              value={note}
-              onChange={e=>setNote(e.target.value)}
-            ></textarea>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-800">
-                Изображение (необязательно)
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleFileChange}
-              />
-              {imageLoading && <div className="note">Изображение сжимается…</div>}
-              {imageError && <div className="err">{imageError}</div>}
-              {imageData && !imageLoading && (
-                <img
-                  src={imageData}
-                  alt="Превью подарка"
-                  className="rounded-2xl mt-2 max-h-40 object-cover w-full"
-                />
-              )}
-            </div>
-
-            {error && <div className="err">{error}</div>}
-            <div className="flex justify-end">
-              <button className="btn btn-primary text-sm" onClick={submit} disabled={disabled}>
-                ➕ Добавить в мои желания
-              </button>
+          <div style={{display:'flex',flexDirection:'column',gap:10}}>
+            <input className="input" placeholder="Что хотите получить?" value={title} onChange={e=>setTitle(e.target.value)} />
+            <input className="input" placeholder="Ссылка на товар" value={url} onChange={e=>setUrl(e.target.value)} />
+            <textarea className="textarea" rows="2" placeholder="Цвет, размер, нюансы…" value={note} onChange={e=>setNote(e.target.value)} />
+            <input type="file" accept="image/*" className="input" style={{fontSize:12}} onChange={handleFile} />
+            {imgLoad&&<div className="note">Сжимается…</div>}
+            {imgErr&&<div className="err">{imgErr}</div>}
+            {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:14,maxHeight:140,width:'100%',objectFit:'cover'}} />}
+            {error&&<div className="err">{error}</div>}
+            <div style={{display:'flex',justifyContent:'flex-end'}}>
+              <button className="btn btn-primary" onClick={submit} disabled={disabled} style={{fontSize:13}}>➕ Добавить</button>
             </div>
           </div>
         </div>
       );
     }
 
-    // ----- Карточка моего желания с кнопками изменить/удалить -----
+    // ===== MY WISH CARD =====
     function WishCardMy({ wish, locked, onDelete, onUpdate, onImageClick }) {
-      const [editing, setEditing] = useState(false);
-      const [title, setTitle] = useState(wish.title || '');
-      const [url, setUrl] = useState(wish.url || '');
-      const [note, setNote] = useState(wish.note || '');
-      const [imageData, setImageData] = useState(wish.image || '');
-      const [imageError,setImageError] = useState('');
-      const [imageLoading,setImageLoading] = useState(false);
+      const [editing,setEditing]=useState(false);
+      const [title,setTitle]=useState(wish.title||'');const [url,setUrl]=useState(wish.url||'');const [note,setNote]=useState(wish.note||'');
+      const [img,setImg]=useState(wish.image||'');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
+      useEffect(()=>{setTitle(wish.title||'');setUrl(wish.url||'');setNote(wish.note||'');setImg(wish.image||'');setEditing(false);},[wish.id]);
+      const handleSave=async()=>{if(!title.trim())return;await onUpdate(wish.id,{title:title.trim(),url:url.trim(),note:note.trim(),image:img||null});setEditing(false);};
+      const handleFile=async e=>{const f=e.target.files?.[0];if(!f){setImg(wish.image||'');return;}setImgLoad(true);setImgErr('');try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);};};
 
-      useEffect(() => {
-        setTitle(wish.title || '');
-        setUrl(wish.url || '');
-        setNote(wish.note || '');
-        setImageData(wish.image || '');
-        setImageError('');
-        setImageLoading(false);
-        setEditing(false);
-      }, [wish.id]);
-
-      const handleSave = async () => {
-        if (!title.trim()) return;
-        await onUpdate(wish.id, {
-          title: title.trim(),
-          url: url.trim(),
-          note: note.trim(),
-          image: imageData || null
-        });
-        setEditing(false);
-      };
-
-      const handleDeleteClick = async () => {
-        if (!window.confirm('Удалить это желание?')) return;
-        await onDelete(wish.id);
-      };
-
-      const handleFileChange = async (e) => {
-        const file = e.target.files && e.target.files[0];
-        if (!file) {
-          setImageData(wish.image || '');
-          setImageError('');
-          return;
-        }
-        setImageLoading(true);
-        setImageError('');
-        try {
-          const compressed = await compressImage(file);
-          setImageData(compressed);
-        } catch (err) {
-          console.error(err);
-          setImageError(typeof err === 'string'
-            ? err
-            : 'Не удалось обработать изображение. Попробуйте другой файл.');
-        } finally {
-          setImageLoading(false);
-        }
-      };
-
-      if (editing) {
-        return (
-          <div className="card p-3 space-y-2">
-            <div className="text-xs uppercase text-slate-400 tracking-wide mb-1">Редактирование желания</div>
-            <input
-              className="input text-sm mb-2"
-              value={title}
-              onChange={e=>setTitle(e.target.value)}
-              placeholder="Название подарка"
-            />
-            <input
-              className="input text-sm mb-2"
-              value={url}
-              onChange={e=>setUrl(e.target.value)}
-              placeholder="Ссылка (необязательно)"
-            />
-            <textarea
-              className="textarea text-sm mb-2"
-              rows="2"
-              value={note}
-              onChange={e=>setNote(e.target.value)}
-              placeholder="Комментарий"
-            />
-            <div className="space-y-2 mb-2">
-              <label className="text-xs font-medium text-slate-700">
-                Изображение
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                className="input text-sm"
-                onChange={handleFileChange}
-              />
-              {imageLoading && <div className="note">Изображение сжимается…</div>}
-              {imageError && <div className="err">{imageError}</div>}
-              {imageData && !imageLoading && (
-                <img
-                  src={imageData}
-                  alt=""
-                  className="w-full rounded-xl object-cover max-h-40 cursor-pointer"
-                  onClick={() => onImageClick(imageData)}
-                />
-              )}
-            </div>
-            <div className="flex gap-2 justify-end border-t border-slate-100 pt-2">
-              <button
-                className="btn btn-ghost text-xs border border-slate-300"
-                onClick={() => setEditing(false)}
-              >
-                Отмена
-              </button>
-              <button
-                className="btn btn-primary text-xs"
-                onClick={handleSave}
-              >
-                Сохранить
-              </button>
-            </div>
+      if(editing) return (
+        <div className="card" style={{display:'flex',flexDirection:'column',gap:10}}>
+          <div style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text2)'}}>Редактирование</div>
+          <input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Название" />
+          <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка" />
+          <textarea className="textarea" rows="2" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий" />
+          <input type="file" accept="image/*" className="input" style={{fontSize:12}} onChange={handleFile} />
+          {imgLoad&&<div className="note">Сжимается…</div>}
+          {imgErr&&<div className="err">{imgErr}</div>}
+          {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:120,width:'100%',objectFit:'cover',cursor:'pointer'}} onClick={()=>onImageClick(img)} />}
+          <div className="divider"/>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>setEditing(false)}>Отмена</button>
+            <button className="btn btn-primary" style={{fontSize:13,padding:'8px 16px'}} onClick={handleSave}>Сохранить</button>
           </div>
-        );
-      }
+        </div>
+      );
 
       return (
-        <div className="card p-3 flex flex-col gap-3">
-          {wish.image && (
-            <img
-              src={wish.image}
-              alt=""
-              className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
-              onClick={() => onImageClick(wish.image)}
-            />
-          )}
-          <div className="flex justify-between items-start gap-3">
+        <div className="card">
+          {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:200,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,marginBottom:8}}>
             <div>
-              <div className="font-semibold text-sm text-slate-900">{wish.title}</div>
-              {wish.note && <div className="text-xs text-slate-600 mt-1">{wish.note}</div>}
-              {wish.url && (
-                <a
-                  href={wish.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="text-xs text-sky-700 underline mt-1 inline-block"
-                >
-                  Открыть ссылку
-                </a>
-              )}
-              {locked && (
-                <div className="note text-[11px] mt-2">
-                  Этот подарок уже кто-то дарит — редактирование отключено, но можно удалить после праздника.
-                </div>
-              )}
+              <div style={{fontWeight:600,color:'var(--text)',fontSize:15,marginBottom:4}}>{wish.title}</div>
+              {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
+              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4}}>Открыть ↗</a>}
             </div>
-            <span className="badge-soft badge text-[11px]">Моё желание</span>
+            <span className="badge badge-muted" style={{flexShrink:0}}>моё</span>
           </div>
-          <div className="flex gap-1 justify-end border-t border-slate-100 pt-2">
-            <button
-              className="btn btn-ghost border border-slate-300 text-xs px-3 py-1"
-              onClick={() => !locked && setEditing(true)}
-              disabled={locked}
-            >
-              Изменить
-            </button>
-            <button
-              className="btn btn-ghost border border-red-200 text-xs px-3 py-1 text-red-600"
-              onClick={handleDeleteClick}
-            >
-              Удалить
-            </button>
+          <div className="divider"/>
+          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+            <button className="btn btn-ghost" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>!locked&&setEditing(true)} disabled={locked}>Изменить</button>
+            <button className="btn btn-danger" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>window.confirm('Удалить?')&&onDelete(wish.id)}>Удалить</button>
           </div>
         </div>
       );
     }
 
-    function WishCardFamily({
-  wish,
-  claim,
-  onClaim,
-  onUnclaim,
-  currentUserName,
-  isMine,
-  onImageClick
-}) {
-  const claimed = !!claim;
-  const iGift = claim && claim.claimerName === currentUserName;
+    // ===== FAMILY WISH CARD =====
+    function WishCardFamily({ wish, claim, onClaim, onUnclaim, currentUserName, isMine, onImageClick }) {
+      const claimed = !!claim;
+      const iGift = claim && claim.claimerName === currentUserName;
+      const [showTip, setShowTip] = useState(false);
 
-  const [showInfo, setShowInfo] = React.useState(false);
-
-  const handleDisabledClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShowInfo((v) => !v);
-  };
-
-  return (
-    <div className="card p-3">
-      <div className="flex flex-col gap-2">
-        {wish.image && (
-          <img
-            src={wish.image}
-            alt=""
-            className="w-full rounded-xl object-cover max-h-48 cursor-pointer"
-            onClick={() => onImageClick(wish.image)}
-          />
-        )}
-
-        <div className="flex items-start gap-3">
-          {/* Левая колонка */}
-          <div className="flex-1 space-y-1">
-            <div className="font-semibold text-sm text-slate-900">
-              {wish.title}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="badge text-[11px]">
-                Для: {wish.ownerName || "Без имени"}
-              </span>
-            </div>
-
-            {wish.note && (
-              <div className="text-xs text-slate-600">
-                {wish.note}
+      return (
+        <div className={`card ${claimed && !iGift ? 'wish-claimed' : ''}`}>
+          {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:200,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
+          <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:600,fontSize:15,color:'var(--text)',marginBottom:4}}>{wish.title}</div>
+              <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:6}}>
+                <span className="badge badge-purple">Для: {wish.ownerName||'—'}</span>
+                {claimed&&<span className="badge badge-claimed">✓ Занято</span>}
               </div>
-            )}
-
-            {wish.url && (
-              <a
-                href={wish.url}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-sky-700 underline inline-block"
-              >
-                Открыть ссылку
-              </a>
-            )}
-          </div>
-
-          {/* Правая колонка */}
-          <div className="min-w-[150px] text-right space-y-2 relative">
-            {claimed ? (
-              iGift ? (
-                // 💌 Это МЫ дарим этот подарок
-                <div className="flex flex-col items-end gap-2">
-                  <span className="text-xs px-2 py-1 rounded-lg bg-amber-100 text-amber-900 whitespace-nowrap">
-                    🎁 Вы дарите этот подарок
-                  </span>
-                  <button
-                    className="btn text-xs w-full bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"
-                    onClick={onUnclaim}
-                  >
-                    Снять бронь
-                  </button>
+              {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
+              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none'}}>Открыть ↗</a>}
+            </div>
+            <div style={{flexShrink:0,position:'relative'}}>
+              {claimed ? (iGift ? (
+                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
+                  <span className="badge badge-claimed">🎁 Вы дарите</span>
+                  <button className="btn btn-ghost" style={{fontSize:12,padding:'6px 12px'}} onClick={onUnclaim}>Снять</button>
                 </div>
               ) : (
-                // Подарок уже забронирован кем-то другим
-                <>
-                  <button
-                    className="btn text-xs w-full md:w-[130px] bg-slate-200 text-slate-500 cursor-not-allowed"
-                    disabled
-                    onClick={handleDisabledClick}
-                    onMouseEnter={() => setShowInfo(true)}
-                    onMouseLeave={() => setShowInfo(false)}
-                  >
-                    Забронировано
-                  </button>
-
-                  {showInfo && (
-                    <div className="absolute right-0 -top-9 bg-slate-900 text-[11px] text-white px-2 py-1 rounded-lg shadow-lg whitespace-nowrap z-10">
-                      🎁 Уже дарит: {claim.claimerName}
-                    </div>
-                  )}
-                </>
-              )
-            ) : (
-              // Подарок свободен
-              <button
-                className="btn btn-primary text-xs w-full md:w-[130px] transition-transform duration-150 active:scale-95"
-                onClick={onClaim}
-                disabled={isMine}
-              >
-                Я подарю
-              </button>
-            )}
+                <div style={{position:'relative'}} onMouseEnter={()=>setShowTip(true)} onMouseLeave={()=>setShowTip(false)}>
+                  <button className="btn" style={{fontSize:12,padding:'8px 14px',background:'rgba(255,255,255,0.05)',color:'var(--text2)',border:'1px solid var(--border2)',cursor:'default'}}>Занято</button>
+                  {showTip&&<div style={{position:'absolute',right:0,bottom:'calc(100% + 8px)',background:'#1c1c28',border:'1px solid var(--border2)',color:'var(--text)',fontSize:11,padding:'6px 10px',borderRadius:10,whiteSpace:'nowrap',zIndex:10,boxShadow:'0 8px 24px rgba(0,0,0,0.4)'}}>🎁 Дарит: {claim.claimerName}</div>}
+                </div>
+              )) : (
+                <button className="btn btn-primary" style={{fontSize:12,padding:'8px 16px'}} onClick={onClaim} disabled={isMine}>Я подарю 🎁</button>
+              )}
+            </div>
           </div>
         </div>
-      </div>
-    </div>
-  );
-}
+      );
+    }
 
-    // ---------- Основное приложение ----------
+    // ===== APP =====
     function App() {
-      const [authUid,setAuthUid] = useState(null);
-      const [userName,setUserName] = useState(loadLocal('nywish:name',''));
-      const [activeTab,setActiveTab] = useState('my'); // 'my' | 'family'
+      const [authUid,setAuthUid]=useState(null);
+      const [userName,setUserName]=useState(loadLocal('nywish:name',''));
+      const [activeTab,setActiveTab]=useState('my');
+      const [items,setItems]=useState([]);const [claims,setClaims]=useState({});
+      const [itemsLoading,setItemsLoading]=useState(true);
+      const [addError,setAddError]=useState('');const [claimError,setClaimError]=useState('');
+      const [previewImage,setPreviewImage]=useState(null);
+      const [familyFilter,setFamilyFilter]=useState('all');
 
-      const [items,setItems] = useState([]);
-      const [claims,setClaims] = useState({});
-      const [itemsLoading,setItemsLoading] = useState(true);
-      const [addError,setAddError] = useState('');
-      const [claimError,setClaimError] = useState('');
-      const [previewImage, setPreviewImage] = useState(null);
-      const [familyFilter, setFamilyFilter] = useState('all'); // 'all' | 'my_claims' | имя
-      const [showCleanupNotice, setShowCleanupNotice] = useState(false);
-
-      // auth
-      useEffect(() => {
-        const unsub = auth.onAuthStateChanged(u => setAuthUid(u?.uid || null));
-        return () => unsub();
-      }, []);
-
-      // save name
-      useEffect(()=>{ saveLocal('nywish:name', userName); }, [userName]);
-
-      useEffect(() => {
-  // Показываем один раз после 1 января текущего года (в каждом браузере отдельно)
-  const now = new Date();
-  const year = now.getFullYear();
-  const jan1 = new Date(year, 0, 1, 0, 0, 0, 0);
-
-
-  const key = `nywish:cleanup_shown:${year}`;
-
-  if (now.getTime() >= jan1.getTime() && !loadLocal(key, false)) {
-    setShowCleanupNotice(true);
-    saveLocal(key, true);
-  }
-}, []);
-      
-      // items
-      useEffect(() => {
+      useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
+      useEffect(()=>{ saveLocal('nywish:name',userName); },[userName]);
+      useEffect(()=>{
         setItemsLoading(true);
-        const unsub = itemsCol().orderBy('createdAt','desc')
-          .onSnapshot(
-            snap => {
-              const arr = [];
-              snap.forEach(doc => arr.push({ id: doc.id, ...doc.data() }));
-              setItems(arr);
-              setItemsLoading(false);
-            },
-            err => { console.error(err); setItemsLoading(false); }
-          );
-        return () => unsub();
-      }, []);
+        const u=itemsCol().orderBy('createdAt','desc').onSnapshot(snap=>{const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));setItems(a);setItemsLoading(false);},err=>{console.error(err);setItemsLoading(false);});
+        return u;
+      },[]);
+      useEffect(()=>{
+        const u=claimsCol().onSnapshot(snap=>{const m={};snap.forEach(d=>m[d.id]=d.data());setClaims(m);},err=>{console.error(err);setClaims({});});
+        return u;
+      },[]);
 
-      // claims — слушаем всегда
-      useEffect(() => {
-        const unsub = claimsCol().onSnapshot(
-          snap => {
-            const map = {};
-            snap.forEach(doc => map[doc.id] = doc.data());
-            setClaims(map);
-          },
-          err => {
-            console.error('claims error', err);
-            setClaims({});
-          }
-        );
-        return () => unsub();
-      }, []);
+      const myWishes = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
+      const familyWishes = useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
+      const familyNames = useMemo(()=>{const s=new Set();familyWishes.forEach(w=>w.ownerName&&s.add(w.ownerName));return Array.from(s);},[familyWishes]);
+      const filteredFamily = useMemo(()=>{
+        let arr = familyFilter==='my_claims' ? familyWishes.filter(w=>claims[w.id]?.claimerUid===authUid)
+                : familyFilter!=='all' ? familyWishes.filter(w=>w.ownerName===familyFilter)
+                : familyWishes;
+        return arr.slice().sort((a,b)=>{const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;});
+      },[familyFilter,familyWishes,claims,authUid]);
 
-      const myWishes = useMemo(
-        () => items.filter(i => i.addedByUid === authUid),
-        [items, authUid]
-      );
-
-      const familyWishes = useMemo(
-        () => items.filter(i => i.addedByUid !== authUid),
-        [items, authUid]
-      );
-
-      // список имён для фильтра
-      const familyNames = useMemo(() => {
-        const set = new Set();
-        items.forEach(item => {
-          if (item.addedByUid !== authUid && item.ownerName) {
-            set.add(item.ownerName);
-          }
-        });
-        return Array.from(set);
-      }, [items, authUid]);
-
-      // отфильтрованные желания семьи
-      const filteredFamilyWishes = useMemo(() => {
-  // 1) сначала фильтруем
-  let arr = familyWishes;
-
-  if (familyFilter === 'my_claims') {
-    arr = arr.filter(w => claims[w.id] && claims[w.id].claimerUid === authUid);
-  } else if (familyFilter !== 'all') {
-    arr = arr.filter(w => w.ownerName === familyFilter);
-  }
-
-  // 2) потом сортируем: незабронированные вверх
-  //    (при равенстве оставляем порядок по createdAt desc, который уже пришёл из Firestore)
-  return arr.slice().sort((a, b) => {
-    const aClaimed = !!claims[a.id];
-    const bClaimed = !!claims[b.id];
-    if (aClaimed === bClaimed) return 0;
-    return aClaimed ? 1 : -1; // false (свободно) -> вверх
-  });
-}, [familyFilter, familyWishes, claims, authUid]);
-      const myGifts = useMemo(() => {
-        const ids = Object.entries(claims)
-          .filter(([id,c]) => c.claimerUid === authUid)
-          .map(([id]) => id);
-        return items.filter(i => ids.includes(i.id));
-      }, [claims, items, authUid]);
-
-      const handleAddWish = async ({ title, url, note, image }) => {
-        setAddError('');
-        if (!userName.trim()) {
-          setAddError('Сначала введите своё имя наверху.');
-          return;
-        }
-        try {
-          await itemsCol().add({
-            title,
-            url,
-            note,
-            image: image || null,
-            ownerName: userName.trim(),
-            addedByUid: authUid,
-            createdAt: Date.now()
-          });
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось добавить. Проверьте Firestore Rules.');
-        }
+      const handleAddWish = async ({title,url,note,image})=>{
+        setAddError('');if(!userName.trim()){setAddError('Сначала введите имя.');return;}
+        try{await itemsCol().add({title,url,note,image:image||null,ownerName:userName.trim(),addedByUid:authUid,createdAt:Date.now()});}
+        catch(e){console.error(e);setAddError('Не удалось добавить.');}
       };
-
-      const handleUpdateWish = async (wishId, updates) => {
-        setAddError('');
-        try {
-          await itemsCol().doc(wishId).update(updates);
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось изменить. Проверьте Firestore Rules.');
-        }
+      const handleUpdateWish=async(id,u)=>{try{await itemsCol().doc(id).update(u);}catch(e){console.error(e);}};
+      const handleDeleteWish=async id=>{try{await itemsCol().doc(id).delete();}catch(e){console.error(e);}};
+      const handleClaim=async wish=>{
+        setClaimError('');if(!userName.trim()){setClaimError('Сначала введите имя.');return;}
+        if(wish.addedByUid===authUid){setClaimError('Нельзя бронировать своё желание.');return;}
+        const ref=claimsCol().doc(wish.id);
+        try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(s.exists)throw new Error('taken');tx.set(ref,{claimerUid:authUid,claimerName:userName.trim(),createdAt:Date.now()});});}
+        catch(e){setClaimError(e.message==='taken'?'Уже забронировано.':'Не удалось забронировать.');}
       };
-
-      const handleDeleteWish = async (wishId) => {
-        setAddError('');
-        try {
-          await itemsCol().doc(wishId).delete();
-        } catch (e) {
-          console.error(e);
-          setAddError('Не удалось удалить. Проверьте Firestore Rules.');
-        }
-      };
-
-      const handleClaim = async (wish) => {
-        setClaimError('');
-        if (!userName.trim()) {
-          setClaimError('Сначала введите своё имя наверху.');
-          return;
-        }
-        if (wish.addedByUid === authUid) {
-          setClaimError('Нельзя бронировать собственное желание.');
-          return;
-        }
-
-        const ref = claimsCol().doc(wish.id);
-
-        try {
-          await db.runTransaction(async (tx) => {
-            const snap = await tx.get(ref);
-            if (snap.exists) {
-              throw new Error('already-claimed');
-            }
-            tx.set(ref, {
-              claimerUid: authUid,
-              claimerName: userName.trim(),
-              createdAt: Date.now()
-            });
-          });
-        } catch (e) {
-          console.error(e);
-          if (e.message === 'already-claimed') {
-            setClaimError('Этот подарок уже кто-то забронировал.');
-          } else {
-            setClaimError('Не удалось забронировать. Проверьте Firestore Rules.');
-          }
-        }
-      };
-
-      const handleUnclaim = async (wish) => {
-        setClaimError('');
-        if (!window.confirm('Снять бронь с этого подарка? Его сможет забронировать кто-то другой.')) {
-          return;
-        }
-
-        const ref = claimsCol().doc(wish.id);
-
-        try {
-          await db.runTransaction(async (tx) => {
-            const snap = await tx.get(ref);
-            if (!snap.exists) {
-              throw new Error('no-claim');
-            }
-            const data = snap.data();
-            if (data.claimerUid !== authUid) {
-              throw new Error('not-owner');
-            }
-            tx.delete(ref);
-          });
-        } catch (e) {
-          console.error(e);
-          if (e.message === 'no-claim') {
-            setClaimError('Бронь уже снята.');
-          } else if (e.message === 'not-owner') {
-            setClaimError('Снять бронь может только тот, кто её поставил.');
-          } else {
-            setClaimError('Не удалось снять бронь. Попробуйте ещё раз.');
-          }
-        }
+      const handleUnclaim=async wish=>{
+        setClaimError('');if(!window.confirm('Снять бронь?'))return;
+        const ref=claimsCol().doc(wish.id);
+        try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw new Error('none');if(s.data().claimerUid!==authUid)throw new Error('not-owner');tx.delete(ref);});}
+        catch(e){setClaimError(e.message==='not-owner'?'Только вы можете снять свою бронь.':'Не удалось снять бронь.');}
       };
 
       return (
-        <div className="pb-10">
+        <div className="app-wrap">
           <Header userName={userName} />
           <NameCard userName={userName} setUserName={setUserName} />
-          <Tabs activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Tabs active={activeTab} setActive={setActiveTab} />
 
-          <main className="container-narrow space-y-4">
-            {activeTab === 'my' && (
-              <>
-                <AddWishForm
-                  onAdd={handleAddWish}
-                  disabled={!authUid}
-                  error={addError}
-                />
+          {activeTab==='my' && (
+            <div className="fade-up">
+              <AddWishForm onAdd={handleAddWish} disabled={!authUid} error={addError} />
+              <div className="section-title">Мои желания {itemsLoading&&<span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>— загружается…</span>}</div>
+              {myWishes.length===0&&!itemsLoading&&<p className="note">Добавьте хотя бы одно желание 🌟</p>}
+              <div style={{display:'grid',gap:10}}>
+                {myWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDeleteWish} onUpdate={handleUpdateWish} onImageClick={setPreviewImage} />)}
+              </div>
+            </div>
+          )}
 
-                <section className="space-y-2">
-                  <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                    Мои желания
-                    {itemsLoading && <span className="note">(загружается…)</span>}
-                  </h2>
+          {activeTab==='family' && (
+            <div className="fade-up">
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
+                <div className="section-title" style={{marginBottom:0}}>Желания семьи</div>
+                <select value={familyFilter} onChange={e=>setFamilyFilter(e.target.value)}>
+                  <option value="all">Все</option>
+                  <option value="my_claims">Мои брони</option>
+                  {familyNames.map(n=><option key={n} value={n}>{n}</option>)}
+                </select>
+              </div>
+              <p className="note" style={{marginBottom:14}}>Ваши желания здесь не видны — только чужие 💝</p>
+              {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
+              {filteredFamily.length===0&&!itemsLoading&&<p className="note">Пока пусто.</p>}
+              <div style={{display:'grid',gap:10}}>
+                {filteredFamily.map(w=><WishCardFamily key={w.id} wish={w} claim={claims[w.id]} currentUserName={userName.trim()} isMine={w.addedByUid===authUid} onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImageClick={setPreviewImage} />)}
+              </div>
+            </div>
+          )}
 
-                  {myWishes.length === 0 && !itemsLoading && (
-                    <p className="note">
-                      Пока пусто. Добавьте хотя бы один подарок, который вы хотите получить.
-                    </p>
-                  )}
+          {activeTab==='ira' && <IraTab />}
 
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {myWishes.map(w => (
-                      <WishCardMy
-                        key={w.id}
-                        wish={w}
-                        locked={!!claims[w.id]}
-                        onDelete={handleDeleteWish}
-                        onUpdate={handleUpdateWish}
-                        onImageClick={setPreviewImage}
-                      />
-                    ))}
-                  </div>
-                </section>
-              </>
-            )}
-
-            {activeTab === 'family' && (
-              <>
-                <section className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                      Желания семьи
-                      {itemsLoading && <span className="note">(загружается…)</span>}
-                    </h2>
-
-                    <div className="text-xs flex items-center gap-2">
-                      <span className="text-slate-500">Показать подарки для:</span>
-                      <select
-                        className="text-xs border border-slate-300 rounded-lg px-2 py-1 bg-white shadow-sm"
-                        value={familyFilter}
-                        onChange={(e) => setFamilyFilter(e.target.value)}
-                      >
-                        <option value="all">Всех</option>
-                        <option value="my_claims">Мои брони</option>
-                        {familyNames.map(name => (
-                          <option key={name} value={name}>{name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  <p className="note">
-                    Здесь не показываются ваши собственные желания — только других членов семьи.
-                    Вы можете выбрать, кому что подарить 💝
-                  </p>
-
-                  {claimError && <div className="err">{claimError}</div>}
-
-                  <div className="grid gap-3 md:grid-cols-2">
-                    {filteredFamilyWishes.map(w => (
-                      <WishCardFamily
-                        key={w.id}
-                        wish={w}
-                        claim={claims[w.id]}
-                        currentUserName={userName.trim()}
-                        isMine={w.addedByUid === authUid}
-                        onClaim={() => handleClaim(w)}
-                        onUnclaim={() => handleUnclaim(w)}
-                        onImageClick={setPreviewImage}
-                      />
-                    ))}
-                  </div>
-
-                  {filteredFamilyWishes.length === 0 && !itemsLoading && (
-                    <p className="note">Пока нет желаний, подходящих под выбранный фильтр.</p>
-                  )}
-                </section>
-
-            
-              </>
-            )}
-          </main>
-
-          {showCleanupNotice && (
-  <div
-    className="fixed inset-0 z-40 bg-black/50 flex items-center justify-center p-4"
-    onClick={() => setShowCleanupNotice(false)}
-  >
-    <div
-      className="card w-full max-w-md p-5 bg-white"
-      onClick={(e) => e.stopPropagation()}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">
-            Напоминание 😊
-          </div>
-          <p className="note mt-1">
-            Новый год позади, удалите подарки, которые вам уже подарили 
-          </p>
-        </div>
-
-        <button
-          className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600"
-          onClick={() => setShowCleanupNotice(false)}
-          aria-label="Закрыть"
-        >
-          ✕
-        </button>
-      </div>
-
-      <div className="flex justify-end mt-4">
-        <button
-          className="btn btn-primary text-sm"
-          onClick={() => setShowCleanupNotice(false)}
-        >
-        Хорошо
-        </button>
-      </div>
-    </div>
-  </div>
-)}
-
-          {previewImage && (
-            <div
-              className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
-              onClick={() => setPreviewImage(null)}
-            >
-              <div className="relative max-h-full max-w-full">
-                <button
-                  className="absolute -top-3 -right-3 bg-white rounded-full w-8 h-8 flex items-center justify-center text-slate-700 shadow-lg text-sm"
-                  onClick={(e) => { e.stopPropagation(); setPreviewImage(null); }}
-                  aria-label="Закрыть"
-                >
-                  ✕
-                </button>
-                <img
-                  src={previewImage}
-                  alt="Подарок"
-                  className="max-h-full max-w-full rounded-2xl shadow-2xl"
-                  onClick={(e) => e.stopPropagation()}
-                />
+          {previewImage&&(
+            <div className="modal-overlay" onClick={()=>setPreviewImage(null)}>
+              <div style={{position:'relative',maxWidth:'100%',maxHeight:'100%'}} onClick={e=>e.stopPropagation()}>
+                <button style={{position:'absolute',top:-12,right:-12,width:32,height:32,borderRadius:'50%',background:'var(--surface)',border:'1px solid var(--border2)',cursor:'pointer',color:'var(--text)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPreviewImage(null)}>✕</button>
+                <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'85vw',borderRadius:20,boxShadow:'0 30px 80px rgba(0,0,0,0.6)'}} />
               </div>
             </div>
           )}
