@@ -4,10 +4,8 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Подарки, подарочки</title>
-
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
-
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
@@ -15,326 +13,63 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
-
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: #13131a;
-      --surface2: #1c1c28;
-      --border: rgba(255,255,255,0.08);
-      --border2: rgba(255,255,255,0.14);
-      --text: #f0f0f5;
-      --text2: #8888aa;
-      --accent: #ff3cac;
-      --accent2: #7b2fff;
-      --accent3: #00d2ff;
-      --gold: #ffd166;
+      --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c28;
+      --border:rgba(255,255,255,0.08); --border2:rgba(255,255,255,0.14);
+      --text:#f0f0f5; --text2:#8888aa;
+      --accent:#ff3cac; --accent2:#7b2fff; --accent3:#00d2ff; --gold:#ffd166;
     }
-
     * { box-sizing: border-box; }
-
-    body {
-      font-family: 'Golos Text', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      margin: 0;
-      overflow-x: hidden;
-    }
-
-    /* Animated mesh background */
-    .mesh-bg {
-      position: fixed;
-      inset: 0;
-      z-index: 0;
-      pointer-events: none;
-    }
-    .mesh-bg::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 60% 40% at 20% 20%, rgba(255,60,172,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 50% at 80% 80%, rgba(123,47,255,0.15) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 30% at 60% 10%, rgba(0,210,255,0.10) 0%, transparent 50%);
-      animation: meshMove 12s ease-in-out infinite alternate;
-    }
-    @keyframes meshMove {
-      0%   { opacity: 1; transform: scale(1) translate(0,0); }
-      100% { opacity: 0.7; transform: scale(1.08) translate(-2%, 2%); }
-    }
-
-    /* Noise overlay */
-    .mesh-bg::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
-      opacity: 0.4;
-    }
-
-    /* Background photo with overlay */
-    .bg-photo {
-      position: fixed;
-      inset: 0;
-      z-index: -1;
-      background-image: url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.07;
-    }
-
-    .app-wrap {
-      position: relative;
-      z-index: 1;
-      max-width: 680px;
-      margin: 0 auto;
-      padding: 0 16px 80px;
-    }
-
-    /* Header */
-    .header {
-      padding: 28px 0 20px;
-      display: flex;
-      align-items: flex-start;
-      justify-content: space-between;
-      gap: 12px;
-    }
-    .header-title {
-      font-family: 'Unbounded', sans-serif;
-      font-size: clamp(1.3rem, 5vw, 1.8rem);
-      font-weight: 900;
-      line-height: 1.1;
-      background: linear-gradient(135deg, #ff3cac, #7b2fff, #00d2ff);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .header-sub {
-      font-size: 12px;
-      color: var(--text2);
-      margin-top: 6px;
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
-    .pill {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 999px;
-      padding: 3px 10px;
-      font-size: 11px;
-      color: var(--text2);
-    }
-
-    /* Name card */
-    .name-card {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 20px;
-      padding: 16px 18px;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      cursor: pointer;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .name-card:hover { border-color: rgba(255,60,172,0.35); box-shadow: 0 0 0 1px rgba(255,60,172,0.15); }
-    .name-avatar {
-      width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0;
-      background: linear-gradient(135deg, #ff3cac22, #7b2fff22);
-      border: 1px solid rgba(255,60,172,0.3);
-      display: flex; align-items: center; justify-content: center; font-size: 18px;
-    }
-
-    /* Tabs */
-    .tabs {
-      display: flex;
-      gap: 6px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 18px;
-      padding: 5px;
-      margin-bottom: 16px;
-    }
-    .tab {
-      flex: 1;
-      padding: 10px 8px;
-      border-radius: 13px;
-      font-family: 'Golos Text', sans-serif;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s;
-      text-align: center;
-      color: var(--text2);
-      background: transparent;
-    }
-    .tab.active {
-      background: linear-gradient(135deg, #ff3cac, #7b2fff);
-      color: white;
-      box-shadow: 0 4px 20px rgba(255,60,172,0.35);
-    }
-    .tab-ira.active {
-      background: linear-gradient(135deg, #ffd166, #ff9a3c);
-      color: #1a0a00;
-      box-shadow: 0 4px 20px rgba(255,209,102,0.4);
-    }
-
-    /* Cards */
-    .card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 18px;
-      transition: border-color 0.2s;
-    }
-    .card:hover { border-color: var(--border2); }
-
-    /* Inputs */
-    .input, .textarea {
-      width: 100%;
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 14px;
-      padding: 11px 14px;
-      color: var(--text);
-      font-family: 'Golos Text', sans-serif;
-      font-size: 14px;
-      outline: none;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .input::placeholder, .textarea::placeholder { color: var(--text2); }
-    .input:focus, .textarea:focus {
-      border-color: #ff3cac;
-      box-shadow: 0 0 0 3px rgba(255,60,172,0.15);
-      background: #1a1a24;
-    }
-    .textarea { resize: none; }
-
-    /* Buttons */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center;
-      border-radius: 999px; padding: 10px 20px;
-      font-family: 'Golos Text', sans-serif; font-size: 14px; font-weight: 600;
-      cursor: pointer; border: none; transition: all 0.18s;
-    }
-    .btn:active { transform: scale(0.97); }
-    .btn-primary {
-      background: linear-gradient(135deg, #ff3cac, #7b2fff);
-      color: white;
-      box-shadow: 0 4px 20px rgba(255,60,172,0.3);
-    }
-    .btn-primary:hover { box-shadow: 0 6px 24px rgba(255,60,172,0.45); transform: translateY(-1px); }
-    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-    .btn-ghost {
-      background: var(--surface2); color: var(--text2);
-      border: 1px solid var(--border2);
-    }
-    .btn-ghost:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
-    .btn-danger { background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.2); }
-
-    /* Badge */
-    .badge {
-      display: inline-flex; align-items: center; gap: 4px;
-      border-radius: 999px; padding: 3px 10px;
-      font-size: 11px; font-weight: 600;
-    }
-    .badge-pink { background: rgba(255,60,172,0.15); color: #ff3cac; border: 1px solid rgba(255,60,172,0.25); }
-    .badge-purple { background: rgba(123,47,255,0.15); color: #a78bfa; border: 1px solid rgba(123,47,255,0.25); }
-    .badge-cyan { background: rgba(0,210,255,0.12); color: #00d2ff; border: 1px solid rgba(0,210,255,0.2); }
-    .badge-gold { background: rgba(255,209,102,0.15); color: #ffd166; border: 1px solid rgba(255,209,102,0.25); }
-    .badge-muted { background: var(--surface2); color: var(--text2); border: 1px solid var(--border2); }
-    .badge-claimed { background: rgba(74,222,128,0.12); color: #4ade80; border: 1px solid rgba(74,222,128,0.2); }
-
-    .err { color: #f87171; font-size: 13px; }
-    .note { color: var(--text2); font-size: 13px; }
-
-    /* Section title */
-    .section-title {
-      font-family: 'Unbounded', sans-serif;
-      font-size: 13px;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--text2);
-      margin-bottom: 12px;
-    }
-
-    /* Ira banner */
-    .ira-banner {
-      background: linear-gradient(135deg, rgba(255,209,102,0.12), rgba(255,154,60,0.08));
-      border: 1px solid rgba(255,209,102,0.25);
-      border-radius: 20px;
-      padding: 20px;
-      margin-bottom: 16px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-decoration: none;
-    }
-    .ira-banner:hover {
-      border-color: rgba(255,209,102,0.5);
-      box-shadow: 0 0 30px rgba(255,209,102,0.12);
-      transform: translateY(-2px);
-    }
-    .ira-banner-icon {
-      width: 52px; height: 52px; border-radius: 16px; flex-shrink: 0;
-      background: linear-gradient(135deg, #ffd166, #ff9a3c);
-      display: flex; align-items: center; justify-content: center; font-size: 26px;
-      box-shadow: 0 4px 16px rgba(255,209,102,0.3);
-    }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; inset: 0; z-index: 50;
-      background: rgba(0,0,0,0.75);
-      backdrop-filter: blur(8px);
-      display: flex; align-items: center; justify-content: center; padding: 16px;
-    }
-    .modal-card {
-      background: var(--surface);
-      border: 1px solid var(--border2);
-      border-radius: 24px;
-      padding: 24px;
-      width: 100%; max-width: 440px;
-      max-height: 90vh; overflow-y: auto;
-    }
-
-    /* Divider */
-    .divider { height: 1px; background: var(--border); margin: 14px 0; }
-
-    /* Claimed state */
-    .wish-claimed { opacity: 0.55; }
-
-    /* Select */
-    select {
-      background: var(--surface2);
-      border: 1px solid var(--border2);
-      border-radius: 10px;
-      color: var(--text);
-      padding: 6px 10px;
-      font-family: 'Golos Text', sans-serif;
-      font-size: 12px;
-      outline: none;
-      cursor: pointer;
-    }
-    select:focus { border-color: #ff3cac; }
-
-    /* Scrollbar */
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: var(--surface); }
-    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
-      to   { opacity: 1; transform: translateY(0); }
-    }
-    .fade-up { animation: fadeUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
+    body { font-family:'Golos Text',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; margin:0; overflow-x:hidden; }
+    .mesh-bg { position:fixed; inset:0; z-index:0; pointer-events:none; }
+    .mesh-bg::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 60% 40% at 20% 20%,rgba(255,60,172,0.18) 0%,transparent 60%), radial-gradient(ellipse 50% 50% at 80% 80%,rgba(123,47,255,0.15) 0%,transparent 60%), radial-gradient(ellipse 40% 30% at 60% 10%,rgba(0,210,255,0.10) 0%,transparent 50%); animation:meshMove 12s ease-in-out infinite alternate; }
+    @keyframes meshMove { 0%{opacity:1;transform:scale(1) translate(0,0)} 100%{opacity:0.7;transform:scale(1.08) translate(-2%,2%)} }
+    .mesh-bg::after { content:''; position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E"); opacity:0.4; }
+    .bg-photo { position:fixed; inset:0; z-index:-1; background-image:url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png'); background-size:cover; background-position:center; opacity:0.07; }
+    .app-wrap { position:relative; z-index:1; max-width:680px; margin:0 auto; padding:0 16px 80px; }
+    .header { padding:28px 0 20px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+    .header-title { font-family:'Unbounded',sans-serif; font-size:clamp(1.3rem,5vw,1.8rem); font-weight:900; line-height:1.1; background:linear-gradient(135deg,#ff3cac,#7b2fff,#00d2ff); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
+    .header-sub { font-size:12px; color:var(--text2); margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; }
+    .pill { background:var(--surface2); border:1px solid var(--border2); border-radius:999px; padding:3px 10px; font-size:11px; color:var(--text2); }
+    .name-card { background:var(--surface); border:1px solid var(--border2); border-radius:20px; padding:16px 18px; margin-bottom:12px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:border-color 0.2s,box-shadow 0.2s; }
+    .name-card:hover { border-color:rgba(255,60,172,0.35); box-shadow:0 0 0 1px rgba(255,60,172,0.15); }
+    .name-avatar { width:40px; height:40px; border-radius:12px; flex-shrink:0; background:linear-gradient(135deg,#ff3cac22,#7b2fff22); border:1px solid rgba(255,60,172,0.3); display:flex; align-items:center; justify-content:center; font-size:18px; }
+    .tabs { display:flex; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:5px; margin-bottom:16px; }
+    .tab { flex:1; padding:10px 8px; border-radius:13px; font-family:'Golos Text',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; text-align:center; color:var(--text2); background:transparent; }
+    .tab.active { background:linear-gradient(135deg,#ff3cac,#7b2fff); color:white; box-shadow:0 4px 20px rgba(255,60,172,0.35); }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:18px; transition:border-color 0.2s; }
+    .card:hover { border-color:var(--border2); }
+    .input,.textarea { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:14px; padding:11px 14px; color:var(--text); font-family:'Golos Text',sans-serif; font-size:14px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
+    .input::placeholder,.textarea::placeholder { color:var(--text2); }
+    .input:focus,.textarea:focus { border-color:#ff3cac; box-shadow:0 0 0 3px rgba(255,60,172,0.15); background:#1a1a24; }
+    .textarea { resize:none; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:10px 20px; font-family:'Golos Text',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all 0.18s; }
+    .btn:active { transform:scale(0.97); }
+    .btn-primary { background:linear-gradient(135deg,#ff3cac,#7b2fff); color:white; box-shadow:0 4px 20px rgba(255,60,172,0.3); }
+    .btn-primary:hover { box-shadow:0 6px 24px rgba(255,60,172,0.45); transform:translateY(-1px); }
+    .btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
+    .btn-ghost { background:var(--surface2); color:var(--text2); border:1px solid var(--border2); }
+    .btn-ghost:hover { border-color:rgba(255,255,255,0.25); color:var(--text); }
+    .btn-danger { background:rgba(239,68,68,0.12); color:#f87171; border:1px solid rgba(239,68,68,0.2); }
+    .badge { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; }
+    .badge-pink { background:rgba(255,60,172,0.15); color:#ff3cac; border:1px solid rgba(255,60,172,0.25); }
+    .badge-purple { background:rgba(123,47,255,0.15); color:#a78bfa; border:1px solid rgba(123,47,255,0.25); }
+    .badge-gold { background:rgba(255,209,102,0.15); color:#ffd166; border:1px solid rgba(255,209,102,0.25); }
+    .badge-muted { background:var(--surface2); color:var(--text2); border:1px solid var(--border2); }
+    .badge-claimed { background:rgba(74,222,128,0.12); color:#4ade80; border:1px solid rgba(74,222,128,0.2); }
+    .err { color:#f87171; font-size:13px; }
+    .note { color:var(--text2); font-size:13px; }
+    .section-title { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
+    .divider { height:1px; background:var(--border); margin:14px 0; }
+    .wish-claimed { opacity:0.55; }
+    select { background:var(--surface2); border:1px solid var(--border2); border-radius:10px; color:var(--text); padding:6px 10px; font-family:'Golos Text',sans-serif; font-size:12px; outline:none; cursor:pointer; }
+    select:focus { border-color:#ff3cac; }
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:var(--surface); }
+    ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    .fade-up { animation:fadeUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
   </style>
 </head>
 <body>
@@ -414,7 +149,6 @@
     function NameCard({ userName, setUserName }) {
       const [editing, setEditing] = useState(!userName);
       const [temp, setTemp] = useState(userName || '');
-
       useEffect(() => { if (!userName) setEditing(true); }, [userName]);
 
       if (editing) return (
@@ -442,40 +176,45 @@
       );
     }
 
-    // ===== TABS =====
+    // ===== TABS — три вкладки, без отдельной для Иры =====
     function Tabs({ active, setActive }) {
       return (
         <div className="tabs">
           <button className={`tab ${active==='my'?'active':''}`} onClick={()=>setActive('my')}>🎁 Мои желания</button>
           <button className={`tab ${active==='family'?'active':''}`} onClick={()=>setActive('family')}>Семье</button>
-          <button className={`tab tab-ira ${active==='ira'?'active':''}`} onClick={()=>setActive('ira')}>✨ Ире</button>
+          <button className={`tab ${active==='people'?'active':''}`} onClick={()=>setActive('people')}>👥 Вишлисты</button>
         </div>
       );
     }
 
-    // ===== IRA TAB =====
-    function IraTab() {
+    // ===== PERSON CARD =====
+    function PersonCard({ name, wishCount, isIra }) {
+      const colors = [
+        ['#ff3cac','#7b2fff'],['#00d2ff','#7b2fff'],['#4ade80','#00d2ff'],
+        ['#ffd166','#ff9a3c'],['#f87171','#ff3cac'],['#a78bfa','#00d2ff'],
+      ];
+      const idx = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % colors.length;
+      const [c1,c2] = colors[idx];
+      const href = isIra ? 'ira.html' : `wishlist.html?user=${encodeURIComponent(name)}`;
       return (
-        <div className="fade-up" style={{display:'flex',flexDirection:'column',gap:14}}>
-          <a href="ira.html" className="ira-banner">
-            <div className="ira-banner-icon">🌸</div>
+        <a href={href} style={{textDecoration:'none',display:'block'}}>
+          <div className="card" style={{display:'flex',alignItems:'center',gap:14,cursor:'pointer',transition:'all 0.2s',padding:'14px 16px'}}
+            onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.25)';e.currentTarget.style.transform='translateY(-2px)';}}
+            onMouseLeave={e=>{e.currentTarget.style.borderColor='';e.currentTarget.style.transform='';}}>
+            <div style={{width:44,height:44,borderRadius:14,flexShrink:0,background:`linear-gradient(135deg,${c1},${c2})`,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Unbounded',sans-serif",fontSize:13,fontWeight:700,color:'white',boxShadow:`0 4px 14px ${c1}44`}}>
+              {name.slice(0,2).toUpperCase()}
+            </div>
             <div style={{flex:1}}>
-              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:14,fontWeight:700,color:'var(--gold)',marginBottom:4}}>
-                Список желаний Иры
-              </div>
-              <div style={{fontSize:13,color:'rgba(255,209,102,0.7)',lineHeight:1.4}}>
-                Подарки и большие мечты — вложитесь в мечту и получите красивый сертификат 🎀
+              <div style={{fontWeight:600,color:'var(--text)',fontSize:15,marginBottom:3}}>{name}</div>
+              <div style={{fontSize:12,color:'var(--text2)'}}>
+                {isIra
+                  ? 'Подарки + мечты с сертификатом ✨'
+                  : `${wishCount} ${wishCount===1?'желание':wishCount<5?'желания':'желаний'}`}
               </div>
             </div>
-            <div style={{fontSize:20,flexShrink:0}}>→</div>
-          </a>
-
-          <div className="card" style={{background:'rgba(255,209,102,0.05)',border:'1px solid rgba(255,209,102,0.15)'}}>
-            <div style={{fontSize:13,color:'rgba(255,209,102,0.6)',lineHeight:1.6}}>
-              💡 На странице Иры вы найдёте конкретные подарки которые можно забронировать, и большие мечты — в них можно вложить любую сумму и получить красивый сертификат для распечатки.
-            </div>
+            <div style={{fontSize:18,color:'var(--text2)'}}>→</div>
           </div>
-        </div>
+        </a>
       );
     }
 
@@ -519,7 +258,7 @@
       const [img,setImg]=useState(wish.image||'');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
       useEffect(()=>{setTitle(wish.title||'');setUrl(wish.url||'');setNote(wish.note||'');setImg(wish.image||'');setEditing(false);},[wish.id]);
       const handleSave=async()=>{if(!title.trim())return;await onUpdate(wish.id,{title:title.trim(),url:url.trim(),note:note.trim(),image:img||null});setEditing(false);};
-      const handleFile=async e=>{const f=e.target.files?.[0];if(!f){setImg(wish.image||'');return;}setImgLoad(true);setImgErr('');try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);};};
+      const handleFile=async e=>{const f=e.target.files?.[0];if(!f){setImg(wish.image||'');return;}setImgLoad(true);setImgErr('');try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}};
 
       if(editing) return (
         <div className="card" style={{display:'flex',flexDirection:'column',gap:10}}>
@@ -546,7 +285,7 @@
             <div>
               <div style={{fontWeight:600,color:'var(--text)',fontSize:15,marginBottom:4}}>{wish.title}</div>
               {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
-              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4}}>Открыть ↗</a>}
+              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none'}}>Открыть ↗</a>}
             </div>
             <span className="badge badge-muted" style={{flexShrink:0}}>моё</span>
           </div>
@@ -564,9 +303,8 @@
       const claimed = !!claim;
       const iGift = claim && claim.claimerName === currentUserName;
       const [showTip, setShowTip] = useState(false);
-
       return (
-        <div className={`card ${claimed && !iGift ? 'wish-claimed' : ''}`}>
+        <div className={`card ${claimed&&!iGift?'wish-claimed':''}`}>
           {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:200,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
           <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
             <div style={{flex:1}}>
@@ -624,6 +362,17 @@
       const myWishes = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
       const familyWishes = useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
       const familyNames = useMemo(()=>{const s=new Set();familyWishes.forEach(w=>w.ownerName&&s.add(w.ownerName));return Array.from(s);},[familyWishes]);
+
+      // «Вишлисты» — все уникальные имена из базы + Ира всегда есть (ira.html)
+      const peopleData = useMemo(()=>{
+        const map = {};
+        items.forEach(i=>{ if(!i.ownerName) return; map[i.ownerName] = (map[i.ownerName]||0) + 1; });
+        if(!map['Ира']) map['Ира'] = 0; // Ира всегда в списке
+        return Object.entries(map)
+          .map(([name,count])=>({name,count}))
+          .sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+      },[items]);
+
       const filteredFamily = useMemo(()=>{
         let arr = familyFilter==='my_claims' ? familyWishes.filter(w=>claims[w.id]?.claimerUid===authUid)
                 : familyFilter!=='all' ? familyWishes.filter(w=>w.ownerName===familyFilter)
@@ -661,7 +410,7 @@
           {activeTab==='my' && (
             <div className="fade-up">
               <AddWishForm onAdd={handleAddWish} disabled={!authUid} error={addError} />
-              <div className="section-title">Мои желания {itemsLoading&&<span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}>— загружается…</span>}</div>
+              <div className="section-title">Мои желания{itemsLoading&&<span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}> — загружается…</span>}</div>
               {myWishes.length===0&&!itemsLoading&&<p className="note">Добавьте хотя бы одно желание 🌟</p>}
               <div style={{display:'grid',gap:10}}>
                 {myWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDeleteWish} onUpdate={handleUpdateWish} onImageClick={setPreviewImage} />)}
@@ -688,7 +437,18 @@
             </div>
           )}
 
-          {activeTab==='ira' && <IraTab />}
+          {activeTab==='people' && (
+            <div className="fade-up">
+              <div className="section-title" style={{marginBottom:4}}>Индивидуальные вишлисты</div>
+              <p className="note" style={{marginBottom:16}}>Нажмите на человека — откроется его личная страница с желаниями, где можно забронировать подарок 🎁</p>
+              <div style={{display:'grid',gap:10}}>
+                {peopleData.map(({name,count})=>(
+                  <PersonCard key={name} name={name} wishCount={count} isIra={name==='Ира'} />
+                ))}
+                {peopleData.length===0&&!itemsLoading&&<p className="note">Пока никто не добавил желания.</p>}
+              </div>
+            </div>
+          )}
 
           {previewImage&&(
             <div className="modal-overlay" onClick={()=>setPreviewImage(null)}>
