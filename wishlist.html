@@ -133,7 +133,9 @@
       const [authUid, setAuthUid] = useState(null);
       const [visitorName, setVisitorName] = useState(loadLocal('nywish:name',''));
       const [tempName, setTempName] = useState(loadLocal('nywish:name',''));
-      const [editingName, setEditingName] = useState(!loadLocal('nywish:name',''));
+      // PIN считается подтверждённым если pin_ok совпадает с именем
+      const pinOk = loadLocal('nywish:pin_ok','');
+      const [editingName, setEditingName] = useState(!loadLocal('nywish:name','') || loadLocal('nywish:pin_ok','') !== loadLocal('nywish:name',''));
       const [items, setItems] = useState([]);
       const [claims, setClaims] = useState({});
       const [loading, setLoading] = useState(true);
