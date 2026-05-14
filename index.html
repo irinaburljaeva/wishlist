@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="ru">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Подарки, подарочки</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
@@ -13,77 +13,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-firestore-compat.js"></script>
-  <style>
-    :root {
-      --bg: #0f110d;
-      --surface: #181c15;
-      --surface2: #1f2419;
-      --border: rgba(255,255,255,0.07);
-      --border2: rgba(255,255,255,0.13);
-      --text: #f0ece4;
-      --text2: #8a9080;
-      --accent: #7ea858;
-      --accent2: #c8a96e;
-      --accent3: #d4b896;
-      --gold: #c8a96e;
-    }
-    * { box-sizing:border-box; }
-    body { font-family:'Golos Text',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; margin:0; overflow-x:hidden; }
-    .mesh-bg { position:fixed; inset:0; z-index:0; pointer-events:none; }
-    .mesh-bg::before { content:''; position:absolute; inset:0;
-      background:
-        radial-gradient(ellipse 70% 50% at 10% 15%, rgba(80,110,50,0.22) 0%, transparent 60%),
-        radial-gradient(ellipse 50% 60% at 90% 85%, rgba(100,70,30,0.18) 0%, transparent 60%),
-        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(60,80,40,0.10) 0%, transparent 60%);
-      animation:meshMove 14s ease-in-out infinite alternate; }
-    @keyframes meshMove { 0%{opacity:1;transform:scale(1) translate(0,0)} 100%{opacity:0.75;transform:scale(1.06) translate(-1%,1.5%)} }
-    .mesh-bg::after { content:''; position:absolute; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); opacity:0.5; }
-    .bg-photo { position:fixed; inset:0; z-index:-1; background-image:url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png'); background-size:cover; background-position:center; opacity:0.05; }
-    .app-wrap { position:relative; z-index:1; max-width:680px; margin:0 auto; padding:0 16px 80px; }
-    .header { padding:28px 0 20px; display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
-    .header-title { font-family:'Unbounded',sans-serif; font-size:clamp(1.3rem,5vw,1.8rem); font-weight:900; line-height:1.1;
-      background:linear-gradient(135deg, #a8c878, #c8a96e, #e8d4b0);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; }
-    .header-sub { font-size:12px; color:var(--text2); margin-top:6px; display:flex; gap:8px; flex-wrap:wrap; }
-    .pill { background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); border-radius:999px; padding:3px 10px; font-size:11px; color:var(--text2); }
-    .name-card { background:var(--surface); border:1px solid var(--border2); border-radius:20px; padding:16px 18px; margin-bottom:12px; display:flex; align-items:center; gap:14px; cursor:pointer; transition:border-color 0.2s,box-shadow 0.2s; }
-    .name-card:hover { border-color:rgba(126,168,88,0.4); box-shadow:0 0 0 1px rgba(126,168,88,0.15); }
-    .name-avatar { width:40px; height:40px; border-radius:12px; flex-shrink:0; background:linear-gradient(135deg,rgba(126,168,88,0.2),rgba(200,169,110,0.2)); border:1px solid rgba(126,168,88,0.3); display:flex; align-items:center; justify-content:center; font-size:18px; }
-    .tabs { display:flex; gap:6px; background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:5px; margin-bottom:16px; }
-    .tab { flex:1; padding:10px 8px; border-radius:13px; font-family:'Golos Text',sans-serif; font-size:13px; font-weight:600; cursor:pointer; border:none; transition:all 0.2s; text-align:center; color:var(--text2); background:transparent; }
-    .tab.active { background:linear-gradient(135deg, #5a7a38, #8aaa58); color:#f0ece4; box-shadow:0 4px 20px rgba(90,122,56,0.45); }
-    .card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:18px; transition:border-color 0.2s; }
-    .card:hover { border-color:var(--border2); }
-    .input,.textarea { width:100%; background:var(--surface2); border:1px solid var(--border2); border-radius:14px; padding:11px 14px; color:var(--text); font-family:'Golos Text',sans-serif; font-size:14px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
-    .input::placeholder,.textarea::placeholder { color:var(--text2); }
-    .input:focus,.textarea:focus { border-color:#7ea858; box-shadow:0 0 0 3px rgba(126,168,88,0.18); background:#222819; }
-    .textarea { resize:none; }
-    .btn { display:inline-flex; align-items:center; justify-content:center; border-radius:999px; padding:10px 20px; font-family:'Golos Text',sans-serif; font-size:14px; font-weight:600; cursor:pointer; border:none; transition:all 0.18s; }
-    .btn:active { transform:scale(0.97); }
-    .btn-primary { background:linear-gradient(135deg, #5a7a38, #7ea858); color:#f0ece4; box-shadow:0 4px 20px rgba(90,122,56,0.35); }
-    .btn-primary:hover { box-shadow:0 6px 24px rgba(90,122,56,0.5); transform:translateY(-1px); }
-    .btn-primary:disabled { opacity:0.4; cursor:not-allowed; transform:none; box-shadow:none; }
-    .btn-ghost { background:var(--surface2); color:var(--text2); border:1px solid var(--border2); }
-    .btn-ghost:hover { border-color:rgba(255,255,255,0.2); color:var(--text); }
-    .btn-danger { background:rgba(200,80,60,0.1); color:#e07060; border:1px solid rgba(200,80,60,0.2); }
-    .badge { display:inline-flex; align-items:center; gap:4px; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:600; }
-    .badge-pink { background:rgba(200,169,110,0.15); color:#c8a96e; border:1px solid rgba(200,169,110,0.3); }
-    .badge-purple { background:rgba(126,168,88,0.12); color:#9aba70; border:1px solid rgba(126,168,88,0.25); }
-    .badge-muted { background:var(--surface2); color:var(--text2); border:1px solid var(--border2); }
-    .badge-claimed { background:rgba(126,168,88,0.12); color:#9aba70; border:1px solid rgba(126,168,88,0.25); }
-    .err { color:#e07878; font-size:13px; }
-    .note { color:var(--text2); font-size:13px; }
-    .section-title { font-family:'Unbounded',sans-serif; font-size:13px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text2); margin-bottom:12px; }
-    .divider { height:1px; background:var(--border); margin:14px 0; }
-    .wish-claimed { opacity:0.5; }
-    select { background:var(--surface2); border:1px solid var(--border2); border-radius:10px; color:var(--text); padding:6px 10px; font-family:'Golos Text',sans-serif; font-size:12px; outline:none; cursor:pointer; }
-    select:focus { border-color:#7ea858; }
-    ::-webkit-scrollbar { width:6px; }
-    ::-webkit-scrollbar-track { background:var(--surface); }
-    ::-webkit-scrollbar-thumb { background:rgba(126,168,88,0.3); border-radius:3px; }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-    .fade-up { animation:fadeUp 0.35s cubic-bezier(.22,.68,0,1.2) both; }
-  </style>
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0f110d">
@@ -94,536 +23,755 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <link rel="apple-touch-icon" sizes="152x152" href="icon-152.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(console.error);
-      });
+  <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.error));</script>
+  <style>
+    :root {
+      --bg:#0f110d; --s1:#181c15; --s2:#1f2419;
+      --b1:rgba(255,255,255,0.07); --b2:rgba(255,255,255,0.13);
+      --t1:#f0ece4; --t2:#8a9080;
+      --g1:#5a7a38; --g2:#7ea858; --gold:#c8a96e;
+      --nav-h:64px;
     }
-  </script>
+    *{box-sizing:border-box;}
+    body{font-family:'Golos Text',sans-serif;background:var(--bg);color:var(--t1);margin:0;overflow-x:hidden;overscroll-behavior:none;}
+
+    /* Mesh bg */
+    .mesh-bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
+    .mesh-bg::before{content:'';position:absolute;inset:0;
+      background:radial-gradient(ellipse 70% 50% at 10% 15%,rgba(80,110,50,0.2) 0%,transparent 60%),
+                 radial-gradient(ellipse 50% 60% at 90% 85%,rgba(100,70,30,0.15) 0%,transparent 60%);
+      animation:meshMove 14s ease-in-out infinite alternate;}
+    @keyframes meshMove{0%{opacity:1;transform:scale(1)}100%{opacity:.75;transform:scale(1.05)}}
+    .bg-photo{position:fixed;inset:0;z-index:-1;background-image:url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png');background-size:cover;background-position:center;opacity:.05;}
+
+    /* Layout */
+    .app{position:relative;z-index:1;max-width:520px;margin:0 auto;}
+    .screen{padding:0 16px;padding-bottom:calc(var(--nav-h) + 16px);}
+    .page-header{padding:24px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+    .page-title{font-family:'Unbounded',sans-serif;font-size:clamp(1.2rem,5vw,1.6rem);font-weight:900;line-height:1.1;
+      background:linear-gradient(135deg,#a8c878,#c8a96e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+
+    /* Bottom Nav */
+    .bottom-nav{
+      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+      width:100%;max-width:520px;
+      background:rgba(24,28,21,0.92);
+      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+      border-top:1px solid var(--b2);
+      display:flex;z-index:100;
+      height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom,0);
+    }
+    .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:opacity .15s;position:relative;}
+    .nav-item:active{opacity:.7;}
+    .nav-icon{font-size:22px;line-height:1;transition:transform .2s;}
+    .nav-item.on .nav-icon{transform:scale(1.1);}
+    .nav-label{font-size:9px;font-weight:600;color:var(--t2);letter-spacing:0.03em;transition:color .2s;}
+    .nav-item.on .nav-label{color:#9aba70;}
+    .nav-dot{width:4px;height:4px;border-radius:50%;background:#9aba70;position:absolute;top:6px;}
+
+    /* Cards */
+    .card{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:16px;transition:border-color .2s;}
+    .card+.card{margin-top:10px;}
+
+    /* Inputs */
+    .inp,.txta{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:11px 14px;color:var(--t1);font-family:'Golos Text',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+    .inp::placeholder,.txta::placeholder{color:var(--t2);}
+    .inp:focus,.txta:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(126,168,88,.18);background:#222819;}
+    .txta{resize:none;}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:11px 22px;font-family:'Golos Text',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .18s;}
+    .btn:active{transform:scale(.97);}
+    .btn-p{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--t1);box-shadow:0 4px 18px rgba(90,122,56,.35);}
+    .btn-p:hover{box-shadow:0 6px 22px rgba(90,122,56,.5);transform:translateY(-1px);}
+    .btn-p:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
+    .btn-g{background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
+    .btn-g:hover{border-color:rgba(255,255,255,.2);color:var(--t1);}
+    .btn-d{background:rgba(200,80,60,.1);color:#e07060;border:1px solid rgba(200,80,60,.2);}
+
+    /* Badges */
+    .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;}
+    .b-green{background:rgba(126,168,88,.12);color:#9aba70;border:1px solid rgba(126,168,88,.25);}
+    .b-gold{background:rgba(200,169,110,.15);color:var(--gold);border:1px solid rgba(200,169,110,.3);}
+    .b-muted{background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
+
+    .err{color:#e07878;font-size:13px;}
+    .note{color:var(--t2);font-size:13px;}
+    .sec{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin-bottom:10px;}
+    .divider{height:1px;background:var(--b1);margin:12px 0;}
+
+    /* Person card */
+    .person-card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;}
+    .person-card:hover{border-color:var(--b2);transform:translateY(-1px);}
+    .person-card+.person-card{margin-top:8px;}
+    .avatar{border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:700;color:white;flex-shrink:0;}
+
+    /* Wish card */
+    .wish-card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;padding:14px;transition:border-color .2s;}
+    .wish-card+.wish-card{margin-top:8px;}
+    .wish-card.claimed{opacity:.55;}
+
+    /* FAB */
+    .fab{position:fixed;bottom:calc(var(--nav-h) + 14px);right:max(16px,calc(50vw - 244px));width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 20px rgba(90,122,56,.45);cursor:pointer;transition:all .2s;z-index:90;border:none;}
+    .fab:hover{transform:scale(1.08);box-shadow:0 8px 26px rgba(90,122,56,.55);}
+    .fab:active{transform:scale(.95);}
+
+    /* Person detail overlay */
+    .person-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;transform:translateX(100%);transition:transform .3s cubic-bezier(.22,.68,0,1.1);}
+    .person-overlay.open{transform:translateX(0);}
+    .person-overlay .screen{max-width:520px;margin:0 auto;}
+
+    /* Add modal */
+    .modal-bg{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+    .modal-bg.open{opacity:1;pointer-events:all;}
+    .modal-sheet{background:var(--s1);border:1px solid var(--b2);border-radius:24px 24px 0 0;padding:24px 20px;width:100%;max-width:520px;transform:translateY(100%);transition:transform .3s cubic-bezier(.22,.68,0,1.1);max-height:90vh;overflow-y:auto;}
+    .modal-bg.open .modal-sheet{transform:translateY(0);}
+    .modal-handle{width:36px;height:4px;border-radius:2px;background:var(--b2);margin:0 auto 18px;}
+
+    /* Image preview */
+    .img-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}
+
+    /* Select */
+    select{background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t1);padding:6px 10px;font-family:'Golos Text',sans-serif;font-size:12px;outline:none;cursor:pointer;}
+
+    ::-webkit-scrollbar{width:4px;}
+    ::-webkit-scrollbar-track{background:transparent;}
+    ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
+
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+    .fu{animation:fadeUp .3s cubic-bezier(.22,.68,0,1.2) both;}
+  </style>
 </head>
 <body>
-  <div class="bg-photo"></div>
-  <div class="mesh-bg"></div>
-  <div id="root"></div>
-  <script type="text/babel">
-    const { useEffect, useState, useMemo } = React;
-    const firebaseConfig = {
-      apiKey:"AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
-      authDomain:"wishlist-37819.firebaseapp.com",
-      projectId:"wishlist-37819",
-      storageBucket:"wishlist-37819.firebasestorage.app",
-      messagingSenderId:"72495355387",
-      appId:"1:72495355387:web:0ff709125d3cf33c8c275e"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    auth.signInAnonymously().catch(console.error);
-    const LIST_ID = 'newyear2025';
-    const listDoc   = db.collection('lists').doc(LIST_ID);
-    const itemsCol  = () => listDoc.collection('items');
-    const claimsCol = () => listDoc.collection('claims');
-    const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-    const loadLocal = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } };
-    const usersCol = () => db.collection('users');
-    async function compressImage(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = e => {
-          const img = new Image();
-          img.onload = () => {
-            const scale = Math.min(800/img.width, 800/img.height, 1);
-            const canvas = document.createElement('canvas');
-            canvas.width = img.width*scale; canvas.height = img.height*scale;
-            canvas.getContext('2d').drawImage(img,0,0,canvas.width,canvas.height);
-            const d = canvas.toDataURL('image/jpeg', 0.7);
-            if (d.length > 900000) { reject('Изображение слишком большое.'); return; }
-            resolve(d);
-          };
-          img.onerror = () => reject('Не удалось прочитать изображение.');
-          img.src = e.target.result;
+<div class="bg-photo"></div>
+<div class="mesh-bg"></div>
+<div id="root"></div>
+
+<script type="text/babel">
+  const { useEffect, useState, useMemo, useRef, useCallback } = React;
+
+  const firebaseConfig = {
+    apiKey:"AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
+    authDomain:"wishlist-37819.firebaseapp.com",
+    projectId:"wishlist-37819",
+    storageBucket:"wishlist-37819.firebasestorage.app",
+    messagingSenderId:"72495355387",
+    appId:"1:72495355387:web:0ff709125d3cf33c8c275e"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+  auth.signInAnonymously().catch(console.error);
+
+  const LIST_ID = 'newyear2025';
+  const listDoc   = db.collection('lists').doc(LIST_ID);
+  const itemsCol  = () => listDoc.collection('items');
+  const claimsCol = () => listDoc.collection('claims');
+  const usersCol  = () => db.collection('users');
+
+  const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
+  const loadLocal = (k,fb) => { try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;} };
+
+  async function compressImage(file) {
+    return new Promise((res,rej) => {
+      const r = new FileReader();
+      r.onload = e => {
+        const img = new Image();
+        img.onload = () => {
+          const s = Math.min(800/img.width,800/img.height,1);
+          const c = document.createElement('canvas');
+          c.width=img.width*s; c.height=img.height*s;
+          c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+          const d = c.toDataURL('image/jpeg',.7);
+          if(d.length>900000){rej('Слишком большое.');return;}
+          res(d);
         };
-        reader.onerror = () => reject('Не удалось прочитать файл.');
-        reader.readAsDataURL(file);
-      });
-    }
+        img.onerror=()=>rej('Не удалось прочитать.');
+        img.src=e.target.result;
+      };
+      r.onerror=()=>rej('Ошибка файла.');
+      r.readAsDataURL(file);
+    });
+  }
 
-    function Header({ userName }) {
-      return (
-        <header className="header">
-          <div>
-            <div className="header-title">Подарки,<br/>подарочки 🎁</div>
-            <div className="header-sub">
-              <span className="pill">🛡️ 23 февраля</span>
-              <span className="pill">🌷 8 марта</span>
-              <span className="pill">🎄 Новый год</span>
+  async function hashPin(pin) {
+    const buf = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pin+'podarki_salt'));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  const NAME_COLORS = [
+    ['#5a7a38','#7ea858'],['#8a6a30','#c8a96e'],['#3a6050','#5a9070'],
+    ['#7a5030','#b87840'],['#4a6840','#7a9858'],['#6a5040','#9a7858'],
+  ];
+  function nameColor(name) {
+    const idx = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % NAME_COLORS.length;
+    return NAME_COLORS[idx];
+  }
+
+  // ══════════════════════════════════════
+  // AUTH SCREEN
+  // ══════════════════════════════════════
+  function AuthScreen({ onAuth }) {
+    const [step,setStep] = useState('name');
+    const [nameInput,setNameInput] = useState('');
+    const [pin,setPin] = useState('');
+    const [pin2,setPin2] = useState('');
+    const [loading,setLoading] = useState(false);
+    const [error,setError] = useState('');
+
+    const handleName = async () => {
+      const name = nameInput.trim();
+      if(!name) return;
+      setLoading(true); setError('');
+      try {
+        const doc = await usersCol().doc(name).get();
+        setStep(doc.exists ? 'pin_enter' : 'pin_new');
+      } catch(e) { setError('Ошибка соединения. Попробуйте ещё раз.'); }
+      setLoading(false);
+    };
+
+    const handleRegister = async () => {
+      if(pin.length<4){setError('PIN минимум 4 цифры.');return;}
+      if(pin!==pin2){setError('PIN-коды не совпадают.');return;}
+      setLoading(true); setError('');
+      try {
+        const hashed = await hashPin(pin);
+        await db.runTransaction(async tx => {
+          const snap = await tx.get(usersCol().doc(nameInput.trim()));
+          if(snap.exists) throw new Error('taken');
+          tx.set(usersCol().doc(nameInput.trim()),{pinHash:hashed,createdAt:Date.now()});
+        });
+        saveLocal('nywish:name',nameInput.trim());
+        saveLocal('nywish:pin_ok',nameInput.trim());
+        onAuth(nameInput.trim());
+      } catch(e) {
+        if(e.message==='taken'){setError('Имя уже занято.');setStep('name');setPin('');setPin2('');}
+        else setError('Не удалось зарегистрироваться.');
+      }
+      setLoading(false);
+    };
+
+    const handleLogin = async () => {
+      if(!pin) return;
+      setLoading(true); setError('');
+      try {
+        const doc = await usersCol().doc(nameInput.trim()).get();
+        if(!doc.exists){setError('Профиль не найден.');setLoading(false);return;}
+        const hashed = await hashPin(pin);
+        if(doc.data().pinHash !== hashed){setError('Неверный PIN.');setPin('');setLoading(false);return;}
+        saveLocal('nywish:name',nameInput.trim());
+        saveLocal('nywish:pin_ok',nameInput.trim());
+        onAuth(nameInput.trim());
+      } catch(e) { setError('Ошибка соединения.'); }
+      setLoading(false);
+    };
+
+    return (
+      <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'24px 20px',position:'relative',zIndex:1}}>
+        <div style={{width:'100%',maxWidth:360}}>
+          <div style={{textAlign:'center',marginBottom:32}}>
+            <div style={{fontSize:52,marginBottom:12}}>🎁</div>
+            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:900,lineHeight:1.1,
+              background:'linear-gradient(135deg,#a8c878,#c8a96e)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+              Подарки,<br/>подарочки
             </div>
           </div>
-          {userName && (
-            <div style={{flexShrink:0,textAlign:'right'}}>
-              <div style={{fontSize:11,color:'var(--text2)',marginBottom:3}}>вы вошли как</div>
-              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:13,fontWeight:700,color:'var(--text)'}}>{userName}</div>
-            </div>
-          )}
-        </header>
-      );
-    }
 
-    // ===== AUTH CARD с PIN =====
-    // Хэш PIN — не храним в открытом виде
-    async function hashPin(pin) {
-      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'podarki_salt'));
-      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
-    }
+          <div className="card">
+            {step==='name' && (<>
+              <div className="sec" style={{marginBottom:12}}>Войти или зарегистрироваться</div>
+              <input className="inp" placeholder="Ваше имя (Ира, Валера…)" value={nameInput}
+                onChange={e=>{setNameInput(e.target.value);setError('');}}
+                onKeyDown={e=>e.key==='Enter'&&nameInput.trim()&&handleName()}
+                style={{marginBottom:10}} autoFocus />
+              {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+              <button className="btn btn-p" style={{width:'100%'}} onClick={handleName} disabled={!nameInput.trim()||loading}>
+                {loading?'Проверяем…':'Продолжить →'}
+              </button>
+            </>)}
 
-    function AuthCard({ userName, setUserName }) {
-      const [step, setStep] = useState('name'); // 'name' | 'pin_new' | 'pin_enter'
-      const [nameInput, setNameInput] = useState(userName || '');
-      const [pin, setPin] = useState('');
-      const [pin2, setPin2] = useState(''); // подтверждение
-      const [loading, setLoading] = useState(false);
-      const [error, setError] = useState('');
-      const [collapsed, setCollapsed] = useState(!!userName);
+            {step==='pin_new' && (<>
+              <div className="sec" style={{marginBottom:4}}>Придумайте PIN</div>
+              <div className="note" style={{marginBottom:12}}>Имя <strong style={{color:'var(--t1)'}}>{nameInput.trim()}</strong> свободно! Задайте PIN — он защитит ваш профиль.</div>
+              <input className="inp" type="password" inputMode="numeric" placeholder="PIN (мин. 4 цифры)" value={pin}
+                onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:8}} autoFocus />
+              <input className="inp" type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2}
+                onChange={e=>{setPin2(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:10}}
+                onKeyDown={e=>e.key==='Enter'&&handleRegister()} />
+              {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setPin2('');setError('');}}>← Назад</button>
+                <button className="btn btn-p" style={{flex:2}} onClick={handleRegister} disabled={pin.length<4||!pin2||loading}>
+                  {loading?'Регистрируем…':'Создать профиль ✓'}
+                </button>
+              </div>
+            </>)}
 
-      const pinInputRef = React.useRef(null);
+            {step==='pin_enter' && (<>
+              <div className="sec" style={{marginBottom:4}}>Введите PIN</div>
+              <div className="note" style={{marginBottom:12}}>Привет, <strong style={{color:'var(--t1)'}}>{nameInput.trim()}</strong>! Введите PIN для входа.</div>
+              <input className="inp" type="password" inputMode="numeric" placeholder="Ваш PIN" value={pin}
+                onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:10}}
+                onKeyDown={e=>e.key==='Enter'&&handleLogin()} autoFocus />
+              {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+              <div style={{display:'flex',gap:8}}>
+                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setError('');}}>← Назад</button>
+                <button className="btn btn-p" style={{flex:2}} onClick={handleLogin} disabled={!pin||loading}>
+                  {loading?'Проверяем…':'Войти →'}
+                </button>
+              </div>
+            </>)}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-      useEffect(() => {
-        if (step !== 'name' && pinInputRef.current) pinInputRef.current.focus();
-      }, [step]);
-
-      // Шаг 1: проверяем есть ли такое имя в Firebase
-      const handleNameSubmit = async () => {
-        const name = nameInput.trim();
-        if (!name) return;
-        setLoading(true); setError('');
-        try {
-          const doc = await usersCol().doc(name).get();
-          if (doc.exists) {
-            // Имя занято — просим PIN
-            setStep('pin_enter');
-          } else {
-            // Новый пользователь — регистрация
-            setStep('pin_new');
-          }
-        } catch(e) {
-          setError('Ошибка соединения. Попробуйте ещё раз.');
-        }
-        setLoading(false);
-      };
-
-      // Шаг 2а: регистрация — создаём профиль
-      const handleRegister = async () => {
-        if (pin.length < 4) { setError('PIN должен быть минимум 4 цифры.'); return; }
-        if (pin !== pin2) { setError('PIN-коды не совпадают.'); return; }
-        const name = nameInput.trim();
-        setLoading(true); setError('');
-        try {
-          const hashed = await hashPin(pin);
-          // Транзакция — защита от гонки при одновременной регистрации
-          const ref = usersCol().doc(name);
-          await db.runTransaction(async tx => {
-            const snap = await tx.get(ref);
-            if (snap.exists) throw new Error('taken');
-            tx.set(ref, { pinHash: hashed, createdAt: Date.now() });
-          });
-          saveLocal('nywish:name', name);
-          saveLocal('nywish:pin_ok', name); // флаг что PIN подтверждён на этом устройстве
-          setUserName(name);
-          setCollapsed(true);
-        } catch(e) {
-          if (e.message === 'taken') {
-            setError('Кто-то только что занял это имя. Выберите другое.');
-            setStep('name'); setPin(''); setPin2('');
-          } else {
-            setError('Не удалось зарегистрироваться. Попробуйте ещё раз.');
-          }
-        }
-        setLoading(false);
-      };
-
-      // Шаг 2б: вход — проверяем PIN
-      const handleLogin = async () => {
-        if (!pin) return;
-        const name = nameInput.trim();
-        setLoading(true); setError('');
-        try {
-          const doc = await usersCol().doc(name).get();
-          if (!doc.exists) { setError('Профиль не найден.'); setLoading(false); return; }
-          const hashed = await hashPin(pin);
-          if (doc.data().pinHash !== hashed) {
-            setError('Неверный PIN. Попробуйте ещё раз.');
-            setPin('');
-            setLoading(false); return;
-          }
-          saveLocal('nywish:name', name);
-          saveLocal('nywish:pin_ok', name);
-          setUserName(name);
-          setCollapsed(true);
-        } catch(e) {
-          setError('Ошибка соединения. Попробуйте ещё раз.');
-        }
-        setLoading(false);
-      };
-
-      // Свёрнутое состояние — показываем имя
-      if (collapsed && userName) return (
-        <div className="name-card fade-up" onClick={()=>{
-          setCollapsed(false);
-          setNameInput(''); // сбрасываем имя чтобы ввести новое
-          setStep('name');
-          setPin(''); setPin2(''); setError('');
-        }}>
-          <div className="name-avatar">👤</div>
+  // ══════════════════════════════════════
+  // WISH CARD (чужое)
+  // ══════════════════════════════════════
+  function WishCardGuest({ wish, claim, userName, authUid, onClaim, onUnclaim, onImgClick }) {
+    const claimed = !!claim;
+    const mine = claim?.claimerName === userName;
+    const [tip,setTip] = useState(false);
+    return (
+      <div className={`wish-card ${claimed&&!mine?'claimed':''}`}>
+        {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:12,maxHeight:200,objectFit:'cover',marginBottom:10,cursor:'pointer'}} onClick={()=>onImgClick(wish.image)} />}
+        <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
           <div style={{flex:1}}>
-            <div style={{fontSize:11,color:'var(--text2)',marginBottom:2}}>Вы вошли как</div>
-            <div style={{fontWeight:600,color:'var(--text)'}}>{userName}</div>
+            <div style={{fontWeight:600,fontSize:15,color:'var(--t1)',marginBottom:3}}>{wish.title}</div>
+            {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
+            {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#9aba70',textDecoration:'none'}}>Открыть ↗</a>}
           </div>
-          <div style={{fontSize:12,color:'var(--text2)'}}>сменить ✏️</div>
-        </div>
-      );
-
-      return (
-        <div className="card fade-up" style={{marginBottom:12}}>
-          {/* Шаг: имя */}
-          {step === 'name' && (<>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',letterSpacing:'0.06em',textTransform:'uppercase'}}>
-                {userName ? 'Сменить аккаунт' : 'Войти или зарегистрироваться'}
+          <div style={{flexShrink:0,position:'relative'}}>
+            {claimed ? (mine ? (
+              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
+                <span className="badge b-green">🎁 Вы дарите</span>
+                <button className="btn btn-g" style={{fontSize:12,padding:'5px 12px'}} onClick={onUnclaim}>Снять</button>
               </div>
-              {userName && <button className="btn btn-ghost" style={{fontSize:12,padding:'5px 12px'}} onClick={()=>setCollapsed(true)}>✕</button>}
-            </div>
-            <input className="input" placeholder="Ваше имя (Ира, Валера, Мама…)" value={nameInput}
-              onChange={e=>{setNameInput(e.target.value);setError('');}}
-              onKeyDown={e=>e.key==='Enter'&&nameInput.trim()&&handleNameSubmit()}
-              style={{marginBottom:10}} autoFocus />
-            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-            <div style={{display:'flex',justifyContent:'flex-end'}}>
-              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleNameSubmit} disabled={!nameInput.trim()||loading}>
-                {loading ? 'Проверяем…' : 'Продолжить →'}
-              </button>
-            </div>
-          </>)}
-
-          {/* Шаг: новый PIN */}
-          {step === 'pin_new' && (<>
-            <div style={{marginBottom:14}}>
-              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:4,letterSpacing:'0.06em',textTransform:'uppercase'}}>Придумайте PIN</div>
-              <div style={{fontSize:13,color:'var(--text2)'}}>Имя <strong style={{color:'var(--text)'}}>{nameInput.trim()}</strong> свободно! Придумайте PIN-код чтобы никто другой не мог войти под вашим именем.</div>
-            </div>
-            <input ref={pinInputRef} className="input" type="password" inputMode="numeric" placeholder="PIN (минимум 4 цифры)" value={pin}
-              onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}}
-              onKeyDown={e=>e.key==='Enter'&&pin2&&handleRegister()}
-              maxLength={8} style={{marginBottom:10}} />
-            <input className="input" type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2}
-              onChange={e=>{setPin2(e.target.value.replace(/\D/g,''));setError('');}}
-              onKeyDown={e=>e.key==='Enter'&&handleRegister()}
-              maxLength={8} style={{marginBottom:10}} />
-            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-            <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center'}}>
-              <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>{setStep('name');setPin('');setPin2('');setError('');}}>← Назад</button>
-              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleRegister} disabled={pin.length<4||!pin2||loading}>
-                {loading ? 'Регистрируем…' : 'Зарегистрироваться ✓'}
-              </button>
-            </div>
-          </>)}
-
-          {/* Шаг: ввод PIN */}
-          {step === 'pin_enter' && (<>
-            <div style={{marginBottom:14}}>
-              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:4,letterSpacing:'0.06em',textTransform:'uppercase'}}>Введите PIN</div>
-              <div style={{fontSize:13,color:'var(--text2)'}}>Имя <strong style={{color:'var(--text)'}}>{nameInput.trim()}</strong> уже зарегистрировано. Введите PIN чтобы войти.</div>
-            </div>
-            <input ref={pinInputRef} className="input" type="password" inputMode="numeric" placeholder="Ваш PIN" value={pin}
-              onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}}
-              onKeyDown={e=>e.key==='Enter'&&handleLogin()}
-              maxLength={8} style={{marginBottom:10}} />
-            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-            <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center'}}>
-              <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>{setStep('name');setPin('');setError('');}}>← Назад</button>
-              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleLogin} disabled={!pin||loading}>
-                {loading ? 'Проверяем…' : 'Войти →'}
-              </button>
-            </div>
-          </>)}
-        </div>
-      );
-    }
-
-    function Tabs({ active, setActive }) {
-      return (
-        <div className="tabs">
-          <button className={`tab ${active==='my'?'active':''}`} onClick={()=>setActive('my')}>🎁 Мои желания</button>
-          <button className={`tab ${active==='family'?'active':''}`} onClick={()=>setActive('family')}>Семье</button>
-          <button className={`tab ${active==='people'?'active':''}`} onClick={()=>setActive('people')}>👥 Вишлисты</button>
-        </div>
-      );
-    }
-
-    // Все одинаковые — все ведут на wishlist.html?user=Имя
-    function PersonCard({ name, wishCount }) {
-      const colors = [
-        ['#5a7a38','#7ea858'],['#8a6a30','#c8a96e'],['#3a6050','#5a9070'],
-        ['#7a5030','#b87840'],['#4a6840','#7a9858'],['#6a5040','#9a7858'],
-      ];
-      const idx = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % colors.length;
-      const [c1,c2] = colors[idx];
-      return (
-        <a href={`wishlist.html?user=${encodeURIComponent(name)}`} style={{textDecoration:'none',display:'block'}}>
-          <div className="card" style={{display:'flex',alignItems:'center',gap:14,cursor:'pointer',transition:'all 0.2s',padding:'14px 16px'}}
-            onMouseEnter={e=>{e.currentTarget.style.borderColor='rgba(255,255,255,0.25)';e.currentTarget.style.transform='translateY(-2px)';}}
-            onMouseLeave={e=>{e.currentTarget.style.borderColor='';e.currentTarget.style.transform='';}}>
-            <div style={{width:44,height:44,borderRadius:14,flexShrink:0,background:`linear-gradient(135deg,${c1},${c2})`,display:'flex',alignItems:'center',justifyContent:'center',fontFamily:"'Unbounded',sans-serif",fontSize:13,fontWeight:700,color:'white',boxShadow:`0 4px 14px ${c1}44`}}>
-              {name.slice(0,2).toUpperCase()}
-            </div>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,color:'var(--text)',fontSize:15,marginBottom:3}}>{name}</div>
-              <div style={{fontSize:12,color:'var(--text2)'}}>
-                {wishCount===0 ? 'пока нет желаний' : `${wishCount} ${wishCount===1?'желание':wishCount<5?'желания':'желаний'}`}
+            ) : (
+              <div onMouseEnter={()=>setTip(true)} onMouseLeave={()=>setTip(false)} onClick={()=>setTip(t=>!t)}>
+                <button className="btn btn-g" style={{fontSize:12,padding:'7px 14px',cursor:'default'}}>Занято</button>
+                {tip&&<div style={{position:'absolute',right:0,bottom:'calc(100% + 6px)',background:'#1c1c28',border:'1px solid var(--b2)',color:'var(--t1)',fontSize:11,padding:'5px 10px',borderRadius:10,whiteSpace:'nowrap',zIndex:10,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>🎁 Дарит: {claim.claimerName}</div>}
               </div>
-            </div>
-            <div style={{fontSize:18,color:'var(--text2)'}}>→</div>
+            )) : (
+              <button className="btn btn-p" style={{fontSize:12,padding:'8px 16px'}} onClick={onClaim}>Я подарю 🎁</button>
+            )}
           </div>
-        </a>
-      );
-    }
+        </div>
+      </div>
+    );
+  }
 
-    function AddWishForm({ onAdd, disabled, error }) {
-      const [title,setTitle]=useState('');const [url,setUrl]=useState('');const [note,setNote]=useState('');
-      const [img,setImg]=useState('');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
-      const submit = () => { if(disabled||!title.trim())return; onAdd({title:title.trim(),url:url.trim(),note:note.trim(),image:img}); setTitle('');setUrl('');setNote('');setImg('');setImgErr(''); };
-      const handleFile = async e => {
-        const f=e.target.files?.[0]; if(!f){setImg('');setImgErr('');return;}
-        setImgLoad(true);setImgErr('');
-        try{setImg(await compressImage(f));}catch(err){setImg('');setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
-      };
-      return (
-        <div className="card fade-up" style={{marginBottom:12}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
-            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',textTransform:'uppercase',letterSpacing:'0.06em'}}>Добавить желание</div>
-            <span className="badge badge-pink">только для вас</span>
+  // ══════════════════════════════════════
+  // WISH CARD (своё)
+  // ══════════════════════════════════════
+  function WishCardMy({ wish, locked, onDelete, onUpdate, onImgClick }) {
+    const [editing,setEditing] = useState(false);
+    const [title,setTitle] = useState(wish.title||'');
+    const [url,setUrl]   = useState(wish.url||'');
+    const [note,setNote] = useState(wish.note||'');
+    const [img,setImg]   = useState(wish.image||'');
+    const [imgErr,setImgErr] = useState('');
+    const [imgLoad,setImgLoad] = useState(false);
+
+    useEffect(()=>{setTitle(wish.title||'');setUrl(wish.url||'');setNote(wish.note||'');setImg(wish.image||'');setEditing(false);},[wish.id]);
+
+    const handleFile = async e => {
+      const f=e.target.files?.[0]; if(!f)return;
+      setImgLoad(true); setImgErr('');
+      try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
+    };
+
+    if(editing) return (
+      <div className="card" style={{display:'flex',flexDirection:'column',gap:8}}>
+        <div className="sec">Редактирование</div>
+        <input className="inp" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Название" />
+        <input className="inp" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка" />
+        <textarea className="txta" rows="2" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий" />
+        <input type="file" accept="image/*" className="inp" style={{fontSize:12}} onChange={handleFile} />
+        {imgLoad&&<div className="note">Сжимается…</div>}
+        {imgErr&&<div className="err">{imgErr}</div>}
+        {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:120,width:'100%',objectFit:'cover',cursor:'pointer'}} onClick={()=>onImgClick(img)} />}
+        <div className="divider"/>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-g" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>setEditing(false)}>Отмена</button>
+          <button className="btn btn-p" style={{fontSize:13,padding:'8px 16px'}} onClick={async()=>{await onUpdate(wish.id,{title:title.trim(),url:url.trim(),note:note.trim(),image:img||null});setEditing(false);}}>Сохранить</button>
+        </div>
+      </div>
+    );
+
+    return (
+      <div className="wish-card">
+        {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:12,maxHeight:200,objectFit:'cover',marginBottom:10,cursor:'pointer'}} onClick={()=>onImgClick(wish.image)} />}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,marginBottom:8}}>
+          <div>
+            <div style={{fontWeight:600,color:'var(--t1)',fontSize:15,marginBottom:3}}>{wish.title}</div>
+            {wish.note&&<div className="note" style={{marginBottom:3}}>{wish.note}</div>}
+            {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#9aba70',textDecoration:'none'}}>Открыть ↗</a>}
           </div>
+          <span className="badge b-muted" style={{flexShrink:0}}>моё</span>
+        </div>
+        <div className="divider"/>
+        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
+          <button className="btn btn-g" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>!locked&&setEditing(true)} disabled={locked}>Изменить</button>
+          <button className="btn btn-d" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>window.confirm('Удалить?')&&onDelete(wish.id)}>Удалить</button>
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // ADD WISH SHEET
+  // ══════════════════════════════════════
+  function AddWishSheet({ open, onClose, onAdd, disabled, error }) {
+    const [title,setTitle]=useState('');const [url,setUrl]=useState('');const [note,setNote]=useState('');
+    const [img,setImg]=useState('');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
+
+    const reset = () => {setTitle('');setUrl('');setNote('');setImg('');setImgErr('');}
+    const submit = () => {
+      if(!title.trim()) return;
+      onAdd({title:title.trim(),url:url.trim(),note:note.trim(),image:img});
+      reset(); onClose();
+    };
+    const handleFile = async e => {
+      const f=e.target.files?.[0]; if(!f)return;
+      setImgLoad(true); setImgErr('');
+      try{setImg(await compressImage(f));}catch(err){setImg('');setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
+    };
+
+    return (
+      <div className={`modal-bg ${open?'open':''}`} onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal-sheet">
+          <div className="modal-handle"/>
+          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:14,fontWeight:700,marginBottom:16,color:'var(--t1)'}}>Новое желание ＋</div>
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
-            <input className="input" placeholder="Что хотите получить?" value={title} onChange={e=>setTitle(e.target.value)} />
-            <input className="input" placeholder="Ссылка на товар" value={url} onChange={e=>setUrl(e.target.value)} />
-            <textarea className="textarea" rows="2" placeholder="Цвет, размер, нюансы…" value={note} onChange={e=>setNote(e.target.value)} />
-            <input type="file" accept="image/*" className="input" style={{fontSize:12}} onChange={handleFile} />
+            <input className="inp" placeholder="Что хочешь получить?" value={title} onChange={e=>setTitle(e.target.value)} autoFocus />
+            <input className="inp" placeholder="Ссылка на товар" value={url} onChange={e=>setUrl(e.target.value)} />
+            <textarea className="txta" rows="2" placeholder="Цвет, размер, нюансы…" value={note} onChange={e=>setNote(e.target.value)} />
+            <input type="file" accept="image/*" className="inp" style={{fontSize:12}} onChange={handleFile} />
             {imgLoad&&<div className="note">Сжимается…</div>}
             {imgErr&&<div className="err">{imgErr}</div>}
-            {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:14,maxHeight:140,width:'100%',objectFit:'cover'}} />}
+            {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:130,width:'100%',objectFit:'cover'}} />}
             {error&&<div className="err">{error}</div>}
-            <div style={{display:'flex',justifyContent:'flex-end'}}>
-              <button className="btn btn-primary" onClick={submit} disabled={disabled} style={{fontSize:13}}>➕ Добавить</button>
+            <div style={{display:'flex',gap:8,marginTop:4}}>
+              <button className="btn btn-g" style={{flex:1}} onClick={()=>{reset();onClose();}}>Отмена</button>
+              <button className="btn btn-p" style={{flex:2}} onClick={submit} disabled={!title.trim()||disabled}>Добавить ✓</button>
             </div>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    function WishCardMy({ wish, locked, onDelete, onUpdate, onImageClick }) {
-      const [editing,setEditing]=useState(false);
-      const [title,setTitle]=useState(wish.title||'');const [url,setUrl]=useState(wish.url||'');const [note,setNote]=useState(wish.note||'');
-      const [img,setImg]=useState(wish.image||'');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
-      useEffect(()=>{setTitle(wish.title||'');setUrl(wish.url||'');setNote(wish.note||'');setImg(wish.image||'');setEditing(false);},[wish.id]);
-      const handleSave=async()=>{if(!title.trim())return;await onUpdate(wish.id,{title:title.trim(),url:url.trim(),note:note.trim(),image:img||null});setEditing(false);};
-      const handleFile=async e=>{const f=e.target.files?.[0];if(!f){setImg(wish.image||'');return;}setImgLoad(true);setImgErr('');try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}};
-      if(editing) return (
-        <div className="card" style={{display:'flex',flexDirection:'column',gap:10}}>
-          <div style={{fontSize:11,textTransform:'uppercase',letterSpacing:'0.1em',color:'var(--text2)'}}>Редактирование</div>
-          <input className="input" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Название" />
-          <input className="input" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка" />
-          <textarea className="textarea" rows="2" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий" />
-          <input type="file" accept="image/*" className="input" style={{fontSize:12}} onChange={handleFile} />
-          {imgLoad&&<div className="note">Сжимается…</div>}
-          {imgErr&&<div className="err">{imgErr}</div>}
-          {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:120,width:'100%',objectFit:'cover',cursor:'pointer'}} onClick={()=>onImageClick(img)} />}
-          <div className="divider"/>
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-            <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>setEditing(false)}>Отмена</button>
-            <button className="btn btn-primary" style={{fontSize:13,padding:'8px 16px'}} onClick={handleSave}>Сохранить</button>
-          </div>
-        </div>
-      );
-      return (
-        <div className="card">
-          {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:200,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,marginBottom:8}}>
-            <div>
-              <div style={{fontWeight:600,color:'var(--text)',fontSize:15,marginBottom:4}}>{wish.title}</div>
-              {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
-              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none'}}>Открыть ↗</a>}
-            </div>
-            <span className="badge badge-muted" style={{flexShrink:0}}>моё</span>
-          </div>
-          <div className="divider"/>
-          <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-            <button className="btn btn-ghost" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>!locked&&setEditing(true)} disabled={locked}>Изменить</button>
-            <button className="btn btn-danger" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>window.confirm('Удалить?')&&onDelete(wish.id)}>Удалить</button>
-          </div>
-        </div>
-      );
-    }
+  // ══════════════════════════════════════
+  // PERSON OVERLAY
+  // ══════════════════════════════════════
+  function PersonOverlay({ name, open, onClose, items, claims, userName, authUid, onClaim, onUnclaim, onImgClick, claimError }) {
+    const [c1,c2] = nameColor(name||'А');
+    const wishes = useMemo(()=>items.filter(i=>i.ownerName===name),[items,name]);
+    const sorted = useMemo(()=>wishes.slice().sort((a,b)=>{
+      const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;
+    }),[wishes,claims]);
 
-    function WishCardFamily({ wish, claim, onClaim, onUnclaim, currentUserName, isMine, onImageClick }) {
-      const claimed = !!claim;
-      const iGift = claim && claim.claimerName === currentUserName;
-      const [showTip, setShowTip] = useState(false);
-      return (
-        <div className={`card ${claimed&&!iGift?'wish-claimed':''}`}>
-          {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:14,maxHeight:200,objectFit:'cover',marginBottom:12,cursor:'pointer'}} onClick={()=>onImageClick(wish.image)} />}
-          <div style={{display:'flex',alignItems:'flex-start',gap:12,marginBottom:8}}>
-            <div style={{flex:1}}>
-              <div style={{fontWeight:600,fontSize:15,color:'var(--text)',marginBottom:4}}>{wish.title}</div>
-              <div style={{display:'flex',flexWrap:'wrap',gap:6,marginBottom:6}}>
-                <span className="badge badge-purple">Для: {wish.ownerName||'—'}</span>
-                {claimed&&<span className="badge badge-claimed">✓ Занято</span>}
+    return (
+      <div className={`person-overlay ${open?'open':''}`}>
+        <div style={{background:'var(--bg)',minHeight:'100vh',paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
+          <div className="screen" style={{maxWidth:520,margin:'0 auto',paddingTop:0}}>
+            {/* Mesh in overlay */}
+            <div style={{position:'fixed',inset:0,zIndex:-1,
+              background:`radial-gradient(ellipse 60% 40% at 20% 20%,${c1}22 0%,transparent 60%)`,
+              pointerEvents:'none'}} />
+
+            <div style={{padding:'24px 0 16px',display:'flex',alignItems:'center',gap:14}}>
+              <button onClick={onClose} style={{background:'var(--s1)',border:'1px solid var(--b2)',borderRadius:12,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--t1)',fontSize:16,flexShrink:0}}>←</button>
+              <div className="avatar" style={{width:48,height:48,fontSize:16,background:`linear-gradient(135deg,${c1},${c2})`,boxShadow:`0 4px 16px ${c1}55`,flexShrink:0}}>
+                {(name||'').slice(0,2).toUpperCase()}
               </div>
-              {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
-              {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'var(--accent3)',textDecoration:'none'}}>Открыть ↗</a>}
-            </div>
-            <div style={{flexShrink:0,position:'relative'}}>
-              {claimed ? (iGift ? (
-                <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:8}}>
-                  <span className="badge badge-claimed">🎁 Вы дарите</span>
-                  <button className="btn btn-ghost" style={{fontSize:12,padding:'6px 12px'}} onClick={onUnclaim}>Снять</button>
+              <div>
+                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:900,background:`linear-gradient(135deg,${c1},${c2})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
+                  {name}
                 </div>
-              ) : (
-                <div style={{position:'relative'}} onMouseEnter={()=>setShowTip(true)} onMouseLeave={()=>setShowTip(false)}>
-                  <button className="btn" style={{fontSize:12,padding:'8px 14px',background:'rgba(255,255,255,0.05)',color:'var(--text2)',border:'1px solid var(--border2)',cursor:'default'}}>Занято</button>
-                  {showTip&&<div style={{position:'absolute',right:0,bottom:'calc(100% + 8px)',background:'#1c1c28',border:'1px solid var(--border2)',color:'var(--text)',fontSize:11,padding:'6px 10px',borderRadius:10,whiteSpace:'nowrap',zIndex:10,boxShadow:'0 8px 24px rgba(0,0,0,0.4)'}}>🎁 Дарит: {claim.claimerName}</div>}
+                <div className="note" style={{fontSize:11,marginTop:1}}>
+                  {sorted.length} {sorted.length===1?'желание':sorted.length<5?'желания':'желаний'}
                 </div>
-              )) : (
-                <button className="btn btn-primary" style={{fontSize:12,padding:'8px 16px'}} onClick={onClaim} disabled={isMine}>Я подарю 🎁</button>
-              )}
+              </div>
+            </div>
+
+            <div style={{background:'rgba(255,255,255,.03)',border:'1px solid var(--b1)',borderRadius:14,padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--t2)',lineHeight:1.5}}>
+              🎁 Забронируйте подарок — {name} не узнает кто что дарит, сюрприз сохранится!
+            </div>
+
+            {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
+
+            {sorted.length===0&&(
+              <div style={{textAlign:'center',padding:'48px 0'}}>
+                <div style={{fontSize:44,marginBottom:12}}>🎀</div>
+                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:13,color:'var(--t1)',marginBottom:6}}>{name} пока не добавил{(name||'').slice(-1)==='а'?'а':''} желания</div>
+                <div className="note">Загляните позже!</div>
+              </div>
+            )}
+
+            <div style={{display:'grid',gap:8}}>
+              {sorted.map(w=>(
+                <WishCardGuest key={w.id} wish={w} claim={claims[w.id]} userName={userName}
+                  authUid={authUid} onClaim={()=>onClaim(w)} onUnclaim={()=>onUnclaim(w)} onImgClick={onImgClick} />
+              ))}
             </div>
           </div>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
-    function App() {
-      const [authUid,setAuthUid]=useState(null);
-      const [userName,setUserName]=useState(loadLocal('nywish:name',''));
-      const [activeTab,setActiveTab]=useState('my');
-      const [items,setItems]=useState([]);const [claims,setClaims]=useState({});
-      const [itemsLoading,setItemsLoading]=useState(true);
-      const [addError,setAddError]=useState('');const [claimError,setClaimError]=useState('');
-      const [previewImage,setPreviewImage]=useState(null);
-      const [familyFilter,setFamilyFilter]=useState('all');
+  // ══════════════════════════════════════
+  // MAIN APP
+  // ══════════════════════════════════════
+  function App() {
+    const savedName = loadLocal('nywish:name','');
+    const pinOk     = loadLocal('nywish:pin_ok','');
+    const isAuthed  = savedName && pinOk === savedName;
 
-      useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
-      useEffect(()=>{ saveLocal('nywish:name',userName); },[userName]);
-      useEffect(()=>{
-        setItemsLoading(true);
-        const u=itemsCol().orderBy('createdAt','desc').onSnapshot(snap=>{const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));setItems(a);setItemsLoading(false);},err=>{console.error(err);setItemsLoading(false);});
-        return u;
-      },[]);
-      useEffect(()=>{
-        const u=claimsCol().onSnapshot(snap=>{const m={};snap.forEach(d=>m[d.id]=d.data());setClaims(m);},err=>{console.error(err);setClaims({});});
-        return u;
-      },[]);
+    const [authDone, setAuthDone] = useState(isAuthed);
+    const [userName, setUserName] = useState(isAuthed ? savedName : '');
+    const [authUid, setAuthUid]   = useState(null);
+    const [tab, setTab]           = useState('people'); // people | my | feed | profile
+    const [items, setItems]       = useState([]);
+    const [claims, setClaims]     = useState({});
+    const [loading, setLoading]   = useState(true);
+    const [addError, setAddError] = useState('');
+    const [claimError, setClaimError] = useState('');
+    const [previewImage, setPreviewImage] = useState(null);
+    const [showAdd, setShowAdd]   = useState(false);
+    const [openPerson, setOpenPerson] = useState(null); // имя или null
+    const [feedFilter, setFeedFilter] = useState('all');
 
-      const myWishes = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
-      const familyWishes = useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
-      const familyNames = useMemo(()=>{const s=new Set();familyWishes.forEach(w=>w.ownerName&&s.add(w.ownerName));return Array.from(s);},[familyWishes]);
+    useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
+    useEffect(()=>{ if(userName) saveLocal('nywish:name',userName); },[userName]);
 
-      // Вишлисты: все уникальные имена, все одинаковые
-      const peopleData = useMemo(()=>{
-        const map = {};
-        items.forEach(i=>{ if(!i.ownerName) return; map[i.ownerName] = (map[i.ownerName]||0) + 1; });
-        return Object.entries(map)
-          .map(([name,count])=>({name,count}))
-          .sort((a,b)=>a.name.localeCompare(b.name,'ru'));
-      },[items]);
+    useEffect(()=>{
+      if(!authDone) return;
+      setLoading(true);
+      const u=itemsCol().orderBy('createdAt','desc').onSnapshot(snap=>{
+        const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));
+        setItems(a);setLoading(false);
+      },err=>{console.error(err);setLoading(false);});
+      return u;
+    },[authDone]);
 
-      const filteredFamily = useMemo(()=>{
-        let arr = familyFilter==='my_claims' ? familyWishes.filter(w=>claims[w.id]?.claimerUid===authUid)
-                : familyFilter!=='all' ? familyWishes.filter(w=>w.ownerName===familyFilter)
-                : familyWishes;
-        return arr.slice().sort((a,b)=>{const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;});
-      },[familyFilter,familyWishes,claims,authUid]);
+    useEffect(()=>{
+      if(!authDone) return;
+      const u=claimsCol().onSnapshot(snap=>{const m={};snap.forEach(d=>m[d.id]=d.data());setClaims(m);},
+        err=>{console.error(err);setClaims({});});
+      return u;
+    },[authDone]);
 
-      const handleAddWish = async ({title,url,note,image})=>{
-        setAddError('');if(!userName.trim()){setAddError('Сначала введите имя.');return;}
-        try{await itemsCol().add({title,url,note,image:image||null,ownerName:userName.trim(),addedByUid:authUid,createdAt:Date.now()});}
-        catch(e){console.error(e);setAddError('Не удалось добавить.');}
-      };
-      const handleUpdateWish=async(id,u)=>{try{await itemsCol().doc(id).update(u);}catch(e){console.error(e);}};
-      const handleDeleteWish=async id=>{try{await itemsCol().doc(id).delete();}catch(e){console.error(e);}};
-      const handleClaim=async wish=>{
-        setClaimError('');if(!userName.trim()){setClaimError('Сначала введите имя.');return;}
-        if(wish.addedByUid===authUid){setClaimError('Нельзя бронировать своё желание.');return;}
-        const ref=claimsCol().doc(wish.id);
-        try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(s.exists)throw new Error('taken');tx.set(ref,{claimerUid:authUid,claimerName:userName.trim(),createdAt:Date.now()});});}
-        catch(e){setClaimError(e.message==='taken'?'Уже забронировано.':'Не удалось забронировать.');}
-      };
-      const handleUnclaim=async wish=>{
-        setClaimError('');if(!window.confirm('Снять бронь?'))return;
-        const ref=claimsCol().doc(wish.id);
-        try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw new Error('none');if(s.data().claimerUid!==authUid)throw new Error('not-owner');tx.delete(ref);});}
-        catch(e){setClaimError(e.message==='not-owner'?'Только вы можете снять свою бронь.':'Не удалось снять бронь.');}
-      };
+    const myWishes    = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
+    const othersWishes= useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
+    const peopleData  = useMemo(()=>{
+      const map={};
+      items.forEach(i=>{if(!i.ownerName)return;map[i.ownerName]=(map[i.ownerName]||0)+1;});
+      return Object.entries(map).map(([name,count])=>({name,count})).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+    },[items]);
 
-      return (
-        <div className="app-wrap">
-          <Header userName={userName} />
-          <AuthCard userName={userName} setUserName={setUserName} />
-          <Tabs active={activeTab} setActive={setActiveTab} />
+    const feedNames   = useMemo(()=>{const s=new Set();othersWishes.forEach(w=>w.ownerName&&s.add(w.ownerName));return Array.from(s);},[othersWishes]);
+    const feedItems   = useMemo(()=>{
+      let arr = feedFilter==='my_claims' ? items.filter(w=>claims[w.id]?.claimerUid===authUid)
+              : feedFilter!=='all' ? items.filter(w=>w.ownerName===feedFilter)
+              : othersWishes;
+      return arr.slice().sort((a,b)=>{const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;});
+    },[feedFilter,othersWishes,items,claims,authUid]);
 
-          {activeTab==='my' && (
-            <div className="fade-up">
-              <AddWishForm onAdd={handleAddWish} disabled={!authUid} error={addError} />
-              <div className="section-title">Мои желания{itemsLoading&&<span style={{fontWeight:400,textTransform:'none',letterSpacing:0}}> — загружается…</span>}</div>
-              {myWishes.length===0&&!itemsLoading&&<p className="note">Добавьте хотя бы одно желание 🌟</p>}
-              <div style={{display:'grid',gap:10}}>
-                {myWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDeleteWish} onUpdate={handleUpdateWish} onImageClick={setPreviewImage} />)}
+    const handleAdd = async ({title,url,note,image}) => {
+      setAddError('');
+      if(!userName.trim()){setAddError('Войдите сначала.');return;}
+      try{await itemsCol().add({title,url,note,image:image||null,ownerName:userName.trim(),addedByUid:authUid,createdAt:Date.now()});}
+      catch(e){console.error(e);setAddError('Не удалось добавить.');}
+    };
+    const handleUpdate=async(id,u)=>{try{await itemsCol().doc(id).update(u);}catch(e){console.error(e);}};
+    const handleDelete=async id=>{try{await itemsCol().doc(id).delete();}catch(e){console.error(e);}};
+
+    const handleClaim = async wish => {
+      setClaimError('');
+      if(!userName.trim()){setClaimError('Войдите сначала.');return;}
+      if(wish.addedByUid===authUid){setClaimError('Нельзя бронировать своё желание.');return;}
+      const ref=claimsCol().doc(wish.id);
+      try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(s.exists)throw new Error('taken');tx.set(ref,{claimerUid:authUid,claimerName:userName.trim(),createdAt:Date.now()});});}
+      catch(e){setClaimError(e.message==='taken'?'Уже забронировано.':'Не удалось забронировать.');}
+    };
+    const handleUnclaim = async wish => {
+      setClaimError('');
+      if(!window.confirm('Снять бронь?'))return;
+      const ref=claimsCol().doc(wish.id);
+      try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw new Error();if(s.data().claimerUid!==authUid)throw new Error('not-owner');tx.delete(ref);});}
+      catch(e){setClaimError(e.message==='not-owner'?'Только вы можете снять свою бронь.':'Не удалось снять бронь.');}
+    };
+
+    const handleLogout = () => {
+      saveLocal('nywish:pin_ok','');
+      setAuthDone(false); setUserName(''); setTab('people');
+    };
+
+    if(!authDone) return <AuthScreen onAuth={name=>{setUserName(name);setAuthDone(true);}}/>;
+
+    const myClaims = Object.entries(claims).filter(([,c])=>c.claimerUid===authUid).length;
+
+    return (
+      <div className="app">
+        {/* ── ЛЮДИ ── */}
+        {tab==='people' && (
+          <div className="screen fu">
+            <div className="page-header">
+              <div>
+                <div className="page-title">Вишлисты</div>
+                <div className="note" style={{fontSize:11,marginTop:3}}>Нажмите на человека чтобы подарить 🎁</div>
               </div>
             </div>
-          )}
+            {loading&&<p className="note">Загружается…</p>}
+            {!loading&&peopleData.length===0&&<p className="note">Пока никто не добавил желания.</p>}
+            {peopleData.map(({name,count})=>{
+              const [c1,c2]=nameColor(name);
+              const myClaimsForPerson = Object.values(claims).filter(c=>c.claimerUid===authUid&&items.find(i=>i.id===Object.keys(claims).find(k=>claims[k]===c)&&i.ownerName===name)).length;
+              return (
+                <div className="person-card" key={name} onClick={()=>setOpenPerson(name)}>
+                  <div className="avatar" style={{width:46,height:46,fontSize:14,background:`linear-gradient(135deg,${c1},${c2})`,boxShadow:`0 3px 12px ${c1}44`}}>
+                    {name.slice(0,2).toUpperCase()}
+                  </div>
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:15,color:'var(--t1)',marginBottom:2}}>{name}</div>
+                    <div className="note" style={{fontSize:11}}>{count} {count===1?'желание':count<5?'желания':'желаний'}</div>
+                  </div>
+                  <div style={{fontSize:18,color:'var(--t2)'}}>›</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-          {activeTab==='family' && (
-            <div className="fade-up">
-              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:12}}>
-                <div className="section-title" style={{marginBottom:0}}>Желания семьи</div>
-                <select value={familyFilter} onChange={e=>setFamilyFilter(e.target.value)}>
-                  <option value="all">Все</option>
-                  <option value="my_claims">Мои брони</option>
-                  {familyNames.map(n=><option key={n} value={n}>{n}</option>)}
-                </select>
+        {/* ── МОЁ ── */}
+        {tab==='my' && (
+          <div className="screen fu">
+            <div className="page-header">
+              <div className="page-title">Мои<br/>желания</div>
+            </div>
+            {myWishes.length===0&&!loading&&(
+              <div style={{textAlign:'center',padding:'32px 0 16px'}}>
+                <div style={{fontSize:44,marginBottom:12}}>🌟</div>
+                <div className="note">Добавьте первое желание — нажмите ＋</div>
               </div>
-              <p className="note" style={{marginBottom:14}}>Ваши желания здесь не видны — только чужие 💝</p>
-              {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
-              {filteredFamily.length===0&&!itemsLoading&&<p className="note">Пока пусто.</p>}
-              <div style={{display:'grid',gap:10}}>
-                {filteredFamily.map(w=><WishCardFamily key={w.id} wish={w} claim={claims[w.id]} currentUserName={userName.trim()} isMine={w.addedByUid===authUid} onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImageClick={setPreviewImage} />)}
+            )}
+            <div style={{display:'grid',gap:8}}>
+              {myWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDelete} onUpdate={handleUpdate} onImgClick={setPreviewImage} />)}
+            </div>
+          </div>
+        )}
+
+        {/* ── ЛЕНТА ── */}
+        {tab==='feed' && (
+          <div className="screen fu">
+            <div className="page-header">
+              <div className="page-title">Лента</div>
+            </div>
+            <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:8,marginBottom:8,WebkitOverflowScrolling:'touch'}}>
+              {[['all','Все'],['my_claims','Мои брони'],...feedNames.map(n=>[n,n])].map(([val,label])=>(
+                <button key={val} onClick={()=>setFeedFilter(val)} style={{
+                  flexShrink:0,borderRadius:999,padding:'5px 12px',fontSize:12,fontWeight:600,border:'none',cursor:'pointer',
+                  background:feedFilter===val?`linear-gradient(135deg,var(--g1),var(--g2))`:'var(--s2)',
+                  color:feedFilter===val?'var(--t1)':'var(--t2)',
+                  boxShadow:feedFilter===val?'0 3px 12px rgba(90,122,56,.3)':'none',
+                }}>{label}</button>
+              ))}
+            </div>
+            {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
+            {feedItems.length===0&&!loading&&<p className="note">Пусто.</p>}
+            <div style={{display:'grid',gap:8}}>
+              {feedItems.map(w=>(
+                <div key={w.id}>
+                  {feedFilter==='all'&&<div style={{fontSize:10,fontWeight:700,color:'var(--gold)',marginBottom:4,letterSpacing:'.06em',textTransform:'uppercase'}}>{w.ownerName}</div>}
+                  <WishCardGuest wish={w} claim={claims[w.id]} userName={userName} authUid={authUid}
+                    onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImgClick={setPreviewImage} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── ПРОФИЛЬ ── */}
+        {tab==='profile' && (
+          <div className="screen fu">
+            <div className="page-header"><div className="page-title">Профиль</div></div>
+            <div className="card" style={{marginBottom:10}}>
+              <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <div className="avatar" style={{width:52,height:52,fontSize:18,background:`linear-gradient(135deg,${nameColor(userName)[0]},${nameColor(userName)[1]})`,boxShadow:`0 4px 16px ${nameColor(userName)[0]}55`}}>
+                  {userName.slice(0,2).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:16,fontWeight:700,color:'var(--t1)'}}>{userName}</div>
+                  <div className="note" style={{fontSize:11,marginTop:2}}>{myWishes.length} желаний · {myClaims} брон{myClaims===1?'ь':myClaims<5?'и':'ей'}</div>
+                </div>
               </div>
             </div>
-          )}
-
-          {activeTab==='people' && (
-            <div className="fade-up">
-              <div className="section-title" style={{marginBottom:4}}>Индивидуальные вишлисты</div>
-              <p className="note" style={{marginBottom:16}}>Нажмите на человека — откроется его личная страница с желаниями 🎁</p>
-              {peopleData.length===0&&!itemsLoading&&<p className="note">Пока никто не добавил желания.</p>}
-              <div style={{display:'grid',gap:10}}>
-                {peopleData.map(({name,count})=><PersonCard key={name} name={name} wishCount={count} />)}
+            <div className="card" style={{marginBottom:10}}>
+              <div style={{fontSize:12,color:'var(--t2)',marginBottom:12,lineHeight:1.5}}>
+                🔒 PIN защищает ваш профиль. Используйте один и тот же PIN на всех устройствах для синхронизации.
               </div>
+              <button className="btn btn-d" style={{width:'100%',fontSize:13}} onClick={handleLogout}>Выйти из аккаунта</button>
             </div>
-          )}
-
-          {previewImage&&(
-            <div className="modal-overlay" onClick={()=>setPreviewImage(null)}>
-              <div style={{position:'relative',maxWidth:'100%',maxHeight:'100%'}} onClick={e=>e.stopPropagation()}>
-                <button style={{position:'absolute',top:-12,right:-12,width:32,height:32,borderRadius:'50%',background:'var(--surface)',border:'1px solid var(--border2)',cursor:'pointer',color:'var(--text)',fontSize:14,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPreviewImage(null)}>✕</button>
-                <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'85vw',borderRadius:20,boxShadow:'0 30px 80px rgba(0,0,0,0.6)'}} />
-              </div>
+            <div style={{fontSize:11,color:'var(--t2)',textAlign:'center',marginTop:16,lineHeight:1.6}}>
+              <div style={{marginBottom:4}}>🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год</div>
+              Семейный вишлист подарков
             </div>
-          )}
-        </div>
-      );
-    }
+          </div>
+        )}
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+        {/* ── FAB ── */}
+        {(tab==='my'||tab==='feed') && (
+          <button className="fab" onClick={()=>setShowAdd(true)}>＋</button>
+        )}
+
+        {/* ── BOTTOM NAV ── */}
+        <nav className="bottom-nav">
+          {[
+            {id:'people', icon:'👥', label:'Люди'},
+            {id:'my',     icon:'🎁', label:'Моё'},
+            {id:'feed',   icon:'🔍', label:'Лента'},
+            {id:'profile',icon:'👤', label:'Профиль'},
+          ].map(({id,icon,label})=>(
+            <div key={id} className={`nav-item ${tab===id?'on':''}`} onClick={()=>setTab(id)}>
+              {tab===id&&<div className="nav-dot"/>}
+              <div className="nav-icon">{icon}</div>
+              <div className="nav-label">{label}</div>
+            </div>
+          ))}
+        </nav>
+
+        {/* ── ADD SHEET ── */}
+        <AddWishSheet open={showAdd} onClose={()=>setShowAdd(false)} onAdd={handleAdd} disabled={!authUid} error={addError} />
+
+        {/* ── PERSON OVERLAY ── */}
+        <PersonOverlay
+          name={openPerson||''} open={!!openPerson}
+          onClose={()=>{setOpenPerson(null);setClaimError('');}}
+          items={items} claims={claims}
+          userName={userName} authUid={authUid}
+          onClaim={handleClaim} onUnclaim={handleUnclaim}
+          onImgClick={setPreviewImage} claimError={claimError}
+        />
+
+        {/* ── IMAGE PREVIEW ── */}
+        {previewImage&&(
+          <div className="img-overlay" onClick={()=>setPreviewImage(null)}>
+            <div style={{position:'relative'}} onClick={e=>e.stopPropagation()}>
+              <button style={{position:'absolute',top:-10,right:-10,width:30,height:30,borderRadius:'50%',background:'var(--s1)',border:'1px solid var(--b2)',cursor:'pointer',color:'var(--t1)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPreviewImage(null)}>✕</button>
+              <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'88vw',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,.7)'}} />
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
 </body>
 </html>
