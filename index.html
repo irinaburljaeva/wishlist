@@ -107,6 +107,7 @@
     const claimsCol = () => listDoc.collection('claims');
     const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
     const loadLocal = (k,fb) => { try { const v=localStorage.getItem(k); return v?JSON.parse(v):fb; } catch { return fb; } };
+    const usersCol = () => db.collection('users');
     async function compressImage(file) {
       return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -150,28 +151,174 @@
       );
     }
 
-    function NameCard({ userName, setUserName }) {
-      const [editing, setEditing] = useState(!userName);
-      const [temp, setTemp] = useState(userName || '');
-      useEffect(() => { if (!userName) setEditing(true); }, [userName]);
-      if (editing) return (
-        <div className="card fade-up" style={{marginBottom:12}}>
-          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:10,letterSpacing:'0.06em',textTransform:'uppercase'}}>Как вас зовут?</div>
-          <input className="input" placeholder="Например: Ира, Валера, Мама…" value={temp} onChange={e=>setTemp(e.target.value)}
-            onKeyDown={e=>e.key==='Enter'&&temp.trim()&&(setUserName(temp.trim()),setEditing(false))} style={{marginBottom:10}} />
-          <div style={{display:'flex',justifyContent:'flex-end'}}>
-            <button className="btn btn-primary" style={{fontSize:13}} onClick={()=>{if(temp.trim()){setUserName(temp.trim());setEditing(false);}}} disabled={!temp.trim()}>Продолжить →</button>
-          </div>
-        </div>
-      );
-      return (
-        <div className="name-card fade-up" onClick={()=>setEditing(true)}>
+    // ===== AUTH CARD с PIN =====
+    // Хэш PIN — не храним в открытом виде
+    async function hashPin(pin) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin + 'podarki_salt'));
+      return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    function AuthCard({ userName, setUserName }) {
+      const [step, setStep] = useState('name'); // 'name' | 'pin_new' | 'pin_enter'
+      const [nameInput, setNameInput] = useState(userName || '');
+      const [pin, setPin] = useState('');
+      const [pin2, setPin2] = useState(''); // подтверждение
+      const [loading, setLoading] = useState(false);
+      const [error, setError] = useState('');
+      const [collapsed, setCollapsed] = useState(!!userName);
+
+      const pinInputRef = React.useRef(null);
+
+      useEffect(() => {
+        if (step !== 'name' && pinInputRef.current) pinInputRef.current.focus();
+      }, [step]);
+
+      // Шаг 1: проверяем есть ли такое имя в Firebase
+      const handleNameSubmit = async () => {
+        const name = nameInput.trim();
+        if (!name) return;
+        setLoading(true); setError('');
+        try {
+          const doc = await usersCol().doc(name).get();
+          if (doc.exists) {
+            // Имя занято — просим PIN
+            setStep('pin_enter');
+          } else {
+            // Новый пользователь — регистрация
+            setStep('pin_new');
+          }
+        } catch(e) {
+          setError('Ошибка соединения. Попробуйте ещё раз.');
+        }
+        setLoading(false);
+      };
+
+      // Шаг 2а: регистрация — создаём профиль
+      const handleRegister = async () => {
+        if (pin.length < 4) { setError('PIN должен быть минимум 4 цифры.'); return; }
+        if (pin !== pin2) { setError('PIN-коды не совпадают.'); return; }
+        const name = nameInput.trim();
+        setLoading(true); setError('');
+        try {
+          const hashed = await hashPin(pin);
+          // Транзакция — защита от гонки при одновременной регистрации
+          const ref = usersCol().doc(name);
+          await db.runTransaction(async tx => {
+            const snap = await tx.get(ref);
+            if (snap.exists) throw new Error('taken');
+            tx.set(ref, { pinHash: hashed, createdAt: Date.now() });
+          });
+          saveLocal('nywish:name', name);
+          saveLocal('nywish:pin_ok', name); // флаг что PIN подтверждён на этом устройстве
+          setUserName(name);
+          setCollapsed(true);
+        } catch(e) {
+          if (e.message === 'taken') {
+            setError('Кто-то только что занял это имя. Выберите другое.');
+            setStep('name'); setPin(''); setPin2('');
+          } else {
+            setError('Не удалось зарегистрироваться. Попробуйте ещё раз.');
+          }
+        }
+        setLoading(false);
+      };
+
+      // Шаг 2б: вход — проверяем PIN
+      const handleLogin = async () => {
+        if (!pin) return;
+        const name = nameInput.trim();
+        setLoading(true); setError('');
+        try {
+          const doc = await usersCol().doc(name).get();
+          if (!doc.exists) { setError('Профиль не найден.'); setLoading(false); return; }
+          const hashed = await hashPin(pin);
+          if (doc.data().pinHash !== hashed) {
+            setError('Неверный PIN. Попробуйте ещё раз.');
+            setPin('');
+            setLoading(false); return;
+          }
+          saveLocal('nywish:name', name);
+          saveLocal('nywish:pin_ok', name);
+          setUserName(name);
+          setCollapsed(true);
+        } catch(e) {
+          setError('Ошибка соединения. Попробуйте ещё раз.');
+        }
+        setLoading(false);
+      };
+
+      // Свёрнутое состояние — показываем имя
+      if (collapsed && userName) return (
+        <div className="name-card fade-up" onClick={()=>setCollapsed(false)}>
           <div className="name-avatar">👤</div>
           <div style={{flex:1}}>
-            <div style={{fontSize:11,color:'var(--text2)',marginBottom:2}}>Ваше имя</div>
+            <div style={{fontSize:11,color:'var(--text2)',marginBottom:2}}>Вы вошли как</div>
             <div style={{fontWeight:600,color:'var(--text)'}}>{userName}</div>
           </div>
-          <div style={{fontSize:12,color:'var(--text2)'}}>изменить ✏️</div>
+          <div style={{fontSize:12,color:'var(--text2)'}}>сменить ✏️</div>
+        </div>
+      );
+
+      return (
+        <div className="card fade-up" style={{marginBottom:12}}>
+          {/* Шаг: имя */}
+          {step === 'name' && (<>
+            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:10,letterSpacing:'0.06em',textTransform:'uppercase'}}>
+              {userName ? 'Сменить аккаунт' : 'Войти или зарегистрироваться'}
+            </div>
+            <input className="input" placeholder="Ваше имя (Ира, Валера, Мама…)" value={nameInput}
+              onChange={e=>{setNameInput(e.target.value);setError('');}}
+              onKeyDown={e=>e.key==='Enter'&&nameInput.trim()&&handleNameSubmit()}
+              style={{marginBottom:10}} autoFocus />
+            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+            <div style={{display:'flex',justifyContent:'flex-end'}}>
+              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleNameSubmit} disabled={!nameInput.trim()||loading}>
+                {loading ? 'Проверяем…' : 'Продолжить →'}
+              </button>
+            </div>
+          </>)}
+
+          {/* Шаг: новый PIN */}
+          {step === 'pin_new' && (<>
+            <div style={{marginBottom:14}}>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:4,letterSpacing:'0.06em',textTransform:'uppercase'}}>Придумайте PIN</div>
+              <div style={{fontSize:13,color:'var(--text2)'}}>Имя <strong style={{color:'var(--text)'}}>{nameInput.trim()}</strong> свободно! Придумайте PIN-код чтобы никто другой не мог войти под вашим именем.</div>
+            </div>
+            <input ref={pinInputRef} className="input" type="password" inputMode="numeric" placeholder="PIN (минимум 4 цифры)" value={pin}
+              onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}}
+              onKeyDown={e=>e.key==='Enter'&&pin2&&handleRegister()}
+              maxLength={8} style={{marginBottom:10}} />
+            <input className="input" type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2}
+              onChange={e=>{setPin2(e.target.value.replace(/\D/g,''));setError('');}}
+              onKeyDown={e=>e.key==='Enter'&&handleRegister()}
+              maxLength={8} style={{marginBottom:10}} />
+            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+            <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center'}}>
+              <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>{setStep('name');setPin('');setPin2('');setError('');}}>← Назад</button>
+              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleRegister} disabled={pin.length<4||!pin2||loading}>
+                {loading ? 'Регистрируем…' : 'Зарегистрироваться ✓'}
+              </button>
+            </div>
+          </>)}
+
+          {/* Шаг: ввод PIN */}
+          {step === 'pin_enter' && (<>
+            <div style={{marginBottom:14}}>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:4,letterSpacing:'0.06em',textTransform:'uppercase'}}>Введите PIN</div>
+              <div style={{fontSize:13,color:'var(--text2)'}}>Имя <strong style={{color:'var(--text)'}}>{nameInput.trim()}</strong> уже зарегистрировано. Введите PIN чтобы войти.</div>
+            </div>
+            <input ref={pinInputRef} className="input" type="password" inputMode="numeric" placeholder="Ваш PIN" value={pin}
+              onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}}
+              onKeyDown={e=>e.key==='Enter'&&handleLogin()}
+              maxLength={8} style={{marginBottom:10}} />
+            {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+            <div style={{display:'flex',gap:8,justifyContent:'space-between',alignItems:'center'}}>
+              <button className="btn btn-ghost" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>{setStep('name');setPin('');setError('');}}>← Назад</button>
+              <button className="btn btn-primary" style={{fontSize:13}} onClick={handleLogin} disabled={!pin||loading}>
+                {loading ? 'Проверяем…' : 'Войти →'}
+              </button>
+            </div>
+          </>)}
         </div>
       );
     }
@@ -393,7 +540,7 @@
       return (
         <div className="app-wrap">
           <Header userName={userName} />
-          <NameCard userName={userName} setUserName={setUserName} />
+          <AuthCard userName={userName} setUserName={setUserName} />
           <Tabs active={activeTab} setActive={setActiveTab} />
 
           {activeTab==='my' && (
