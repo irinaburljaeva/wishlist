@@ -268,7 +268,12 @@
 
       // Свёрнутое состояние — показываем имя
       if (collapsed && userName) return (
-        <div className="name-card fade-up" onClick={()=>setCollapsed(false)}>
+        <div className="name-card fade-up" onClick={()=>{
+          setCollapsed(false);
+          setNameInput(''); // сбрасываем имя чтобы ввести новое
+          setStep('name');
+          setPin(''); setPin2(''); setError('');
+        }}>
           <div className="name-avatar">👤</div>
           <div style={{flex:1}}>
             <div style={{fontSize:11,color:'var(--text2)',marginBottom:2}}>Вы вошли как</div>
@@ -282,8 +287,11 @@
         <div className="card fade-up" style={{marginBottom:12}}>
           {/* Шаг: имя */}
           {step === 'name' && (<>
-            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',marginBottom:10,letterSpacing:'0.06em',textTransform:'uppercase'}}>
-              {userName ? 'Сменить аккаунт' : 'Войти или зарегистрироваться'}
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
+              <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:12,fontWeight:700,color:'var(--text2)',letterSpacing:'0.06em',textTransform:'uppercase'}}>
+                {userName ? 'Сменить аккаунт' : 'Войти или зарегистрироваться'}
+              </div>
+              {userName && <button className="btn btn-ghost" style={{fontSize:12,padding:'5px 12px'}} onClick={()=>setCollapsed(true)}>✕</button>}
             </div>
             <input className="input" placeholder="Ваше имя (Ира, Валера, Мама…)" value={nameInput}
               onChange={e=>{setNameInput(e.target.value);setError('');}}
