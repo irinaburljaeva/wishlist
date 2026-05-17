@@ -317,6 +317,7 @@
                   <code style={{fontSize:10,background:'var(--s2)',padding:'2px 6px',borderRadius:6,display:'inline-block',marginTop:4}}>match /users/{'{'}userName{'}'} {'{'} allow read, create: if request.auth != null; {'}'}</code>
                 </div>}
               </div>}
+              <button className="btn btn-p" style={{width:'100%'}} onClick={handleName} disabled={!nameInput.trim()||loading}>
                 {loading?'Проверяем…':'Продолжить →'}
               </button>
             </>)}
