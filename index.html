@@ -759,7 +759,8 @@
         </div>
 
         <div style={{fontSize:11,color:'var(--t2)',textAlign:'center',marginTop:8,marginBottom:8,lineHeight:1.6}}>
-          🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год<br/>Семейный вишлист подарков
+          🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год<br/>Семейный вишлист подарков<br/>
+          <span style={{fontSize:10,opacity:.5,userSelect:'all'}}>uid: {authUid}</span>
         </div>
       </div>
     );
@@ -808,6 +809,31 @@
     },[authDone]);
 
     const myWishes    = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
+
+    const THREE_MONTHS = 90 * 24 * 60 * 60 * 1000;
+    // Желания которые надо проверить: старше 3 месяцев И не отложены (snooze)
+    const snoozedRaw = useMemo(()=>loadLocal('nywish:snoozed:'+userName,[]),[userName,items]);
+    // Фильтруем только те у кого срок отсрочки не истёк
+    const snoozedIds = useMemo(()=>snoozedRaw
+      .filter(s=>s?.until && Date.now() < s.until)
+      .map(s=>s.id)
+    ,[snoozedRaw]);
+    const staleWishes = useMemo(()=>myWishes.filter(w=>{
+      if(!w.createdAt) return false;
+      const age = Date.now() - w.createdAt;
+      return age > THREE_MONTHS && !snoozedIds.includes(w.id);
+    }),[myWishes,snoozedIds]);
+    const freshWishes = useMemo(()=>myWishes.filter(w=>!staleWishes.find(s=>s.id===w.id)),[myWishes,staleWishes]);
+
+    // «Всё ещё хочу» — откладываем напоминание ещё на 3 месяца
+    const handleSnoozeWish = (id) => {
+      const snoozed = loadLocal('nywish:snoozed:'+userName,[]);
+      // Сохраняем id + время когда отложили
+      const next = [...snoozed.filter(s=>s!==id&&s?.id!==id), {id, until: Date.now()+THREE_MONTHS}];
+      saveLocal('nywish:snoozed:'+userName, next);
+      // Принудительно обновляем список — пересчитываем
+      setItems(prev=>[...prev]);
+    };
     const othersWishes= useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
     const peopleData  = useMemo(()=>{
       const map={};
@@ -895,6 +921,49 @@
             <div className="page-header">
               <div className="page-title">Мои<br/>желания</div>
             </div>
+
+            {/* Устаревшие желания — напоминание */}
+            {staleWishes.length>0&&(
+              <div style={{marginBottom:16}}>
+                <div style={{
+                  background:'linear-gradient(135deg,rgba(200,169,110,0.12),rgba(200,120,50,0.08))',
+                  border:'1px solid rgba(200,169,110,0.3)',
+                  borderRadius:18,padding:'14px 16px',marginBottom:10,
+                }}>
+                  <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:10}}>
+                    <div style={{fontSize:22,flexShrink:0}}>⏰</div>
+                    <div>
+                      <div style={{fontWeight:700,color:'var(--gold)',fontSize:14,marginBottom:3}}>Проверьте старые желания</div>
+                      <div style={{fontSize:12,color:'rgba(200,169,110,0.7)',lineHeight:1.4}}>
+                        {staleWishes.length} {staleWishes.length===1?'желание уже':'желания уже'} больше 3 месяцев — актуально ещё?
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{display:'grid',gap:8}}>
+                    {staleWishes.map(w=>(
+                      <div key={w.id} style={{background:'rgba(0,0,0,0.2)',borderRadius:14,padding:'12px 14px'}}>
+                        <div style={{fontWeight:600,fontSize:14,color:'var(--t1)',marginBottom:3}}>{w.title}</div>
+                        {w.note&&<div style={{fontSize:12,color:'var(--t2)',marginBottom:3}}>{w.note}</div>}
+                        <div style={{fontSize:11,color:'rgba(200,169,110,0.6)',marginBottom:10}}>
+                          Добавлено {new Date(w.createdAt).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}
+                        </div>
+                        <div style={{display:'flex',gap:8}}>
+                          <button className="btn btn-g" style={{flex:1,fontSize:12,padding:'8px 12px'}}
+                            onClick={()=>handleSnoozeWish(w.id)}>
+                            ✓ Всё ещё хочу
+                          </button>
+                          <button className="btn btn-d" style={{flex:1,fontSize:12,padding:'8px 12px'}}
+                            onClick={()=>handleDelete(w.id)}>
+                            🎁 Уже подарили
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {myWishes.length===0&&!loading&&(
               <div style={{textAlign:'center',padding:'32px 0 16px'}}>
                 <div style={{fontSize:44,marginBottom:12}}>🌟</div>
@@ -902,7 +971,7 @@
               </div>
             )}
             <div style={{display:'grid',gap:8}}>
-              {myWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDelete} onUpdate={handleUpdate} onImgClick={setPreviewImage} />)}
+              {freshWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDelete} onUpdate={handleUpdate} onImgClick={setPreviewImage} />)}
             </div>
           </div>
         )}
