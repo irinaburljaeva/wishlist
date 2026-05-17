@@ -225,8 +225,18 @@
       setLoading(true); setError('');
       try {
         const doc = await usersCol().doc(name).get();
+        // Профиль есть → вход по PIN
+        // Профиля нет → регистрация (в том числе миграция старых пользователей)
         setStep(doc.exists ? 'pin_enter' : 'pin_new');
-      } catch(e) { setError('Ошибка соединения. Попробуйте ещё раз.'); }
+      } catch(e) {
+        console.error('handleName error:', e);
+        // Скорее всего правило users ещё не добавлено в Firebase
+        if(e.code === 'permission-denied') {
+          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
+        } else {
+          setError('Ошибка соединения. Проверьте интернет и попробуйте ещё раз.');
+        }
+      }
       setLoading(false);
     };
 
@@ -236,17 +246,26 @@
       setLoading(true); setError('');
       try {
         const hashed = await hashPin(pin);
+        const ref = usersCol().doc(nameInput.trim());
         await db.runTransaction(async tx => {
-          const snap = await tx.get(usersCol().doc(nameInput.trim()));
+          const snap = await tx.get(ref);
           if(snap.exists) throw new Error('taken');
-          tx.set(usersCol().doc(nameInput.trim()),{pinHash:hashed,createdAt:Date.now()});
+          tx.set(ref,{pinHash:hashed,createdAt:Date.now()});
         });
         saveLocal('nywish:name',nameInput.trim());
         saveLocal('nywish:pin_ok',nameInput.trim());
         onAuth(nameInput.trim());
       } catch(e) {
-        if(e.message==='taken'){setError('Имя уже занято.');setStep('name');setPin('');setPin2('');}
-        else setError('Не удалось зарегистрироваться.');
+        console.error('handleRegister error:', e);
+        if(e.message==='taken'){
+          // Гонка — пока вводили PIN, кто-то занял имя → переходим к вводу PIN
+          setError('Это имя уже зарегистрировано. Введите PIN.');
+          setStep('pin_enter'); setPin(''); setPin2('');
+        } else if(e.code==='permission-denied') {
+          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
+        } else {
+          setError('Не удалось зарегистрироваться. Попробуйте ещё раз.');
+        }
       }
       setLoading(false);
     };
@@ -258,11 +277,18 @@
         const doc = await usersCol().doc(nameInput.trim()).get();
         if(!doc.exists){setError('Профиль не найден.');setLoading(false);return;}
         const hashed = await hashPin(pin);
-        if(doc.data().pinHash !== hashed){setError('Неверный PIN.');setPin('');setLoading(false);return;}
+        if(doc.data().pinHash !== hashed){setError('Неверный PIN. Попробуйте ещё раз.');setPin('');setLoading(false);return;}
         saveLocal('nywish:name',nameInput.trim());
         saveLocal('nywish:pin_ok',nameInput.trim());
         onAuth(nameInput.trim());
-      } catch(e) { setError('Ошибка соединения.'); }
+      } catch(e) {
+        console.error('handleLogin error:', e);
+        if(e.code==='permission-denied') {
+          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
+        } else {
+          setError('Ошибка соединения. Проверьте интернет и попробуйте ещё раз.');
+        }
+      }
       setLoading(false);
     };
 
@@ -284,8 +310,13 @@
                 onChange={e=>{setNameInput(e.target.value);setError('');}}
                 onKeyDown={e=>e.key==='Enter'&&nameInput.trim()&&handleName()}
                 style={{marginBottom:10}} autoFocus />
-              {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-              <button className="btn btn-p" style={{width:'100%'}} onClick={handleName} disabled={!nameInput.trim()||loading}>
+              {error&&<div className="err" style={{marginBottom:8}}>
+                {error}
+                {error.includes('доступа')&&<div style={{marginTop:6,fontSize:11,color:'var(--t2)',lineHeight:1.5}}>
+                  Добавьте в Firebase Console → Firestore → Rules:<br/>
+                  <code style={{fontSize:10,background:'var(--s2)',padding:'2px 6px',borderRadius:6,display:'inline-block',marginTop:4}}>match /users/{'{'}userName{'}'} {'{'} allow read, create: if request.auth != null; {'}'}</code>
+                </div>}
+              </div>}
                 {loading?'Проверяем…':'Продолжить →'}
               </button>
             </>)}
@@ -525,6 +556,215 @@
   }
 
   // ══════════════════════════════════════
+  // PROFILE TAB
+  // ══════════════════════════════════════
+  const THEMES = [
+    { id:'forest',  label:'Лесная',   g1:'#5a7a38', g2:'#7ea858', bg:'#0f110d', s1:'#181c15' },
+    { id:'ocean',   label:'Океан',    g1:'#1a6090', g2:'#2890c8', bg:'#0a0c10', s1:'#12161e' },
+    { id:'amber',   label:'Янтарь',   g1:'#8a5a10', g2:'#c8820a', bg:'#100d08', s1:'#1a1510' },
+    { id:'rose',    label:'Роза',     g1:'#8a3050', g2:'#c05878', bg:'#100a0d', s1:'#1a1015' },
+    { id:'plum',    label:'Слива',    g1:'#5a3888', g2:'#8860c0', bg:'#0c0a10', s1:'#151220' },
+  ];
+
+  function ProfileTab({ userName, authUid, myWishes, myClaims, claims, items, onLogout, onUnclaim, onImgClick }) {
+    const [photo, setPhoto]       = useState(loadLocal('profile:photo:'+userName, ''));
+    const [showPin, setShowPin]   = useState(false);
+    const [oldPin, setOldPin]     = useState('');
+    const [newPin, setNewPin]     = useState('');
+    const [newPin2, setNewPin2]   = useState('');
+    const [pinMsg, setPinMsg]     = useState('');
+    const [pinErr, setPinErr]     = useState('');
+    const [pinLoad, setPinLoad]   = useState(false);
+    const [theme, setTheme]       = useState(loadLocal('profile:theme', 'forest'));
+    const [showClaims, setShowClaims] = useState(false);
+
+    const [c1, c2] = nameColor(userName);
+
+    // Применяем тему к CSS переменным
+    useEffect(()=>{
+      const t = THEMES.find(t=>t.id===theme) || THEMES[0];
+      const root = document.documentElement;
+      root.style.setProperty('--g1', t.g1);
+      root.style.setProperty('--g2', t.g2);
+      saveLocal('profile:theme', theme);
+    }, [theme]);
+
+    const handlePhoto = async e => {
+      const f = e.target.files?.[0]; if(!f) return;
+      try {
+        const compressed = await compressImage(f);
+        setPhoto(compressed);
+        saveLocal('profile:photo:'+userName, compressed);
+      } catch(err) { console.error(err); }
+    };
+
+    const handleChangePin = async () => {
+      if(!oldPin){setPinErr('Введите старый PIN.');return;}
+      if(newPin.length<4){setPinErr('Новый PIN минимум 4 цифры.');return;}
+      if(newPin!==newPin2){setPinErr('Новые PIN-коды не совпадают.');return;}
+      setPinLoad(true); setPinErr(''); setPinMsg('');
+      try {
+        const oldHash = await hashPin(oldPin);
+        const newHash = await hashPin(newPin);
+        const ref = usersCol().doc(userName);
+        await db.runTransaction(async tx => {
+          const snap = await tx.get(ref);
+          if(!snap.exists) throw new Error('no-user');
+          if(snap.data().pinHash !== oldHash) throw new Error('wrong-pin');
+          tx.update(ref, {pinHash: newHash});
+        });
+        // Обновляем разрешение для нового PIN
+        saveLocal('nywish:pin_ok', userName);
+        setPinMsg('PIN успешно изменён ✓');
+        setOldPin(''); setNewPin(''); setNewPin2('');
+        setTimeout(()=>setShowPin(false), 1500);
+      } catch(e) {
+        if(e.message==='wrong-pin') setPinErr('Старый PIN неверный.');
+        else setPinErr('Не удалось изменить PIN. Попробуйте ещё раз.');
+      }
+      setPinLoad(false);
+    };
+
+    // Мои активные брони
+    const myClaimsList = useMemo(()=>{
+      return Object.entries(claims)
+        .filter(([,c])=>c.claimerUid===authUid)
+        .map(([id])=>items.find(i=>i.id===id))
+        .filter(Boolean);
+    }, [claims, items, authUid]);
+
+    return (
+      <div className="screen fu">
+        <div className="page-header"><div className="page-title">Профиль</div></div>
+
+        {/* ── АВАТАР + ИМЯ ── */}
+        <div className="card" style={{marginBottom:10,textAlign:'center',paddingTop:24,paddingBottom:20}}>
+          <div style={{position:'relative',display:'inline-block',marginBottom:14}}>
+            <div style={{
+              width:88,height:88,borderRadius:26,overflow:'hidden',
+              background:photo?'transparent':`linear-gradient(135deg,${c1},${c2})`,
+              boxShadow:`0 6px 24px ${c1}55`,
+              display:'flex',alignItems:'center',justifyContent:'center',
+              fontFamily:"'Unbounded',sans-serif",fontSize:28,fontWeight:700,color:'white',
+            }}>
+              {photo
+                ? <img src={photo} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                : userName.slice(0,2).toUpperCase()
+              }
+            </div>
+            {/* Кнопка смены фото */}
+            <label style={{
+              position:'absolute',bottom:-6,right:-6,
+              width:28,height:28,borderRadius:'50%',
+              background:'var(--s2)',border:'2px solid var(--bg)',
+              display:'flex',alignItems:'center',justifyContent:'center',
+              cursor:'pointer',fontSize:13,
+            }}>
+              📷
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto} />
+            </label>
+          </div>
+          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:700,color:'var(--t1)',marginBottom:4}}>{userName}</div>
+
+          {/* Статы */}
+          <div style={{display:'flex',justifyContent:'center',gap:24,marginTop:12}}>
+            {[
+              {val:myWishes.length, label:'желаний'},
+              {val:myClaims, label:'брон'+( myClaims===1?'ь':myClaims<5?'и':'ей')},
+            ].map(({val,label})=>(
+              <div key={label} style={{textAlign:'center'}}>
+                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:700,
+                  background:`linear-gradient(135deg,${c1},${c2})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{val}</div>
+                <div className="note" style={{fontSize:11}}>{label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── МОИ БРОНИ ── */}
+        <div className="card" style={{marginBottom:10}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>setShowClaims(s=>!s)}>
+            <div style={{fontWeight:600,color:'var(--t1)',fontSize:14}}>🎁 Я дарю</div>
+            <div style={{fontSize:12,color:'var(--t2)'}}>{myClaims} подарк{myClaims===1?'':myClaims<5?'а':'ов'} {showClaims?'▲':'▼'}</div>
+          </div>
+          {showClaims && (
+            <div style={{marginTop:12,display:'grid',gap:8}}>
+              {myClaimsList.length===0&&<div className="note">Вы пока ничего не бронировали.</div>}
+              {myClaimsList.map(w=>(
+                <div key={w.id} style={{background:'var(--s2)',borderRadius:14,padding:'10px 12px',display:'flex',alignItems:'flex-start',gap:10}}>
+                  {w.image&&<img src={w.image} alt="" style={{width:40,height:40,borderRadius:8,objectFit:'cover',cursor:'pointer',flexShrink:0}} onClick={()=>onImgClick(w.image)} />}
+                  <div style={{flex:1}}>
+                    <div style={{fontWeight:600,fontSize:13,color:'var(--t1)',marginBottom:2}}>{w.title}</div>
+                    <div className="note" style={{fontSize:11}}>Для: {w.ownerName}</div>
+                  </div>
+                  <button className="btn btn-d" style={{fontSize:11,padding:'5px 10px',flexShrink:0}}
+                    onClick={()=>onUnclaim(w)}>Снять</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── ЦВЕТОВАЯ ТЕМА ── */}
+        <div className="card" style={{marginBottom:10}}>
+          <div style={{fontWeight:600,color:'var(--t1)',fontSize:14,marginBottom:12}}>🎨 Цветовая тема</div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+            {THEMES.map(t=>(
+              <div key={t.id} onClick={()=>setTheme(t.id)} style={{
+                display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',
+              }}>
+                <div style={{
+                  width:44,height:44,borderRadius:14,
+                  background:`linear-gradient(135deg,${t.g1},${t.g2})`,
+                  border:theme===t.id?`2px solid ${t.g2}`:'2px solid transparent',
+                  boxShadow:theme===t.id?`0 0 0 2px ${t.g1}55`:'none',
+                  transition:'all .2s',
+                }}/>
+                <div style={{fontSize:10,color:theme===t.id?'var(--t1)':'var(--t2)',fontWeight:theme===t.id?600:400}}>{t.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── СМЕНА PIN ── */}
+        <div className="card" style={{marginBottom:10}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>{setShowPin(s=>!s);setPinErr('');setPinMsg('');}}>
+            <div style={{fontWeight:600,color:'var(--t1)',fontSize:14}}>🔑 Изменить PIN</div>
+            <div style={{fontSize:12,color:'var(--t2)'}}>{showPin?'▲':'▼'}</div>
+          </div>
+          {showPin&&(
+            <div style={{marginTop:12,display:'flex',flexDirection:'column',gap:8}}>
+              <input className="inp" type="password" inputMode="numeric" placeholder="Старый PIN" value={oldPin}
+                onChange={e=>{setOldPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
+              <input className="inp" type="password" inputMode="numeric" placeholder="Новый PIN (мин. 4 цифры)" value={newPin}
+                onChange={e=>{setNewPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
+              <input className="inp" type="password" inputMode="numeric" placeholder="Повторите новый PIN" value={newPin2}
+                onChange={e=>{setNewPin2(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
+              {pinErr&&<div className="err">{pinErr}</div>}
+              {pinMsg&&<div style={{color:'#9aba70',fontSize:13}}>{pinMsg}</div>}
+              <button className="btn btn-p" style={{fontSize:13}} onClick={handleChangePin} disabled={!oldPin||newPin.length<4||!newPin2||pinLoad}>
+                {pinLoad?'Меняем…':'Сохранить новый PIN'}
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── ВЫХОД ── */}
+        <div className="card" style={{marginBottom:10}}>
+          <div className="note" style={{marginBottom:12,fontSize:12,lineHeight:1.5}}>
+            🔒 PIN защищает ваш профиль. Используйте один PIN на всех устройствах.
+          </div>
+          <button className="btn btn-d" style={{width:'100%',fontSize:13}} onClick={onLogout}>Выйти из аккаунта</button>
+        </div>
+
+        <div style={{fontSize:11,color:'var(--t2)',textAlign:'center',marginTop:8,marginBottom:8,lineHeight:1.6}}>
+          🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год<br/>Семейный вишлист подарков
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
   // MAIN APP
   // ══════════════════════════════════════
   function App() {
@@ -535,7 +775,7 @@
     const [authDone, setAuthDone] = useState(isAuthed);
     const [userName, setUserName] = useState(isAuthed ? savedName : '');
     const [authUid, setAuthUid]   = useState(null);
-    const [tab, setTab]           = useState('people'); // people | my | feed | profile
+    const [tab, setTab]           = useState('my'); // people | my | feed | profile
     const [items, setItems]       = useState([]);
     const [claims, setClaims]     = useState({});
     const [loading, setLoading]   = useState(true);
@@ -609,7 +849,7 @@
 
     const handleLogout = () => {
       saveLocal('nywish:pin_ok','');
-      setAuthDone(false); setUserName(''); setTab('people');
+      setAuthDone(false); setUserName(''); setTab('my');
     };
 
     if(!authDone) return <AuthScreen onAuth={name=>{setUserName(name);setAuthDone(true);}}/>;
@@ -698,30 +938,14 @@
 
         {/* ── ПРОФИЛЬ ── */}
         {tab==='profile' && (
-          <div className="screen fu">
-            <div className="page-header"><div className="page-title">Профиль</div></div>
-            <div className="card" style={{marginBottom:10}}>
-              <div style={{display:'flex',alignItems:'center',gap:14}}>
-                <div className="avatar" style={{width:52,height:52,fontSize:18,background:`linear-gradient(135deg,${nameColor(userName)[0]},${nameColor(userName)[1]})`,boxShadow:`0 4px 16px ${nameColor(userName)[0]}55`}}>
-                  {userName.slice(0,2).toUpperCase()}
-                </div>
-                <div>
-                  <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:16,fontWeight:700,color:'var(--t1)'}}>{userName}</div>
-                  <div className="note" style={{fontSize:11,marginTop:2}}>{myWishes.length} желаний · {myClaims} брон{myClaims===1?'ь':myClaims<5?'и':'ей'}</div>
-                </div>
-              </div>
-            </div>
-            <div className="card" style={{marginBottom:10}}>
-              <div style={{fontSize:12,color:'var(--t2)',marginBottom:12,lineHeight:1.5}}>
-                🔒 PIN защищает ваш профиль. Используйте один и тот же PIN на всех устройствах для синхронизации.
-              </div>
-              <button className="btn btn-d" style={{width:'100%',fontSize:13}} onClick={handleLogout}>Выйти из аккаунта</button>
-            </div>
-            <div style={{fontSize:11,color:'var(--t2)',textAlign:'center',marginTop:16,lineHeight:1.6}}>
-              <div style={{marginBottom:4}}>🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год</div>
-              Семейный вишлист подарков
-            </div>
-          </div>
+          <ProfileTab
+            userName={userName} authUid={authUid}
+            myWishes={myWishes} myClaims={myClaims}
+            claims={claims} items={items}
+            onLogout={handleLogout}
+            onUnclaim={handleUnclaim}
+            onImgClick={setPreviewImage}
+          />
         )}
 
         {/* ── FAB ── */}
