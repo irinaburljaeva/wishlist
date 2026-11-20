@@ -266,6 +266,13 @@
     if(b>=2&&b<=4) return few;
     return many;
   };
+  const LEVELS = [
+    { v:1, e:'💸',     label:'Недорого' },
+    { v:2, e:'💸💸',   label:'Средне' },
+    { v:3, e:'💸💸💸', label:'Дорого' },
+  ];
+  // уровень цены; у старых желаний с числовой ценой — переводим в уровень
+  const levelOf = w => w.priceLevel || (w.price ? (w.price<=2000?1:w.price<=7000?2:3) : 0);
   const fmtPrice = n => n ? new Intl.NumberFormat('ru-RU').format(Math.round(n))+' ₽' : '';
   const normUrl = u => { u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; };
   const hostOf = u => { try{ return new URL(normUrl(u)).hostname.replace(/^www\./,''); }catch{ return ''; } };
@@ -452,12 +459,13 @@
 
   function WishMeta({ wish }) {
     const p = PRIORITIES.find(x=>x.v===wish.priority);
-    if(!p && !wish.price && !wish.url) return null;
+    const lv = LEVELS.find(x=>x.v===levelOf(wish));
+    if(!p && !lv && !wish.url) return null;
     return (
       <div className="wish-meta">
         {p && p.v===3 && <span className="badge b-red">🔥 очень хочу</span>}
         {p && p.v===1 && <span className="badge b-muted">🤷 если будет</span>}
-        {wish.price>0 && <span className="badge b-gold">≈ {fmtPrice(wish.price)}</span>}
+        {lv && <span className="badge b-gold" title={lv.label}>{lv.e} {lv.label.toLowerCase()}</span>}
         {wish.url && <ShopChip url={wish.url}/>}
       </div>
     );
@@ -651,7 +659,7 @@
   // ══════════════════════════════════════
   // ADD / EDIT WISH SHEET
   // ══════════════════════════════════════
-  const BLANK = { title:'', url:'', price:'', priority:2, note:'', image:'' };
+  const BLANK = { title:'', url:'', priceLevel:0, priority:2, note:'', image:'' };
   function WishSheet({ open, initial, onClose, onSave }) {
     const [f,setF] = useState(BLANK);
     const [imgErr,setImgErr] = useState('');
@@ -661,7 +669,7 @@
 
     useEffect(()=>{
       if(!open) return;
-      setF(initial ? { ...BLANK, ...initial, price: initial.price?String(initial.price):'', image: initial.image||'', priority: initial.priority||2 } : BLANK);
+      setF(initial ? { ...BLANK, ...initial, priceLevel: levelOf(initial), image: initial.image||'', priority: initial.priority||2 } : BLANK);
       setImgErr('');
       if(!initial) setTimeout(()=>titleRef.current && titleRef.current.focus(), 350);
     },[open, initial && initial.id]);
@@ -676,7 +684,7 @@
     const submit = e => {
       if(!f.title.trim()) return;
       onSave({ title:f.title.trim(), url:normUrl(f.url), note:f.note.trim(), image:f.image||null,
-        price: Number(String(f.price).replace(/[^\d]/g,''))||null, priority:f.priority }, e.currentTarget);
+        priceLevel: f.priceLevel||null, price:null, priority:f.priority }, e.currentTarget);
     };
 
     return (
@@ -688,9 +696,17 @@
             <input className="inp" placeholder="Ссылка на товар (необязательно)" value={f.url} onChange={e=>set('url',e.target.value)} inputMode="url" style={shop?{paddingRight:120}:null}/>
             {shop && <span className="shop-chip" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',maxWidth:110}}><img src={shop.icon} alt=""/>{shop.name}</span>}
           </div>
-          <div className="row">
-            <input className="inp" placeholder="Примерная цена, ₽" value={f.price} inputMode="numeric" onChange={e=>set('price',e.target.value.replace(/[^\d\s]/g,''))}/>
+          <div>
+            <div className="note" style={{fontSize:12,margin:'2px 2px 6px'}}>Примерная стоимость <span style={{opacity:.7}}>— необязательно</span></div>
+            <div className="seg">
+              {LEVELS.map(l=>(
+                <button key={l.v} className={f.priceLevel===l.v?'on':''} onClick={()=>{set('priceLevel',f.priceLevel===l.v?0:l.v);vibrate(10);}}>
+                  <span className="e" style={{fontSize:15,letterSpacing:-3}}>{l.e}</span>{l.label}
+                </button>
+              ))}
+            </div>
           </div>
+          <div className="note" style={{fontSize:12,margin:'4px 2px -4px'}}>Насколько хочется</div>
           <div className="seg">
             {PRIORITIES.map(p=>(
               <button key={p.v} className={f.priority===p.v?'on':''} onClick={()=>{set('priority',p.v);vibrate(10);}}>
@@ -944,8 +960,7 @@
   // FEED TAB
   // ══════════════════════════════════════
   const PRICE_FILTERS = [
-    ['all','Любая цена',()=>true], ['1','до 1 000 ₽',p=>p>0&&p<=1000], ['2','1–3 тыс.',p=>p>1000&&p<=3000],
-    ['3','3–10 тыс.',p=>p>3000&&p<=10000], ['4','от 10 тыс.',p=>p>10000],
+    ['all','Любая стоимость',()=>true], ['1','💸 Недорого',l=>l===1], ['2','💸💸 Средне',l=>l===2], ['3','💸💸💸 Дорого',l=>l===3],
   ];
   function FeedTab({ wishes, claims, me, people, profiles, handlers, onImg }) {
     const [q,setQ] = useState('');
@@ -959,13 +974,13 @@
       let arr = wishes.filter(w=>
         (who==='all'||w.ownerName===who) &&
         (!onlyFree || !claims[w.id] || (claims[w.id].coop && !isClaimBy(claims[w.id],me))) &&
-        pf(w.price||0) &&
+        pf(levelOf(w)) &&
         (!s || (w.title+' '+(w.note||'')+' '+w.ownerName).toLowerCase().includes(s)));
       const taken = w => claims[w.id]&&!isClaimBy(claims[w.id],me)&&!claims[w.id].coop?1:0;
       arr = arr.slice().sort((a,b)=> taken(a)-taken(b) || (
         sort==='prio' ? (b.priority||2)-(a.priority||2)||(b.createdAt||0)-(a.createdAt||0) :
         sort==='new' ? (b.createdAt||0)-(a.createdAt||0) :
-        sort==='cheap' ? (a.price||9e9)-(b.price||9e9) : (b.price||0)-(a.price||0)));
+        sort==='cheap' ? (levelOf(a)||9)-(levelOf(b)||9) : levelOf(b)-levelOf(a)));
       return arr;
     },[wishes,claims,q,who,onlyFree,price,sort,me]);
 
@@ -986,7 +1001,7 @@
           <select value={price} onChange={e=>setPrice(e.target.value)}>{PRICE_FILTERS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
           <select value={sort} onChange={e=>setSort(e.target.value)}>
             <option value="prio">🔥 Сначала важные</option><option value="new">🆕 Новые</option>
-            <option value="cheap">₽ Дешевле</option><option value="exp">₽₽₽ Дороже</option>
+            <option value="cheap">💸 Сначала недорогие</option><option value="exp">💸💸💸 Сначала дорогие</option>
           </select>
         </div>
         {list.length===0 && <div className="empty"><div className="big">🔍</div><div className="note">Ничего не нашлось — попробуйте другие фильтры</div></div>}
@@ -1059,7 +1074,7 @@
       saveLocal('nywish:snoozed:'+me,[...cur,{id,until:Date.now()+THREE_MONTHS}]); setSnoozeTick(t=>t+1); toast('Отлично, оставили','👍');
     };
     const shareText = async () => {
-      const lines = wishes.map((w,i)=>`${i+1}. ${w.title}${w.price?` (~${fmtPrice(w.price)})`:''}${w.url?`\n   ${w.url}`:''}`);
+      const lines = wishes.map((w,i)=>`${i+1}. ${w.title}${levelOf(w)?` ${LEVELS[levelOf(w)-1].e}`:''}${w.url?`\n   ${w.url}`:''}`);
       const text = `🎁 Мой вишлист (${me}):\n\n${lines.join('\n')}`;
       try{ if(navigator.share) await navigator.share({text}); else { await navigator.clipboard.writeText(text); toast('Список скопирован — вставьте в мессенджер','📋'); } }catch{}
     };
@@ -1109,15 +1124,31 @@
   // ══════════════════════════════════════
   // GIFTS TAB (я дарю)
   // ══════════════════════════════════════
-  function GiftsTab({ gifts, claims, me, profiles, onStatus, onUnclaim, onImg, onGoPeople }) {
+  function SpentInput({ value, onSave }) {
+    const [v,setV] = useState(value?String(value):'');
+    useEffect(()=>{ setV(value?String(value):''); },[value]);
+    const commit = () => { const n=Number(v.replace(/\D/g,''))||0; if(n!==(value||0)) onSave(n); };
+    return (
+      <div className="row" style={{marginTop:10}}>
+        <span className="note" style={{fontSize:12,flex:1}}>💳 Сколько потратили{value?'':' (необязательно)'}</span>
+        <div style={{position:'relative',width:120}}>
+          <input className="inp" inputMode="numeric" placeholder="0" value={v} style={{padding:'8px 28px 8px 12px',fontSize:15,textAlign:'right'}}
+            onChange={e=>setV(e.target.value.replace(/\D/g,''))} onBlur={commit} onKeyDown={e=>e.key==='Enter'&&e.target.blur()}/>
+          <span className="note" style={{position:'absolute',right:11,top:'50%',transform:'translateY(-50%)'}}>₽</span>
+        </div>
+      </div>
+    );
+  }
+
+  function GiftsTab({ gifts, claims, me, profiles, onStatus, onSpent, onUnclaim, onImg, onGoPeople }) {
     const groups = useMemo(()=>{
       const m = {}; gifts.forEach(w=>{ (m[w.ownerName]=m[w.ownerName]||[]).push(w); });
       return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
     },[gifts]);
     const done = gifts.filter(w=>claims[w.id]&&claims[w.id].status==='given').length;
     const ready = gifts.filter(w=>claims[w.id]&&stepIdx(claims[w.id].status)>=1).length;
-    const budget = gifts.reduce((s,w)=>s+((w.price||0)/Math.max(1,claimParts(claims[w.id]).length)),0);
-    const spentBought = gifts.filter(w=>stepIdx(claims[w.id]&&claims[w.id].status)>=1).reduce((s,w)=>s+((w.price||0)/Math.max(1,claimParts(claims[w.id]).length)),0);
+    const mySpent = w => { const c=claims[w.id]; return (c&&c.spentBy&&c.spentBy[me])||0; };
+    const spent = gifts.reduce((s,w)=>s+mySpent(w),0);
 
     return (
       <div className="screen fu">
@@ -1133,8 +1164,8 @@
             <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
               <div><div className="event-num grad-text" style={{fontSize:30}}>{ready}/{gifts.length}</div><div className="note" style={{fontSize:11}}>куплено</div></div>
               <div style={{textAlign:'right'}}>
-                {budget>0 && <><div style={{fontFamily:"'Unbounded',sans-serif",fontWeight:700,fontSize:17}}>≈ {fmtPrice(budget)}</div>
-                <div className="note" style={{fontSize:11}}>бюджет{spentBought?` · потрачено ≈ ${fmtPrice(spentBought)}`:''}</div></>}
+                <div style={{fontFamily:"'Unbounded',sans-serif",fontWeight:700,fontSize:17}}>{spent?fmtPrice(spent):'0 ₽'}</div>
+                <div className="note" style={{fontSize:11}}>потрачено · видите только вы</div>
               </div>
             </div>
             <div className="bar"><div style={{width:`${gifts.length?(ready+done)/(gifts.length*2)*100:0}%`}}/></div>
@@ -1155,7 +1186,7 @@
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{w.title}</div>
                         <div className="wish-meta" style={{marginBottom:0}}>
-                          {w.price>0 && <span className="badge b-gold">≈ {fmtPrice(w.price)}{parts.length>1?` · ваша доля ≈ ${fmtPrice(w.price/parts.length)}`:''}</span>}
+                          {levelOf(w)>0 && <span className="badge b-gold">{LEVELS[levelOf(w)-1].e} {LEVELS[levelOf(w)-1].label.toLowerCase()}</span>}
                           {c.coop && <span className="badge b-green">🤝 {parts.join(', ')}</span>}
                           {w.url && <ShopChip url={w.url}/>}
                         </div>
@@ -1171,6 +1202,7 @@
                         </button>
                       ))}
                     </div>
+                    <SpentInput value={mySpent(w)} onSave={v=>onSpent(w,v)}/>
                   </div>
                 );
               })}
@@ -1577,6 +1609,18 @@
         else if(status==='wrapped'){ burstFrom(el,{n:30,emoji:['🎀','✨']}); toast('Красиво упаковано!','🎀'); }
       } catch(e){ console.error(e); toast('Не удалось обновить статус','⚠️'); }
     };
+    const setSpent = async (wish, amount) => {
+      const ref = claimsCol(gid).doc(wish.id);
+      try {
+        await db.runTransaction(async tx=>{
+          const s = await tx.get(ref); if(!s.exists) return;
+          const spentBy = { ...(s.data().spentBy||{}) };
+          if(amount) spentBy[me]=amount; else delete spentBy[me];
+          tx.update(ref,{ spentBy });
+        });
+        if(amount) toast('Записали: '+fmtPrice(amount),'💳');
+      } catch(e){ console.error(e); toast('Не удалось сохранить сумму','⚠️'); }
+    };
     const handlers = { claim:claimWish, join:joinCoop, unclaim:unclaimWish };
 
     // ── оверлей человека + кнопка «назад» на телефоне
@@ -1624,7 +1668,7 @@
         {tab==='feed' && <FeedTab wishes={others} claims={claims} me={me} people={people} profiles={profiles} handlers={handlers} onImg={setPreviewImage}/>}
         {tab==='my' && <MyTab me={me} wishes={myWishes} loading={loading} profile={myProfile} onSaveLinks={links=>saveProfile({links})}
           onEdit={w=>setSheet({initial:w})} onRemove={removeWish} onReceived={receivedWish} onImg={setPreviewImage}/>}
-        {tab==='gifts' && <GiftsTab gifts={myGifts} claims={claims} me={me} profiles={profiles} onStatus={setStatus} onUnclaim={unclaimWish}
+        {tab==='gifts' && <GiftsTab gifts={myGifts} claims={claims} me={me} profiles={profiles} onStatus={setStatus} onSpent={setSpent} onUnclaim={unclaimWish}
           onImg={setPreviewImage} onGoPeople={()=>setTab('people')}/>}
         {tab==='profile' && <ProfileTab me={me} profile={myProfile} onSaveProfile={saveProfile}
           stats={{wishes:myWishes.length,gifts:myGifts.length,given:myGifts.filter(w=>(claims[w.id]||{}).status==='given').length}}
