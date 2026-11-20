@@ -45,8 +45,7 @@
       animation:meshMove 14s ease-in-out infinite alternate;}
     @keyframes meshMove{0%{opacity:1;transform:scale(1)}100%{opacity:.75;transform:scale(1.06)}}
     .bg-photo{position:fixed;inset:0;z-index:-1;background-image:url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png');background-size:cover;background-position:center;opacity:.05;}
-    .snow-canvas,.fx-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;}
-    .snow-canvas{z-index:0;}
+    .fx-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;}
     .fx-canvas{z-index:1000;}
 
     .app{position:relative;z-index:1;max-width:520px;margin:0 auto;}
@@ -467,29 +466,6 @@
   function Switch({ on, onChange }) { return <div className={`switch ${on?'on':''}`} onClick={()=>onChange(!on)}/>; }
 
   // ══════════════════════════════════════
-  // SNOW
-  // ══════════════════════════════════════
-  function Snow() {
-    const ref = useRef(null);
-    useEffect(()=>{
-      if(reduceMotion()) return;
-      const cv=ref.current, ctx=cv.getContext('2d'); let raf, W, H;
-      const resize=()=>{ const d=window.devicePixelRatio||1; W=innerWidth; H=innerHeight; cv.width=W*d; cv.height=H*d; ctx.setTransform(d,0,0,d,0,0); };
-      resize(); addEventListener('resize',resize);
-      const flakes = Array.from({length:55},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:.8+Math.random()*2.2,s:.3+Math.random()*.9,w:Math.random()*Math.PI*2}));
-      const tick=()=>{
-        ctx.clearRect(0,0,W,H); ctx.fillStyle='rgba(255,255,255,.55)';
-        for(const f of flakes){ f.y+=f.s; f.w+=.01; f.x+=Math.sin(f.w)*.4; if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}
-          ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); }
-        raf=requestAnimationFrame(tick);
-      };
-      tick();
-      return ()=>{ cancelAnimationFrame(raf); removeEventListener('resize',resize); };
-    },[]);
-    return <canvas ref={ref} className="snow-canvas"/>;
-  }
-
-  // ══════════════════════════════════════
   // AUTH SCREEN
   // ══════════════════════════════════════
   function AuthScreen({ onAuth, invite }) {
@@ -853,11 +829,12 @@
           </div>
 
           {links.length>0 && (
-            <div style={{marginBottom:12}}>
-              <div className="note" style={{fontSize:11,marginBottom:6}}>Другие вишлисты:</div>
-              <div className="hscroll">{links.map((l,i)=>{ const s=shopOf(l.url); return (
-                <a key={i} className="chip" href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{textDecoration:'none',color:'var(--t1)'}}>
-                  {s && <img src={s.icon} alt="" style={{width:16,height:16,borderRadius:4,background:'white'}}/>}{l.label||(s&&s.name)||'Ссылка'} ↗
+            <div className="card" style={{marginBottom:12,padding:12}}>
+              <div style={{fontWeight:700,fontSize:13,marginBottom:8}}>🔗 Другие вишлисты — в Ozon, WB и не только</div>
+              <div style={{display:'grid',gap:6}}>{links.map((l,i)=>{ const s=shopOf(l.url); return (
+                <a key={i} className="glass" href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{display:'flex',alignItems:'center',gap:10,padding:'9px 12px',textDecoration:'none'}}>
+                  {s && <img src={s.icon} alt="" style={{width:24,height:24,borderRadius:7,background:'white'}}/>}
+                  <span style={{flex:1,fontWeight:600,fontSize:14}}>{l.label||(s&&s.name)||'Ссылка'}</span><span className="note">Открыть ↗</span>
                 </a>); })}</div>
             </div>
           )}
@@ -954,6 +931,7 @@
                   {p.total===0?'пока пусто':`${p.free} из ${p.total} ${plural(p.total,['свободно','свободно','свободно'])}`}
                 </div>
                 {bd!=null && bd<=30 && <span className="badge b-gold">🎂 {whenText(bd)}</span>}
+                {(pr.links||[]).length>0 && <span className="badge b-muted">🔗 ещё {pr.links.length} {plural(pr.links.length,['вишлист','вишлиста','вишлистов'])}</span>}
               </div>
             );
           })}
@@ -1024,35 +1002,49 @@
   // MY TAB
   // ══════════════════════════════════════
   const THREE_MONTHS = 90*24*60*60*1000;
-  function ExternalLinks({ links, onChange }) {
-    const [url,setUrl] = useState(''); const [adding,setAdding] = useState(false);
+  function ExternalLinks({ links, onChange, title='🌐 Мои вишлисты в других приложениях' }) {
+    const [url,setUrl] = useState(''); const [label,setLabel] = useState(''); const [err,setErr] = useState('');
+    const list = links||[];
     const s = shopOf(url);
-    const add = () => { if(!s) return; onChange([...(links||[]),{url:normUrl(url),label:s.name}]); setUrl(''); setAdding(false); toast('Ссылка добавлена','🔗'); };
+    const add = async () => {
+      if(!s){ setErr('Похоже, это не ссылка. Скопируйте адрес вишлиста целиком.'); return; }
+      if(list.some(l=>normUrl(l.url)===normUrl(url))){ setErr('Эта ссылка уже добавлена.'); return; }
+      const ok = await onChange([...list,{ url:normUrl(url), label:label.trim()||s.name }]);
+      if(ok!==false){ setUrl(''); setLabel(''); setErr(''); toast('Вишлист добавлен — близкие увидят его в вашей карточке','🔗'); }
+    };
+    const remove = async i => {
+      if(!await askConfirm({ e:'🔗', title:'Удалить ссылку?', text:list[i].label||list[i].url, ok:'Удалить', danger:true })) return;
+      onChange(list.filter((_,j)=>j!==i));
+    };
     return (
       <div className="card" style={{marginBottom:12}}>
-        <div className="row" style={{justifyContent:'space-between',marginBottom:(links||[]).length||adding?10:0}}>
-          <div><div style={{fontWeight:700,fontSize:14}}>🌐 Мои вишлисты в других местах</div>
-            {!(links||[]).length && !adding && <div className="note" style={{fontSize:12,marginTop:2}}>Ozon, WB, Я.Маркет, Pinterest — что угодно</div>}</div>
-          {!adding && <button className="icon-btn" onClick={()=>setAdding(true)}>＋</button>}
+        <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{title}</div>
+        <div className="note" style={{fontSize:12,marginBottom:12}}>Есть список на Ozon, Wildberries, Я.Маркете, в Pinterest или другом сервисе? Вставьте ссылку — она появится в вашей карточке у близких.</div>
+
+        {list.length>0 && (
+          <div style={{display:'grid',gap:8,marginBottom:12}}>
+            {list.map((l,i)=>{ const ss=shopOf(l.url); return (
+              <div key={i} className="glass" style={{display:'flex',alignItems:'center',gap:10,padding:'9px 10px 9px 12px'}}>
+                {ss && <img src={ss.icon} alt="" style={{width:26,height:26,borderRadius:7,background:'white',flexShrink:0}}/>}
+                <a href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{flex:1,minWidth:0,textDecoration:'none'}}>
+                  <div style={{fontWeight:700,fontSize:14}}>{l.label||(ss&&ss.name)} ↗</div>
+                  <div className="note" style={{fontSize:11,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{ss?ss.host:l.url}</div>
+                </a>
+                <button className="icon-btn" style={{width:32,height:32,fontSize:12}} onClick={()=>remove(i)}>✕</button>
+              </div>); })}
+          </div>
+        )}
+
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          <div style={{position:'relative'}}>
+            <input className="inp" placeholder="https://ozon.ru/… — ссылка на вишлист" value={url} inputMode="url"
+              onChange={e=>{setUrl(e.target.value);setErr('');}} onKeyDown={e=>e.key==='Enter'&&add()} style={s?{paddingRight:120}:null}/>
+            {s && <span className="shop-chip" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',maxWidth:110}}><img src={s.icon} alt=""/>{s.name}</span>}
+          </div>
+          {url.trim() && <input className="inp fu" placeholder={`Название (по умолчанию «${s?s.name:'Ссылка'}»)`} value={label} maxLength={40} onChange={e=>setLabel(e.target.value)}/>}
+          {err && <div className="err">{err}</div>}
+          <button className="btn btn-p" onClick={add} disabled={!url.trim()}>＋ Добавить ссылку</button>
         </div>
-        {(links||[]).length>0 && (
-          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
-            {links.map((l,i)=>{ const ss=shopOf(l.url); return (
-              <span key={i} className="chip" style={{paddingRight:6,color:'var(--t1)'}}>
-                {ss && <img src={ss.icon} alt="" style={{width:16,height:16,borderRadius:4,background:'white'}}/>}
-                <a href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{textDecoration:'none'}}>{l.label||(ss&&ss.name)}</a>
-                <span style={{cursor:'pointer',opacity:.5,padding:'0 4px'}} onClick={()=>onChange(links.filter((_,j)=>j!==i))}>✕</span>
-              </span>); })}
-          </div>
-        )}
-        {adding && (
-          <div className="fu" style={{marginTop:10,display:'flex',flexDirection:'column',gap:8}}>
-            <input className="inp" placeholder="Вставьте ссылку на вишлист" value={url} onChange={e=>setUrl(e.target.value)} inputMode="url" autoFocus onKeyDown={e=>e.key==='Enter'&&add()}/>
-            {s && <div className="note" style={{fontSize:12}}>Распознано: <b style={{color:'var(--t1)'}}>{s.name}</b></div>}
-            <div className="row"><button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>{setAdding(false);setUrl('');}}>Отмена</button>
-              <button className="btn btn-p btn-sm" style={{flex:2}} disabled={!s} onClick={add}>Добавить</button></div>
-          </div>
-        )}
       </div>
     );
   }
@@ -1201,7 +1193,7 @@
     { id:'xmas',   label:'Ёлка',   g1:'#8a2a2a', g2:'#c84a3a' },
   ];
 
-  function ProfileTab({ me, profile, onSaveProfile, stats, groups, activeId, onPickGroup, onLeaveGroup, onCreateGroup, onJoinGroup, theme, setTheme, snow, setSnow, onLogout }) {
+  function ProfileTab({ me, profile, onSaveProfile, stats, groups, activeId, onPickGroup, onLeaveGroup, onCreateGroup, onJoinGroup, theme, setTheme, onLogout }) {
     const [showPin,setShowPin] = useState(false);
     const [oldPin,setOldPin] = useState(''); const [newPin,setNewPin] = useState(''); const [newPin2,setNewPin2] = useState('');
     const [pinMsg,setPinMsg] = useState(''); const [pinErr,setPinErr] = useState(''); const [pinLoad,setPinLoad] = useState(false);
@@ -1226,7 +1218,7 @@
           const snap = await tx.get(ref);
           if(!snap.exists) throw new Error('no-user');
           if(snap.data().pinHash!==oldHash) throw new Error('wrong-pin');
-          tx.update(ref,{pinHash:newHash});
+          tx.update(ref,{pinHash:newHash, pinCheck:oldHash}); // pinCheck проверяется правилами Firestore
         });
         setPinMsg('PIN изменён ✓'); setOldPin(''); setNewPin(''); setNewPin2(''); setTimeout(()=>setShowPin(false),1500);
       } catch(e) { setPinErr(e.message==='wrong-pin'?'Старый PIN неверный.':'Не удалось изменить PIN.'); }
@@ -1264,6 +1256,8 @@
           </div>
         </div>
 
+        <ExternalLinks links={profile.links||[]} onChange={links=>onSaveProfile({links})}/>
+
         <div className="card" style={{marginBottom:10}}>
           <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>👨‍👩‍👧 Мои группы</div>
           <GroupList groups={groups} activeId={activeId} me={me} onPick={onPickGroup} onLeave={onLeaveGroup}/>
@@ -1272,7 +1266,7 @@
 
         <div className="card" style={{marginBottom:10}}>
           <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>🎨 Оформление</div>
-          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14}}>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
             {THEMES.map(t=>(
               <div key={t.id} onClick={()=>setTheme(t.id)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer'}}>
                 <div style={{width:44,height:44,borderRadius:14,background:`linear-gradient(135deg,${t.g1},${t.g2})`,
@@ -1281,7 +1275,6 @@
               </div>
             ))}
           </div>
-          <div className="row" style={{justifyContent:'space-between'}}><div style={{fontSize:14}}>❄️ Снегопад</div><Switch on={snow} onChange={setSnow}/></div>
         </div>
 
         <div className="card" style={{marginBottom:10}}>
@@ -1344,7 +1337,6 @@
     const [openPerson,setOpenPerson] = useState(null);
     const [groupSheet,setGroupSheet] = useState(false);
     const [theme,setThemeS] = useState(loadLocal('profile:theme','forest'));
-    const [snow,setSnowS] = useState(loadLocal('profile:snow', [10,11,0,1].includes(new Date().getMonth())));
     const [pendingCode,setPendingCode] = useState(()=>{
       const c = new URLSearchParams(location.search).get('join');
       if(c){ saveLocal('nywish:pendingJoin',c.toUpperCase()); history.replaceState(null,'',location.pathname); }
@@ -1359,7 +1351,6 @@
       document.documentElement.style.setProperty('--g2',t.g2);
       saveLocal('profile:theme',theme);
     },[theme]);
-    const setSnow = v => { setSnowS(v); saveLocal('profile:snow',v); };
 
     useEffect(()=>auth.onAuthStateChanged(u=>setAuthUid(u?u.uid:null)),[]);
     useEffect(()=>{ if(me) setActiveGroupS(loadLocal('nywish:group:'+me,'')); },[me]);
@@ -1492,7 +1483,7 @@
 
     const profiles = useProfiles([me, ...people.map(p=>p.name)], !!(me&&authUid));
     const myProfile = profiles[me]||{};
-    const saveProfile = patch => profilesCol().doc(me).set(patch,{merge:true}).catch(e=>{ console.error(e); toast('Не сохранилось — проверьте правила Firestore','⚠️'); });
+    const saveProfile = patch => profilesCol().doc(me).set(patch,{merge:true}).then(()=>true).catch(e=>{ console.error(e); toast('Не сохранилось — проверьте правила Firestore','⚠️'); return false; });
 
     const events = useMemo(()=>{
       const ev = HOLIDAYS.map(h=>({ key:h.label, e:h.e, label:h.label, until:h.until, days:daysUntil(h.date) }));
@@ -1598,7 +1589,7 @@
       saveLocal('nywish:pin_ok',''); setMe(''); setUserDoc(null); setGroupDocs({}); setItems([]); setClaims({}); setTab('people'); migrated.current=false;
     };
 
-    const fx = (<>{snow && <Snow/>}<ToastHost/><ConfirmHost/><RingDefs/></>);
+    const fx = (<><ToastHost/><ConfirmHost/><RingDefs/></>);
 
     if(!me) return (<>{fx}<AuthScreen invite={invite} onAuth={(name,isNew)=>{ setMe(name); setTab(isNew?'my':'people'); if(isNew) setTimeout(()=>{FX.big();toast(`Добро пожаловать, ${name}!`,'🎉');},300); }}/></>);
 
@@ -1639,7 +1630,7 @@
           stats={{wishes:myWishes.length,gifts:myGifts.length,given:myGifts.filter(w=>(claims[w.id]||{}).status==='given').length}}
           groups={groups} activeId={gid} onPickGroup={id=>{setActiveGroup(id);toast('Группа: '+((groupDocs[id]||{}).name||''),(groupDocs[id]||{}).emoji||'🎁');}}
           onLeaveGroup={leaveGroup} onCreateGroup={createGroup} onJoinGroup={joinByCode}
-          theme={theme} setTheme={setThemeS} snow={snow} setSnow={setSnow} onLogout={logout}/>}
+          theme={theme} setTheme={setThemeS} onLogout={logout}/>}
 
         {(tab==='my'||tab==='feed') && <button className="fab" onClick={()=>{vibrate(10);setSheet({initial:null});}}>＋</button>}
 
@@ -1679,4 +1670,5 @@
 </script>
 </body>
 </html>
+
 
