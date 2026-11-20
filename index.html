@@ -2,13 +2,13 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
   <title>Подарки, подарочки</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700;900&family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- production-сборки React: грузятся и работают заметно быстрее development -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.3/firebase-auth-compat.js"></script>
@@ -25,121 +25,172 @@
   <link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
   <script>if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(console.error));</script>
   <style>
-    :root {
-      --bg:#0f110d; --s1:#181c15; --s2:#1f2419;
+    :root{
+      --bg:#0f110d; --s1:#181c15; --s2:#1f2419; --s3:#262c1f;
       --b1:rgba(255,255,255,0.07); --b2:rgba(255,255,255,0.13);
       --t1:#f0ece4; --t2:#8a9080;
-      --g1:#5a7a38; --g2:#7ea858; --gold:#c8a96e;
-      --nav-h:64px;
+      --g1:#5a7a38; --g2:#7ea858; --gold:#c8a96e; --red:#e07060;
+      --nav-h:66px;
     }
-    *{box-sizing:border-box;}
-    body{font-family:'Golos Text',sans-serif;background:var(--bg);color:var(--t1);margin:0;overflow-x:hidden;overscroll-behavior:none;}
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+    html,body{background:var(--bg);}
+    body{font-family:'Golos Text',sans-serif;color:var(--t1);margin:0;overflow-x:hidden;overscroll-behavior:none;}
+    button{font-family:inherit;}
+    a{color:inherit;}
 
-    /* Mesh bg */
     .mesh-bg{position:fixed;inset:0;z-index:0;pointer-events:none;}
     .mesh-bg::before{content:'';position:absolute;inset:0;
-      background:radial-gradient(ellipse 70% 50% at 10% 15%,rgba(80,110,50,0.2) 0%,transparent 60%),
-                 radial-gradient(ellipse 50% 60% at 90% 85%,rgba(100,70,30,0.15) 0%,transparent 60%);
+      background:radial-gradient(ellipse 70% 50% at 10% 15%,color-mix(in srgb,var(--g1) 28%,transparent) 0%,transparent 60%),
+                 radial-gradient(ellipse 50% 60% at 90% 85%,rgba(140,95,40,0.16) 0%,transparent 60%);
       animation:meshMove 14s ease-in-out infinite alternate;}
-    @keyframes meshMove{0%{opacity:1;transform:scale(1)}100%{opacity:.75;transform:scale(1.05)}}
+    @keyframes meshMove{0%{opacity:1;transform:scale(1)}100%{opacity:.75;transform:scale(1.06)}}
     .bg-photo{position:fixed;inset:0;z-index:-1;background-image:url('E3888A90-B1B8-4628-B6F1-032D4C9FFF50.png');background-size:cover;background-position:center;opacity:.05;}
+    .snow-canvas,.fx-canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;}
+    .snow-canvas{z-index:0;}
+    .fx-canvas{z-index:1000;}
 
-    /* Layout */
     .app{position:relative;z-index:1;max-width:520px;margin:0 auto;}
-    .screen{padding:0 16px;padding-bottom:calc(var(--nav-h) + 16px);}
-    .page-header{padding:24px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
-    .page-title{font-family:'Unbounded',sans-serif;font-size:clamp(1.2rem,5vw,1.6rem);font-weight:900;line-height:1.1;
-      background:linear-gradient(135deg,#a8c878,#c8a96e);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .screen{padding:0 16px;padding-bottom:calc(var(--nav-h) + 90px + env(safe-area-inset-bottom,0px));}
+    .page-header{padding:calc(20px + env(safe-area-inset-top,0px)) 0 14px;display:flex;align-items:flex-end;justify-content:space-between;gap:12px;}
+    .page-title{font-family:'Unbounded',sans-serif;font-size:clamp(1.25rem,5.4vw,1.65rem);font-weight:900;line-height:1.08;
+      background:linear-gradient(135deg,color-mix(in srgb,var(--g2) 70%,white),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    .grad-text{background:linear-gradient(135deg,var(--g2),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 
-    /* Bottom Nav */
-    .bottom-nav{
-      position:fixed;bottom:0;left:50%;transform:translateX(-50%);
-      width:100%;max-width:520px;
-      background:rgba(24,28,21,0.92);
-      backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
-      border-top:1px solid var(--b2);
-      display:flex;z-index:100;
-      height:var(--nav-h);padding-bottom:env(safe-area-inset-bottom,0);
-    }
-    .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;transition:opacity .15s;position:relative;}
-    .nav-item:active{opacity:.7;}
-    .nav-icon{font-size:22px;line-height:1;transition:transform .2s;}
-    .nav-item.on .nav-icon{transform:scale(1.1);}
-    .nav-label{font-size:9px;font-weight:600;color:var(--t2);letter-spacing:0.03em;transition:color .2s;}
-    .nav-item.on .nav-label{color:#9aba70;}
-    .nav-dot{width:4px;height:4px;border-radius:50%;background:#9aba70;position:absolute;top:6px;}
+    /* Bottom nav */
+    .bottom-nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;
+      background:rgba(20,24,18,0.9);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+      border-top:1px solid var(--b2);display:flex;z-index:100;height:calc(var(--nav-h) + env(safe-area-inset-bottom,0px));padding-bottom:env(safe-area-inset-bottom,0px);}
+    .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;position:relative;user-select:none;}
+    .nav-item:active .nav-icon{transform:scale(.85);}
+    .nav-icon{font-size:22px;line-height:1;transition:transform .25s cubic-bezier(.3,1.6,.5,1);filter:grayscale(.6);opacity:.75;}
+    .nav-item.on .nav-icon{transform:translateY(-2px) scale(1.15);filter:none;opacity:1;}
+    .nav-label{font-size:10px;font-weight:600;color:var(--t2);letter-spacing:.02em;transition:color .2s;}
+    .nav-item.on .nav-label{color:var(--g2);}
+    .nav-badge{position:absolute;top:7px;left:calc(50% + 6px);min-width:17px;height:17px;padding:0 5px;border-radius:9px;background:var(--red);color:white;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px var(--bg);}
 
-    /* Cards */
-    .card{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:16px;transition:border-color .2s;}
+    .card{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:16px;}
     .card+.card{margin-top:10px;}
+    .glass{background:rgba(255,255,255,.035);border:1px solid var(--b1);border-radius:16px;}
 
-    /* Inputs */
-    .inp,.txta{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:11px 14px;color:var(--t1);font-family:'Golos Text',sans-serif;font-size:14px;outline:none;transition:border-color .2s,box-shadow .2s;}
+    .inp,.txta{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:12px 14px;color:var(--t1);font-family:'Golos Text',sans-serif;font-size:16px;outline:none;transition:border-color .2s,box-shadow .2s;}
     .inp::placeholder,.txta::placeholder{color:var(--t2);}
-    .inp:focus,.txta:focus{border-color:var(--g2);box-shadow:0 0 0 3px rgba(126,168,88,.18);background:#222819;}
+    .inp:focus,.txta:focus{border-color:var(--g2);box-shadow:0 0 0 3px color-mix(in srgb,var(--g2) 22%,transparent);}
     .txta{resize:none;}
+    select{background:var(--s2);border:1px solid var(--b2);border-radius:12px;color:var(--t1);padding:8px 10px;font-family:'Golos Text',sans-serif;font-size:13px;outline:none;}
 
-    /* Buttons */
-    .btn{display:inline-flex;align-items:center;justify-content:center;border-radius:999px;padding:11px 22px;font-family:'Golos Text',sans-serif;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:all .18s;}
-    .btn:active{transform:scale(.97);}
-    .btn-p{background:linear-gradient(135deg,var(--g1),var(--g2));color:var(--t1);box-shadow:0 4px 18px rgba(90,122,56,.35);}
-    .btn-p:hover{box-shadow:0 6px 22px rgba(90,122,56,.5);transform:translateY(-1px);}
-    .btn-p:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none;}
-    .btn-g{background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
-    .btn-g:hover{border-color:rgba(255,255,255,.2);color:var(--t1);}
-    .btn-d{background:rgba(200,80,60,.1);color:#e07060;border:1px solid rgba(200,80,60,.2);}
+    .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:999px;padding:11px 20px;font-size:14px;font-weight:600;cursor:pointer;border:none;transition:transform .15s,box-shadow .2s,opacity .2s;white-space:nowrap;}
+    .btn:active{transform:scale(.95);}
+    .btn-p{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;box-shadow:0 4px 18px color-mix(in srgb,var(--g1) 45%,transparent);}
+    .btn-p:disabled{opacity:.4;cursor:not-allowed;box-shadow:none;}
+    .btn-gold{background:linear-gradient(135deg,#9a7a40,var(--gold));color:#1a1408;box-shadow:0 4px 18px rgba(200,169,110,.3);}
+    .btn-g{background:var(--s2);color:var(--t1);border:1px solid var(--b2);}
+    .btn-g:disabled{opacity:.4;}
+    .btn-d{background:rgba(200,80,60,.1);color:var(--red);border:1px solid rgba(200,80,60,.22);}
+    .btn-sm{font-size:12px;padding:7px 13px;}
+    .btn-block{width:100%;}
+    .icon-btn{width:38px;height:38px;border-radius:12px;background:var(--s1);border:1px solid var(--b2);color:var(--t1);display:inline-flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;}
+    .icon-btn:active{transform:scale(.92);}
 
-    /* Badges */
-    .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 10px;font-size:11px;font-weight:600;}
-    .b-green{background:rgba(126,168,88,.12);color:#9aba70;border:1px solid rgba(126,168,88,.25);}
-    .b-gold{background:rgba(200,169,110,.15);color:var(--gold);border:1px solid rgba(200,169,110,.3);}
+    .badge{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:600;white-space:nowrap;}
+    .b-green{background:color-mix(in srgb,var(--g2) 14%,transparent);color:var(--g2);border:1px solid color-mix(in srgb,var(--g2) 30%,transparent);}
+    .b-gold{background:rgba(200,169,110,.14);color:var(--gold);border:1px solid rgba(200,169,110,.3);}
+    .b-red{background:rgba(224,112,96,.13);color:#f08a78;border:1px solid rgba(224,112,96,.3);}
     .b-muted{background:var(--s2);color:var(--t2);border:1px solid var(--b2);}
 
-    .err{color:#e07878;font-size:13px;}
-    .note{color:var(--t2);font-size:13px;}
-    .sec{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin-bottom:10px;}
+    .err{color:#e88878;font-size:13px;line-height:1.4;}
+    .note{color:var(--t2);font-size:13px;line-height:1.45;}
+    .sec{font-family:'Unbounded',sans-serif;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--t2);margin:18px 0 10px;}
     .divider{height:1px;background:var(--b1);margin:12px 0;}
+    .row{display:flex;align-items:center;gap:8px;}
+    .hscroll{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px 4px;}
+    .hscroll::-webkit-scrollbar{display:none;}
 
-    /* Person card */
-    .person-card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .2s;}
-    .person-card:hover{border-color:var(--b2);transform:translateY(-1px);}
-    .person-card+.person-card{margin-top:8px;}
-    .avatar{border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:700;color:white;flex-shrink:0;}
+    .chip{flex-shrink:0;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:600;border:1px solid var(--b2);cursor:pointer;background:var(--s2);color:var(--t2);display:inline-flex;align-items:center;gap:6px;transition:all .2s;}
+    .chip.on{background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;border-color:transparent;box-shadow:0 3px 12px color-mix(in srgb,var(--g1) 40%,transparent);}
 
-    /* Wish card */
-    .wish-card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;padding:14px;transition:border-color .2s;}
-    .wish-card+.wish-card{margin-top:8px;}
-    .wish-card.claimed{opacity:.55;}
+    .avatar{display:flex;align-items:center;justify-content:center;font-family:'Unbounded',sans-serif;font-weight:700;color:white;flex-shrink:0;overflow:hidden;}
+    .avatar img{width:100%;height:100%;object-fit:cover;}
 
-    /* FAB */
-    .fab{position:fixed;bottom:calc(var(--nav-h) + 14px);right:max(16px,calc(50vw - 244px));width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 6px 20px rgba(90,122,56,.45);cursor:pointer;transition:all .2s;z-index:90;border:none;}
-    .fab:hover{transform:scale(1.08);box-shadow:0 8px 26px rgba(90,122,56,.55);}
-    .fab:active{transform:scale(.95);}
+    /* Events */
+    .event-card{flex-shrink:0;min-width:128px;border-radius:18px;padding:12px 14px;background:var(--s1);border:1px solid var(--b1);}
+    .event-card.hero{min-width:200px;background:linear-gradient(135deg,color-mix(in srgb,var(--g1) 55%,var(--s1)),color-mix(in srgb,var(--gold) 30%,var(--s1)));border-color:color-mix(in srgb,var(--gold) 35%,transparent);}
+    .event-num{font-family:'Unbounded',sans-serif;font-weight:900;font-size:26px;line-height:1;}
 
-    /* Person detail overlay */
-    .person-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;transform:translateX(100%);transition:transform .3s cubic-bezier(.22,.68,0,1.1);}
-    .person-overlay.open{transform:translateX(0);}
-    .person-overlay .screen{max-width:520px;margin:0 auto;}
+    /* People grid */
+    .people-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+    .person-tile{background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:16px 12px 14px;display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;cursor:pointer;transition:transform .2s,border-color .2s;position:relative;animation:pop .4s cubic-bezier(.3,1.5,.5,1) both;}
+    .person-tile:active{transform:scale(.96);}
+    .person-tile .flag{position:absolute;top:10px;right:10px;}
+    @keyframes pop{from{opacity:0;transform:scale(.9) translateY(8px)}to{opacity:1;transform:none}}
 
-    /* Add modal */
-    .modal-bg{position:fixed;inset:0;z-index:150;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
+    .santa{border-radius:20px;padding:14px 16px;background:linear-gradient(135deg,rgba(200,80,60,.14),rgba(200,169,110,.1));border:1px solid rgba(200,120,80,.25);display:flex;align-items:center;gap:14px;}
+    .bar{height:8px;border-radius:4px;background:rgba(255,255,255,.08);overflow:hidden;}
+    .bar>div{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--g2),var(--gold));transition:width .8s cubic-bezier(.3,1.2,.5,1);}
+
+    /* Wish cards */
+    .wish-card{background:var(--s1);border:1px solid var(--b1);border-radius:20px;overflow:hidden;transition:opacity .3s,border-color .3s;animation:fadeUp .35s cubic-bezier(.22,.68,0,1.2) both;}
+    .wish-card+.wish-card{margin-top:10px;}
+    .wish-card.claimed{opacity:.5;}
+    .wish-card.mine-claim{border-color:color-mix(in srgb,var(--g2) 45%,transparent);box-shadow:0 0 0 1px color-mix(in srgb,var(--g2) 15%,transparent),0 8px 30px color-mix(in srgb,var(--g1) 18%,transparent);}
+    .wish-img{width:100%;aspect-ratio:16/10;background:var(--s2);cursor:zoom-in;overflow:hidden;}
+    .wish-img img{width:100%;height:100%;object-fit:cover;display:block;}
+    .wish-body{padding:13px 14px 4px;}
+    .wish-title{font-weight:700;font-size:16px;line-height:1.3;margin-bottom:6px;word-break:break-word;}
+    .wish-meta{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;}
+    .wish-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;padding:6px 14px 13px;flex-wrap:wrap;}
+    .owner-tag{display:flex;align-items:center;gap:8px;padding:11px 14px 0;font-size:12px;font-weight:700;color:var(--gold);}
+    .shop-chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 10px 3px 4px;font-size:11px;font-weight:600;background:var(--s2);border:1px solid var(--b2);text-decoration:none;color:var(--t1);max-width:100%;}
+    .shop-chip img{width:16px;height:16px;border-radius:5px;background:white;}
+    .warn{font-size:12px;color:var(--gold);background:rgba(200,169,110,.08);border-radius:10px;padding:6px 10px;margin:6px 0;}
+
+    .fab{position:fixed;bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom,0px));right:max(16px,calc(50vw - 244px));width:58px;height:58px;border-radius:20px;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;font-size:28px;color:white;box-shadow:0 8px 24px color-mix(in srgb,var(--g1) 55%,transparent);cursor:pointer;z-index:90;border:none;transition:transform .25s cubic-bezier(.3,1.6,.5,1);}
+    .fab:active{transform:scale(.9) rotate(90deg);}
+
+    .person-overlay{position:fixed;inset:0;z-index:200;background:var(--bg);overflow-y:auto;transform:translateX(100%);transition:transform .35s cubic-bezier(.22,.68,0,1.05);visibility:hidden;}
+    .person-overlay.open{transform:translateX(0);visibility:visible;}
+
+    .modal-bg{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s;}
     .modal-bg.open{opacity:1;pointer-events:all;}
-    .modal-sheet{background:var(--s1);border:1px solid var(--b2);border-radius:24px 24px 0 0;padding:24px 20px;width:100%;max-width:520px;transform:translateY(100%);transition:transform .3s cubic-bezier(.22,.68,0,1.1);max-height:90vh;overflow-y:auto;}
+    .modal-sheet{background:var(--s1);border:1px solid var(--b2);border-bottom:none;border-radius:26px 26px 0 0;padding:14px 20px calc(22px + env(safe-area-inset-bottom,0px));width:100%;max-width:520px;transform:translateY(100%);transition:transform .35s cubic-bezier(.22,.68,0,1.05);max-height:92vh;overflow-y:auto;}
     .modal-bg.open .modal-sheet{transform:translateY(0);}
-    .modal-handle{width:36px;height:4px;border-radius:2px;background:var(--b2);margin:0 auto 18px;}
+    .modal-handle{width:38px;height:4px;border-radius:2px;background:var(--b2);margin:0 auto 16px;}
+    .sheet-title{font-family:'Unbounded',sans-serif;font-size:15px;font-weight:700;margin-bottom:16px;}
 
-    /* Image preview */
-    .img-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}
+    .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;}
+    .seg button{border-radius:14px;padding:10px 6px;background:var(--s2);border:1px solid var(--b2);color:var(--t2);font-size:12px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:all .2s;}
+    .seg button .e{font-size:20px;transition:transform .25s cubic-bezier(.3,1.6,.5,1);}
+    .seg button.on{color:var(--t1);border-color:var(--g2);background:color-mix(in srgb,var(--g2) 14%,var(--s2));}
+    .seg button.on .e{transform:scale(1.25);}
 
-    /* Select */
-    select{background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t1);padding:6px 10px;font-family:'Golos Text',sans-serif;font-size:12px;outline:none;cursor:pointer;}
+    .img-overlay{position:fixed;inset:0;z-index:400;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:16px;}
+
+    /* Status stepper */
+    .steps{display:flex;gap:4px;margin-top:10px;}
+    .step{flex:1;border:none;border-radius:10px;padding:7px 2px 6px;background:var(--s2);color:var(--t2);font-size:10px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px;transition:all .25s;}
+    .step .e{font-size:16px;filter:grayscale(1);opacity:.5;transition:all .3s cubic-bezier(.3,1.6,.5,1);}
+    .step.done{background:color-mix(in srgb,var(--g2) 16%,var(--s2));color:var(--t1);}
+    .step.done .e{filter:none;opacity:1;}
+    .step.cur .e{transform:scale(1.25);}
+
+    .toasts{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:900;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:420px;}
+    .toast{background:rgba(30,36,26,.96);border:1px solid var(--b2);border-radius:16px;padding:11px 16px;font-size:14px;font-weight:600;display:flex;gap:10px;align-items:center;box-shadow:0 12px 40px rgba(0,0,0,.45);animation:toastIn .45s cubic-bezier(.3,1.5,.5,1) both;}
+    .toast span{font-size:20px;}
+    @keyframes toastIn{from{opacity:0;transform:translateY(-16px) scale(.9)}to{opacity:1;transform:none}}
+
+    .switch{width:46px;height:28px;border-radius:14px;background:var(--s2);border:1px solid var(--b2);position:relative;cursor:pointer;flex-shrink:0;transition:background .2s;}
+    .switch::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:var(--t2);transition:all .25s cubic-bezier(.3,1.5,.5,1);}
+    .switch.on{background:var(--g1);}
+    .switch.on::after{left:21px;background:white;}
+
+    .empty{text-align:center;padding:40px 16px;}
+    .empty .big{font-size:52px;margin-bottom:12px;animation:float 3s ease-in-out infinite;}
+    @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
 
     ::-webkit-scrollbar{width:4px;}
-    ::-webkit-scrollbar-track{background:transparent;}
     ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:2px;}
-
     @keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
     .fu{animation:fadeUp .3s cubic-bezier(.22,.68,0,1.2) both;}
+    @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important;}}
   </style>
 </head>
 <body>
@@ -148,8 +199,11 @@
 <div id="root"></div>
 
 <script type="text/babel">
-  const { useEffect, useState, useMemo, useRef, useCallback } = React;
+  const { useEffect, useState, useMemo, useRef } = React;
 
+  // ══════════════════════════════════════
+  // FIREBASE
+  // ══════════════════════════════════════
   const firebaseConfig = {
     apiKey:"AIzaSyC26Xjjr0pFQDVFtCgRyteEpNEjngVOJFI",
     authDomain:"wishlist-37819.firebaseapp.com",
@@ -161,111 +215,327 @@
   firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
   const db = firebase.firestore();
+  const FV = firebase.firestore.FieldValue;
   auth.signInAnonymously().catch(console.error);
 
-  const LIST_ID = 'newyear2025';
-  const listDoc   = db.collection('lists').doc(LIST_ID);
-  const itemsCol  = () => listDoc.collection('items');
-  const claimsCol = () => listDoc.collection('claims');
-  const usersCol  = () => db.collection('users');
+  // Старый семейный список становится первой «группой» — все данные сохраняются
+  const LEGACY_LIST = 'newyear2025';
+  const listsCol    = () => db.collection('lists');
+  const usersCol    = () => db.collection('users');
+  const profilesCol = () => db.collection('profiles');
+  const itemsCol    = gid => listsCol().doc(gid).collection('items');
+  const claimsCol   = gid => listsCol().doc(gid).collection('claims');
 
-  const saveLocal = (k,v) => localStorage.setItem(k, JSON.stringify(v));
-  const loadLocal = (k,fb) => { try{const v=localStorage.getItem(k);return v?JSON.parse(v):fb;}catch{return fb;} };
+  // ══════════════════════════════════════
+  // UTILS
+  // ══════════════════════════════════════
+  const saveLocal = (k,v) => { try{ localStorage.setItem(k, JSON.stringify(v)); }catch{} };
+  const loadLocal = (k,fb) => { try{ const v=localStorage.getItem(k); return v!=null?JSON.parse(v):fb; }catch{ return fb; } };
+  const cleanName = s => (s||'').replace(/\//g,'').replace(/\s+/g,' ').trim();
 
-  async function compressImage(file) {
+  function compressImage(file, max=800, quality=.72) {
     return new Promise((res,rej) => {
       const r = new FileReader();
       r.onload = e => {
         const img = new Image();
         img.onload = () => {
-          const s = Math.min(800/img.width,800/img.height,1);
+          const s = Math.min(max/img.width, max/img.height, 1);
           const c = document.createElement('canvas');
-          c.width=img.width*s; c.height=img.height*s;
+          c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
           c.getContext('2d').drawImage(img,0,0,c.width,c.height);
-          const d = c.toDataURL('image/jpeg',.7);
-          if(d.length>900000){rej('Слишком большое.');return;}
+          const d = c.toDataURL('image/jpeg',quality);
+          if(d.length>900000){ rej('Картинка слишком большая.'); return; }
           res(d);
         };
-        img.onerror=()=>rej('Не удалось прочитать.');
-        img.src=e.target.result;
+        img.onerror = () => rej('Не удалось прочитать картинку.');
+        img.src = e.target.result;
       };
-      r.onerror=()=>rej('Ошибка файла.');
+      r.onerror = () => rej('Ошибка файла.');
       r.readAsDataURL(file);
     });
   }
 
   async function hashPin(pin) {
-    const buf = await crypto.subtle.digest('SHA-256',new TextEncoder().encode(pin+'podarki_salt'));
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pin+'podarki_salt'));
     return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
   }
 
-  const NAME_COLORS = [
-    ['#5a7a38','#7ea858'],['#8a6a30','#c8a96e'],['#3a6050','#5a9070'],
-    ['#7a5030','#b87840'],['#4a6840','#7a9858'],['#6a5040','#9a7858'],
+  const plural = (n,[one,few,many]) => {
+    const a=Math.abs(n)%100, b=a%10;
+    if(a>10&&a<20) return many;
+    if(b===1) return one;
+    if(b>=2&&b<=4) return few;
+    return many;
+  };
+  const fmtPrice = n => n ? new Intl.NumberFormat('ru-RU').format(Math.round(n))+' ₽' : '';
+  const normUrl = u => { u=(u||'').trim(); if(!u) return ''; if(!/^https?:\/\//i.test(u)) u='https://'+u; return u; };
+  const hostOf = u => { try{ return new URL(normUrl(u)).hostname.replace(/^www\./,''); }catch{ return ''; } };
+  const SHOPS = [
+    [/ozon\./,'Ozon'], [/wildberries|(^|\.)wb\.ru/,'Wildberries'], [/market\.yandex|yandex\.ru\/market/,'Я.Маркет'],
+    [/aliexpress/,'AliExpress'], [/amazon\./,'Amazon'], [/lamoda/,'Lamoda'], [/goldapple/,'Золотое Яблоко'],
+    [/letu\./,'Л’Этуаль'], [/mvideo/,'М.Видео'], [/dns-shop/,'DNS'], [/megamarket/,'Мегамаркет'], [/detmir/,'Детский мир'],
+    [/litres/,'Литрес'], [/labirint/,'Лабиринт'], [/chitai-gorod/,'Читай-город'], [/avito/,'Авито'], [/ikea|swed-house|hoff/,'Для дома'],
+    [/mywishlist|wishlist\.ru|ohmywishes|wishmaster|wishlistik|wishr|wishpicker|desires|giftly/,'Вишлист'],
+    [/pinterest/,'Pinterest'], [/t\.me|telegram/,'Telegram'], [/notion\./,'Notion'], [/docs\.google/,'Google Docs'],
   ];
-  function nameColor(name) {
-    const idx = name.split('').reduce((a,c)=>a+c.charCodeAt(0),0) % NAME_COLORS.length;
-    return NAME_COLORS[idx];
+  function shopOf(u) {
+    const host = hostOf(u); if(!host) return null;
+    const hit = SHOPS.find(([re])=>re.test(host));
+    return { host, name: hit?hit[1]:host, icon:`https://www.google.com/s2/favicons?domain=${host}&sz=64` };
+  }
+  const vibrate = p => { try{ navigator.vibrate && navigator.vibrate(p); }catch{} };
+  const genCode = () => Array.from(crypto.getRandomValues(new Uint8Array(6))).map(b=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b%32]).join('');
+
+  const NAME_COLORS = [
+    ['#5a7a38','#7ea858'],['#8a6a30','#c8a96e'],['#3a6050','#5a9070'],['#7a5030','#b87840'],
+    ['#4a6840','#7a9858'],['#6a5040','#9a7858'],['#3a5878','#5a88b0'],['#7a3a50','#b05a78'],
+  ];
+  const nameColor = name => NAME_COLORS[(name||'?').split('').reduce((a,c)=>a+c.charCodeAt(0),0) % NAME_COLORS.length];
+
+  const PRIORITIES = [
+    { v:1, e:'🤷', label:'Было бы неплохо' },
+    { v:2, e:'👍', label:'Хочу' },
+    { v:3, e:'🔥', label:'Очень хочу' },
+  ];
+  const STEPS = [
+    { id:'reserved', e:'📌', label:'Бронь' },
+    { id:'bought',   e:'🛍️', label:'Куплено' },
+    { id:'wrapped',  e:'🎀', label:'Упаковано' },
+    { id:'given',    e:'🎉', label:'Подарено' },
+  ];
+  const stepIdx = s => Math.max(0, STEPS.findIndex(x=>x.id===(s||'reserved')));
+
+  // Дни до ближайшей даты MM-DD (0 = сегодня)
+  function daysUntil(mmdd) {
+    if(!mmdd) return null;
+    const now = new Date(); const today = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    const [m,d] = mmdd.split('-').map(Number); if(!m||!d) return null;
+    let t = new Date(today.getFullYear(),m-1,d);
+    if(t<today) t = new Date(today.getFullYear()+1,m-1,d);
+    return Math.round((t-today)/864e5);
+  }
+  const whenText = n => n===0 ? 'сегодня!' : n===1 ? 'завтра' : `через ${n} ${plural(n,['день','дня','дней'])}`;
+  const HOLIDAYS = [
+    { date:'01-01', e:'🎄', label:'Новый год', until:'До Нового года' },
+    { date:'02-23', e:'🛡️', label:'23 февраля', until:'До 23 февраля' },
+    { date:'03-08', e:'🌷', label:'8 марта', until:'До 8 марта' },
+  ];
+  const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+  const isClaimBy = (c,name) => !!c && (c.claimerName===name || (c.participants||[]).includes(name));
+  const claimParts = c => !c ? [] : (c.participants && c.participants.length ? c.participants : [c.claimerName]);
+
+  // ══════════════════════════════════════
+  // FX: конфетти, тосты, подтверждения
+  // ══════════════════════════════════════
+  const reduceMotion = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const FX = (() => {
+    let cv, ctx, parts=[], raf=null;
+    const resize = () => { const d=window.devicePixelRatio||1; cv.width=innerWidth*d; cv.height=innerHeight*d; ctx.setTransform(d,0,0,d,0,0); };
+    const ensure = () => { if(cv) return; cv=document.createElement('canvas'); cv.className='fx-canvas'; document.body.appendChild(cv); ctx=cv.getContext('2d'); resize(); addEventListener('resize',resize); };
+    const loop = () => {
+      ctx.clearRect(0,0,innerWidth,innerHeight);
+      parts = parts.filter(p=>p.life>0);
+      for(const p of parts){
+        p.vy+=p.g; p.vx*=.985; p.x+=p.vx; p.y+=p.vy; p.r+=p.vr; p.life--;
+        ctx.save(); ctx.globalAlpha=Math.min(1,p.life/25); ctx.translate(p.x,p.y); ctx.rotate(p.r);
+        if(p.emoji){ ctx.font=p.size+'px serif'; ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(p.emoji,0,0); }
+        else { ctx.fillStyle=p.c; ctx.fillRect(-p.size/2,-p.size/4,p.size,p.size/2); }
+        ctx.restore();
+      }
+      raf = parts.length ? requestAnimationFrame(loop) : null;
+    };
+    function burst({x=innerWidth/2,y=innerHeight/2,n=50,emoji=null,spread=1,power=1}={}) {
+      if(reduceMotion()) return; ensure();
+      const colors=['#7ea858','#c8a96e','#f0ece4','#e07060','#5a9070','#ffd36e','#b05a78'];
+      for(let i=0;i<n;i++){
+        const a=-Math.PI/2+(Math.random()-.5)*Math.PI*spread, s=(3+Math.random()*7)*power;
+        parts.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,g:.2,r:Math.random()*6,vr:(Math.random()-.5)*.3,
+          life:60+Math.random()*50,size:emoji?16+Math.random()*12:6+Math.random()*6,c:colors[i%colors.length],
+          emoji:emoji?(Array.isArray(emoji)?emoji[i%emoji.length]:emoji):null});
+      }
+      if(!raf) raf=requestAnimationFrame(loop);
+    }
+    function big(){
+      burst({x:innerWidth*.15,y:innerHeight*.75,n:70,spread:.7,power:1.4});
+      burst({x:innerWidth*.85,y:innerHeight*.75,n:70,spread:.7,power:1.4});
+      setTimeout(()=>burst({y:innerHeight*.45,n:24,emoji:['🎁','✨','🎄','⭐','🎀']}),220);
+    }
+    return { burst, big };
+  })();
+  const burstFrom = (el, opts={}) => {
+    const r = el && el.getBoundingClientRect ? el.getBoundingClientRect() : null;
+    FX.burst({ ...(r?{x:r.left+r.width/2,y:r.top+r.height/2}:{}), ...opts });
+  };
+
+  const toast = (text, e='✨') => window.dispatchEvent(new CustomEvent('app:toast',{detail:{text,e,id:Math.random()}}));
+  function ToastHost(){
+    const [list,setList] = useState([]);
+    useEffect(()=>{
+      const h = ev => { const t=ev.detail; setList(l=>[...l.slice(-2),t]); setTimeout(()=>setList(l=>l.filter(x=>x.id!==t.id)),2800); };
+      addEventListener('app:toast',h); return ()=>removeEventListener('app:toast',h);
+    },[]);
+    return <div className="toasts">{list.map(t=><div key={t.id} className="toast"><span>{t.e}</span>{t.text}</div>)}</div>;
+  }
+
+  let confirmImpl = null;
+  const askConfirm = opts => new Promise(res => confirmImpl ? confirmImpl({...opts,res}) : res(window.confirm(opts.title)));
+  function ConfirmHost(){
+    const [st,setSt] = useState(null);
+    const last = useRef(null); if(st) last.current = st;
+    useEffect(()=>{ confirmImpl=setSt; return ()=>{confirmImpl=null;}; },[]);
+    const close = v => { st && st.res(v); setSt(null); };
+    const c = last.current || {};
+    return (
+      <Sheet open={!!st} onClose={()=>close(false)} z={300}>
+        <div style={{textAlign:'center',padding:'4px 0 6px'}}>
+          <div style={{fontSize:40,marginBottom:8}}>{c.e||'🤔'}</div>
+          <div className="sheet-title" style={{marginBottom:6}}>{c.title}</div>
+          {c.text&&<div className="note" style={{marginBottom:16}}>{c.text}</div>}
+          <div className="row" style={{marginTop:12}}>
+            <button className="btn btn-g" style={{flex:1}} onClick={()=>close(false)}>{c.cancel||'Отмена'}</button>
+            <button className={`btn ${c.danger?'btn-d':'btn-p'}`} style={{flex:1}} onClick={()=>close(true)}>{c.ok||'Да'}</button>
+          </div>
+        </div>
+      </Sheet>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // SMALL UI
+  // ══════════════════════════════════════
+  function Sheet({ open, onClose, children, z }) {
+    return (
+      <div className={`modal-bg ${open?'open':''}`} style={z?{zIndex:z}:null} onClick={e=>e.target===e.currentTarget&&onClose()}>
+        <div className="modal-sheet"><div className="modal-handle"/>{children}</div>
+      </div>
+    );
+  }
+
+  function Avatar({ name, photo, size=44, radius }) {
+    const [c1,c2] = nameColor(name);
+    return (
+      <div className="avatar" style={{width:size,height:size,borderRadius:radius??Math.round(size*.32),fontSize:Math.round(size*.32),
+        background:photo?'var(--s2)':`linear-gradient(135deg,${c1},${c2})`,boxShadow:`0 4px 14px ${c1}44`}}>
+        {photo ? <img src={photo} alt=""/> : (name||'?').slice(0,2).toUpperCase()}
+      </div>
+    );
+  }
+
+  function Ring({ value, size, stroke=3.5, children }) {
+    const r=(size-stroke)/2, c=2*Math.PI*r, v=Math.max(0,Math.min(1,value||0));
+    return (
+      <div style={{position:'relative',width:size,height:size,flexShrink:0}}>
+        <svg width={size} height={size} style={{position:'absolute',inset:0,transform:'rotate(-90deg)'}}>
+          <circle cx={size/2} cy={size/2} r={r} stroke="rgba(255,255,255,.08)" strokeWidth={stroke} fill="none"/>
+          <circle cx={size/2} cy={size/2} r={r} stroke="url(#ringGrad)" strokeWidth={stroke} fill="none" strokeLinecap="round"
+            strokeDasharray={c} strokeDashoffset={c*(1-v)} style={{transition:'stroke-dashoffset .8s cubic-bezier(.3,1.2,.5,1)'}}/>
+        </svg>
+        <div style={{position:'absolute',inset:stroke+3,display:'flex',alignItems:'center',justifyContent:'center'}}>{children}</div>
+      </div>
+    );
+  }
+  const RingDefs = () => (
+    <svg width="0" height="0" style={{position:'absolute'}}><defs>
+      <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="var(--g2)"/><stop offset="100%" stopColor="var(--gold)"/></linearGradient>
+    </defs></svg>
+  );
+
+  function ShopChip({ url }) {
+    const s = shopOf(url); if(!s) return null;
+    return (
+      <a className="shop-chip" href={normUrl(url)} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}>
+        <img src={s.icon} alt="" onError={e=>{e.target.style.display='none';}}/>
+        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{s.name}</span> ↗
+      </a>
+    );
+  }
+
+  function WishMeta({ wish }) {
+    const p = PRIORITIES.find(x=>x.v===wish.priority);
+    if(!p && !wish.price && !wish.url) return null;
+    return (
+      <div className="wish-meta">
+        {p && p.v===3 && <span className="badge b-red">🔥 очень хочу</span>}
+        {p && p.v===1 && <span className="badge b-muted">🤷 если будет</span>}
+        {wish.price>0 && <span className="badge b-gold">≈ {fmtPrice(wish.price)}</span>}
+        {wish.url && <ShopChip url={wish.url}/>}
+      </div>
+    );
+  }
+
+  function Switch({ on, onChange }) { return <div className={`switch ${on?'on':''}`} onClick={()=>onChange(!on)}/>; }
+
+  // ══════════════════════════════════════
+  // SNOW
+  // ══════════════════════════════════════
+  function Snow() {
+    const ref = useRef(null);
+    useEffect(()=>{
+      if(reduceMotion()) return;
+      const cv=ref.current, ctx=cv.getContext('2d'); let raf, W, H;
+      const resize=()=>{ const d=window.devicePixelRatio||1; W=innerWidth; H=innerHeight; cv.width=W*d; cv.height=H*d; ctx.setTransform(d,0,0,d,0,0); };
+      resize(); addEventListener('resize',resize);
+      const flakes = Array.from({length:55},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:.8+Math.random()*2.2,s:.3+Math.random()*.9,w:Math.random()*Math.PI*2}));
+      const tick=()=>{
+        ctx.clearRect(0,0,W,H); ctx.fillStyle='rgba(255,255,255,.55)';
+        for(const f of flakes){ f.y+=f.s; f.w+=.01; f.x+=Math.sin(f.w)*.4; if(f.y>H+5){f.y=-5;f.x=Math.random()*W;}
+          ctx.beginPath(); ctx.arc(f.x,f.y,f.r,0,Math.PI*2); ctx.fill(); }
+        raf=requestAnimationFrame(tick);
+      };
+      tick();
+      return ()=>{ cancelAnimationFrame(raf); removeEventListener('resize',resize); };
+    },[]);
+    return <canvas ref={ref} className="snow-canvas"/>;
   }
 
   // ══════════════════════════════════════
   // AUTH SCREEN
   // ══════════════════════════════════════
-  function AuthScreen({ onAuth }) {
+  function AuthScreen({ onAuth, invite }) {
     const [step,setStep] = useState('name');
     const [nameInput,setNameInput] = useState('');
     const [pin,setPin] = useState('');
     const [pin2,setPin2] = useState('');
     const [loading,setLoading] = useState(false);
     const [error,setError] = useState('');
+    const name = cleanName(nameInput);
+
+    const permErr = () => setError('Нет доступа к базе. Обновите правила Firestore (файл firestore.rules).');
 
     const handleName = async () => {
-      const name = nameInput.trim();
       if(!name) return;
       setLoading(true); setError('');
       try {
+        if(!auth.currentUser) await auth.signInAnonymously();
         const doc = await usersCol().doc(name).get();
-        // Профиль есть → вход по PIN
-        // Профиля нет → регистрация (в том числе миграция старых пользователей)
         setStep(doc.exists ? 'pin_enter' : 'pin_new');
       } catch(e) {
-        console.error('handleName error:', e);
-        // Скорее всего правило users ещё не добавлено в Firebase
-        if(e.code === 'permission-denied') {
-          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
-        } else {
-          setError('Ошибка соединения. Проверьте интернет и попробуйте ещё раз.');
-        }
+        console.error(e);
+        e.code==='permission-denied' ? permErr() : setError('Ошибка соединения. Проверьте интернет.');
       }
       setLoading(false);
     };
 
     const handleRegister = async () => {
-      if(pin.length<4){setError('PIN минимум 4 цифры.');return;}
-      if(pin!==pin2){setError('PIN-коды не совпадают.');return;}
+      if(pin.length<4){ setError('PIN минимум 4 цифры.'); return; }
+      if(pin!==pin2){ setError('PIN-коды не совпадают.'); return; }
       setLoading(true); setError('');
       try {
         const hashed = await hashPin(pin);
-        const ref = usersCol().doc(nameInput.trim());
+        const ref = usersCol().doc(name);
         await db.runTransaction(async tx => {
           const snap = await tx.get(ref);
           if(snap.exists) throw new Error('taken');
-          tx.set(ref,{pinHash:hashed,createdAt:Date.now()});
+          tx.set(ref,{ pinHash:hashed, createdAt:Date.now(), groups: invite?[invite.id]:[] });
         });
-        saveLocal('nywish:name',nameInput.trim());
-        saveLocal('nywish:pin_ok',nameInput.trim());
-        onAuth(nameInput.trim());
+        saveLocal('nywish:name',name); saveLocal('nywish:pin_ok',name);
+        onAuth(name, true);
       } catch(e) {
-        console.error('handleRegister error:', e);
-        if(e.message==='taken'){
-          // Гонка — пока вводили PIN, кто-то занял имя → переходим к вводу PIN
-          setError('Это имя уже зарегистрировано. Введите PIN.');
-          setStep('pin_enter'); setPin(''); setPin2('');
-        } else if(e.code==='permission-denied') {
-          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
-        } else {
-          setError('Не удалось зарегистрироваться. Попробуйте ещё раз.');
-        }
+        console.error(e);
+        if(e.message==='taken'){ setError('Это имя уже занято. Введите PIN.'); setStep('pin_enter'); setPin(''); setPin2(''); }
+        else if(e.code==='permission-denied') permErr();
+        else setError('Не удалось зарегистрироваться. Попробуйте ещё раз.');
       }
       setLoading(false);
     };
@@ -274,83 +544,70 @@
       if(!pin) return;
       setLoading(true); setError('');
       try {
-        const doc = await usersCol().doc(nameInput.trim()).get();
-        if(!doc.exists){setError('Профиль не найден.');setLoading(false);return;}
-        const hashed = await hashPin(pin);
-        if(doc.data().pinHash !== hashed){setError('Неверный PIN. Попробуйте ещё раз.');setPin('');setLoading(false);return;}
-        saveLocal('nywish:name',nameInput.trim());
-        saveLocal('nywish:pin_ok',nameInput.trim());
-        onAuth(nameInput.trim());
+        const doc = await usersCol().doc(name).get();
+        if(!doc.exists){ setError('Профиль не найден.'); setLoading(false); return; }
+        if(doc.data().pinHash !== await hashPin(pin)){ setError('Неверный PIN. Попробуйте ещё раз.'); setPin(''); vibrate([40,40,40]); setLoading(false); return; }
+        saveLocal('nywish:name',name); saveLocal('nywish:pin_ok',name);
+        onAuth(name, false);
       } catch(e) {
-        console.error('handleLogin error:', e);
-        if(e.code==='permission-denied') {
-          setError('Ошибка доступа. Добавьте правило для коллекции users в Firebase Console.');
-        } else {
-          setError('Ошибка соединения. Проверьте интернет и попробуйте ещё раз.');
-        }
+        console.error(e);
+        e.code==='permission-denied' ? permErr() : setError('Ошибка соединения. Проверьте интернет.');
       }
       setLoading(false);
     };
 
     return (
-      <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'24px 20px',position:'relative',zIndex:1}}>
-        <div style={{width:'100%',maxWidth:360}}>
-          <div style={{textAlign:'center',marginBottom:32}}>
-            <div style={{fontSize:52,marginBottom:12}}>🎁</div>
-            <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:900,lineHeight:1.1,
-              background:'linear-gradient(135deg,#a8c878,#c8a96e)',WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-              Подарки,<br/>подарочки
-            </div>
+      <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center',padding:'24px 20px',position:'relative',zIndex:1}}>
+        <div style={{width:'100%',maxWidth:370}}>
+          <div style={{textAlign:'center',marginBottom:28}}>
+            <div className="empty" style={{padding:0}}><div className="big" style={{fontSize:60}}>🎁</div></div>
+            <div className="page-title" style={{fontSize:26}}>Подарки,<br/>подарочки</div>
+            <div className="note" style={{marginTop:10}}>Вишлисты для своих — без повторов и испорченных сюрпризов</div>
           </div>
+
+          {invite && (
+            <div className="glass fu" style={{padding:'12px 14px',marginBottom:12,display:'flex',gap:12,alignItems:'center',borderColor:'rgba(200,169,110,.35)'}}>
+              <div style={{fontSize:28}}>{invite.emoji||'🎄'}</div>
+              <div><div style={{fontWeight:700}}>Вас пригласили в «{invite.name}»</div>
+                <div className="note" style={{fontSize:12}}>Войдите или создайте профиль — и вы в группе</div></div>
+            </div>
+          )}
 
           <div className="card">
             {step==='name' && (<>
-              <div className="sec" style={{marginBottom:12}}>Войти или зарегистрироваться</div>
-              <input className="inp" placeholder="Ваше имя (Ира, Валера…)" value={nameInput}
+              <div className="sec" style={{marginTop:0}}>Как вас зовут?</div>
+              <input className="inp" placeholder="Имя (Ира, Валера…)" value={nameInput} maxLength={30}
                 onChange={e=>{setNameInput(e.target.value);setError('');}}
-                onKeyDown={e=>e.key==='Enter'&&nameInput.trim()&&handleName()}
-                style={{marginBottom:10}} autoFocus />
-              {error&&<div className="err" style={{marginBottom:8}}>
-                {error}
-                {error.includes('доступа')&&<div style={{marginTop:6,fontSize:11,color:'var(--t2)',lineHeight:1.5}}>
-                  Добавьте в Firebase Console → Firestore → Rules:<br/>
-                  <code style={{fontSize:10,background:'var(--s2)',padding:'2px 6px',borderRadius:6,display:'inline-block',marginTop:4}}>match /users/{'{'}userName{'}'} {'{'} allow read, create: if request.auth != null; {'}'}</code>
-                </div>}
-              </div>}
-              <button className="btn btn-p" style={{width:'100%'}} onClick={handleName} disabled={!nameInput.trim()||loading}>
-                {loading?'Проверяем…':'Продолжить →'}
-              </button>
+                onKeyDown={e=>e.key==='Enter'&&name&&handleName()} style={{marginBottom:10}} autoFocus/>
+              {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
+              <button className="btn btn-p btn-block" onClick={handleName} disabled={!name||loading}>{loading?'Проверяем…':'Продолжить →'}</button>
             </>)}
 
             {step==='pin_new' && (<>
-              <div className="sec" style={{marginBottom:4}}>Придумайте PIN</div>
-              <div className="note" style={{marginBottom:12}}>Имя <strong style={{color:'var(--t1)'}}>{nameInput.trim()}</strong> свободно! Задайте PIN — он защитит ваш профиль.</div>
+              <div className="sec" style={{marginTop:0}}>Придумайте PIN</div>
+              <div className="note" style={{marginBottom:12}}>Имя <b style={{color:'var(--t1)'}}>{name}</b> свободно! PIN защитит профиль — с ним можно входить с любого устройства.</div>
               <input className="inp" type="password" inputMode="numeric" placeholder="PIN (мин. 4 цифры)" value={pin}
-                onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:8}} autoFocus />
+                onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:8}} autoFocus/>
               <input className="inp" type="password" inputMode="numeric" placeholder="Повторите PIN" value={pin2}
                 onChange={e=>{setPin2(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:10}}
-                onKeyDown={e=>e.key==='Enter'&&handleRegister()} />
+                onKeyDown={e=>e.key==='Enter'&&handleRegister()}/>
               {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-              <div style={{display:'flex',gap:8}}>
-                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setPin2('');setError('');}}>← Назад</button>
-                <button className="btn btn-p" style={{flex:2}} onClick={handleRegister} disabled={pin.length<4||!pin2||loading}>
-                  {loading?'Регистрируем…':'Создать профиль ✓'}
-                </button>
+              <div className="row">
+                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setPin2('');setError('');}}>←</button>
+                <button className="btn btn-p" style={{flex:3}} onClick={handleRegister} disabled={pin.length<4||!pin2||loading}>{loading?'Создаём…':'Создать профиль ✓'}</button>
               </div>
             </>)}
 
             {step==='pin_enter' && (<>
-              <div className="sec" style={{marginBottom:4}}>Введите PIN</div>
-              <div className="note" style={{marginBottom:12}}>Привет, <strong style={{color:'var(--t1)'}}>{nameInput.trim()}</strong>! Введите PIN для входа.</div>
+              <div className="sec" style={{marginTop:0}}>Введите PIN</div>
+              <div className="note" style={{marginBottom:12}}>Привет, <b style={{color:'var(--t1)'}}>{name}</b>! 👋</div>
               <input className="inp" type="password" inputMode="numeric" placeholder="Ваш PIN" value={pin}
                 onChange={e=>{setPin(e.target.value.replace(/\D/g,''));setError('');}} maxLength={8} style={{marginBottom:10}}
-                onKeyDown={e=>e.key==='Enter'&&handleLogin()} autoFocus />
+                onKeyDown={e=>e.key==='Enter'&&handleLogin()} autoFocus/>
               {error&&<div className="err" style={{marginBottom:8}}>{error}</div>}
-              <div style={{display:'flex',gap:8}}>
-                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setError('');}}>← Назад</button>
-                <button className="btn btn-p" style={{flex:2}} onClick={handleLogin} disabled={!pin||loading}>
-                  {loading?'Проверяем…':'Войти →'}
-                </button>
+              <div className="row">
+                <button className="btn btn-g" style={{flex:1}} onClick={()=>{setStep('name');setPin('');setError('');}}>←</button>
+                <button className="btn btn-p" style={{flex:3}} onClick={handleLogin} disabled={!pin||loading}>{loading?'Проверяем…':'Войти →'}</button>
               </div>
             </>)}
           </div>
@@ -360,138 +617,203 @@
   }
 
   // ══════════════════════════════════════
-  // WISH CARD (чужое)
+  // WISH CARDS
   // ══════════════════════════════════════
-  function WishCardGuest({ wish, claim, userName, authUid, onClaim, onUnclaim, onImgClick }) {
-    const claimed = !!claim;
-    const mine = claim?.claimerName === userName;
-    const [tip,setTip] = useState(false);
+  function WishCardGuest({ wish, claim, me, showOwner, ownerPhoto, onClaim, onJoin, onUnclaim, onImg }) {
+    const mine = isClaimBy(claim, me);
+    const parts = claimParts(claim);
+    const changed = mine && wish.updatedAt && claim.createdAt && wish.updatedAt > claim.createdAt;
+    const takenSolo = claim && !mine && !claim.coop;
     return (
-      <div className={`wish-card ${claimed&&!mine?'claimed':''}`}>
-        {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:12,maxHeight:200,objectFit:'cover',marginBottom:10,cursor:'pointer'}} onClick={()=>onImgClick(wish.image)} />}
-        <div style={{display:'flex',alignItems:'flex-start',gap:10}}>
-          <div style={{flex:1}}>
-            <div style={{fontWeight:600,fontSize:15,color:'var(--t1)',marginBottom:3}}>{wish.title}</div>
-            {wish.note&&<div className="note" style={{marginBottom:4}}>{wish.note}</div>}
-            {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#9aba70',textDecoration:'none'}}>Открыть ↗</a>}
-          </div>
-          <div style={{flexShrink:0,position:'relative'}}>
-            {claimed ? (mine ? (
-              <div style={{display:'flex',flexDirection:'column',alignItems:'flex-end',gap:6}}>
-                <span className="badge b-green">🎁 Вы дарите</span>
-                <button className="btn btn-g" style={{fontSize:12,padding:'5px 12px'}} onClick={onUnclaim}>Снять</button>
-              </div>
-            ) : (
-              <div onMouseEnter={()=>setTip(true)} onMouseLeave={()=>setTip(false)} onClick={()=>setTip(t=>!t)}>
-                <button className="btn btn-g" style={{fontSize:12,padding:'7px 14px',cursor:'default'}}>Занято</button>
-                {tip&&<div style={{position:'absolute',right:0,bottom:'calc(100% + 6px)',background:'#1c1c28',border:'1px solid var(--b2)',color:'var(--t1)',fontSize:11,padding:'5px 10px',borderRadius:10,whiteSpace:'nowrap',zIndex:10,boxShadow:'0 8px 24px rgba(0,0,0,.4)'}}>🎁 Дарит: {claim.claimerName}</div>}
-              </div>
-            )) : (
-              <button className="btn btn-p" style={{fontSize:12,padding:'8px 16px'}} onClick={onClaim}>Я подарю 🎁</button>
-            )}
-          </div>
+      <div className={`wish-card ${takenSolo?'claimed':''} ${mine?'mine-claim':''}`}>
+        {showOwner && <div className="owner-tag"><Avatar name={wish.ownerName} photo={ownerPhoto} size={22} radius={7}/>{wish.ownerName}</div>}
+        {wish.image && <div className="wish-img" style={showOwner?{marginTop:10}:null} onClick={()=>onImg(wish.image)}><img src={wish.image} alt="" loading="lazy"/></div>}
+        <div className="wish-body">
+          <div className="wish-title">{wish.title}</div>
+          <WishMeta wish={wish}/>
+          {wish.note && <div className="note" style={{marginBottom:4,whiteSpace:'pre-wrap'}}>{wish.note}</div>}
+          {changed && <div className="warn">✏️ Изменено после вашей брони — проверьте детали</div>}
+        </div>
+        <div className="wish-actions">
+          {!claim && (<>
+            <button className="btn btn-g btn-sm" onClick={e=>onClaim(wish,true,e.currentTarget)}>🤝 Скинуться</button>
+            <button className="btn btn-p btn-sm" onClick={e=>onClaim(wish,false,e.currentTarget)}>Я подарю 🎁</button>
+          </>)}
+          {mine && (<>
+            <span className="badge b-green" style={{marginRight:'auto'}}>
+              {claim.coop ? `🤝 ${parts.length>1?'Вместе: '+parts.join(', '):'Вы открыли складчину'}` : '🎁 Вы дарите'}
+            </span>
+            <button className="btn btn-g btn-sm" onClick={()=>onUnclaim(wish)}>Снять</button>
+          </>)}
+          {claim && !mine && claim.coop && (<>
+            <span className="badge b-gold" style={{marginRight:'auto',whiteSpace:'normal'}}>🤝 Скидываются: {parts.join(', ')}</span>
+            <button className="btn btn-p btn-sm" onClick={e=>onJoin(wish,e.currentTarget)}>Я в деле</button>
+          </>)}
+          {takenSolo && <span className="badge b-muted">🔒 Уже дарит {claim.claimerName}</span>}
         </div>
       </div>
     );
   }
 
-  // ══════════════════════════════════════
-  // WISH CARD (своё)
-  // ══════════════════════════════════════
-  function WishCardMy({ wish, locked, onDelete, onUpdate, onImgClick }) {
-    const [editing,setEditing] = useState(false);
-    const [title,setTitle] = useState(wish.title||'');
-    const [url,setUrl]   = useState(wish.url||'');
-    const [note,setNote] = useState(wish.note||'');
-    const [img,setImg]   = useState(wish.image||'');
-    const [imgErr,setImgErr] = useState('');
-    const [imgLoad,setImgLoad] = useState(false);
-
-    useEffect(()=>{setTitle(wish.title||'');setUrl(wish.url||'');setNote(wish.note||'');setImg(wish.image||'');setEditing(false);},[wish.id]);
-
-    const handleFile = async e => {
-      const f=e.target.files?.[0]; if(!f)return;
-      setImgLoad(true); setImgErr('');
-      try{setImg(await compressImage(f));}catch(err){setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
-    };
-
-    if(editing) return (
-      <div className="card" style={{display:'flex',flexDirection:'column',gap:8}}>
-        <div className="sec">Редактирование</div>
-        <input className="inp" value={title} onChange={e=>setTitle(e.target.value)} placeholder="Название" />
-        <input className="inp" value={url} onChange={e=>setUrl(e.target.value)} placeholder="Ссылка" />
-        <textarea className="txta" rows="2" value={note} onChange={e=>setNote(e.target.value)} placeholder="Комментарий" />
-        <input type="file" accept="image/*" className="inp" style={{fontSize:12}} onChange={handleFile} />
-        {imgLoad&&<div className="note">Сжимается…</div>}
-        {imgErr&&<div className="err">{imgErr}</div>}
-        {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:120,width:'100%',objectFit:'cover',cursor:'pointer'}} onClick={()=>onImgClick(img)} />}
-        <div className="divider"/>
-        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-          <button className="btn btn-g" style={{fontSize:13,padding:'8px 16px'}} onClick={()=>setEditing(false)}>Отмена</button>
-          <button className="btn btn-p" style={{fontSize:13,padding:'8px 16px'}} onClick={async()=>{await onUpdate(wish.id,{title:title.trim(),url:url.trim(),note:note.trim(),image:img||null});setEditing(false);}}>Сохранить</button>
-        </div>
-      </div>
-    );
-
+  function WishCardMy({ wish, onEdit, onRemove, onImg }) {
     return (
       <div className="wish-card">
-        {wish.image&&<img src={wish.image} alt="" style={{width:'100%',borderRadius:12,maxHeight:200,objectFit:'cover',marginBottom:10,cursor:'pointer'}} onClick={()=>onImgClick(wish.image)} />}
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10,marginBottom:8}}>
-          <div>
-            <div style={{fontWeight:600,color:'var(--t1)',fontSize:15,marginBottom:3}}>{wish.title}</div>
-            {wish.note&&<div className="note" style={{marginBottom:3}}>{wish.note}</div>}
-            {wish.url&&<a href={wish.url} target="_blank" rel="noreferrer" style={{fontSize:12,color:'#9aba70',textDecoration:'none'}}>Открыть ↗</a>}
-          </div>
-          <span className="badge b-muted" style={{flexShrink:0}}>моё</span>
+        {wish.image && <div className="wish-img" onClick={()=>onImg(wish.image)}><img src={wish.image} alt="" loading="lazy"/></div>}
+        <div className="wish-body">
+          <div className="wish-title">{wish.title}</div>
+          <WishMeta wish={wish}/>
+          {wish.note && <div className="note" style={{whiteSpace:'pre-wrap'}}>{wish.note}</div>}
         </div>
-        <div className="divider"/>
-        <div style={{display:'flex',gap:8,justifyContent:'flex-end'}}>
-          <button className="btn btn-g" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>!locked&&setEditing(true)} disabled={locked}>Изменить</button>
-          <button className="btn btn-d" style={{fontSize:12,padding:'7px 14px'}} onClick={()=>window.confirm('Удалить?')&&onDelete(wish.id)}>Удалить</button>
+        <div className="wish-actions">
+          <button className="btn btn-g btn-sm" onClick={()=>onEdit(wish)}>✏️ Изменить</button>
+          <button className="btn btn-d btn-sm" onClick={()=>onRemove(wish)}>Убрать</button>
         </div>
       </div>
     );
   }
 
   // ══════════════════════════════════════
-  // ADD WISH SHEET
+  // ADD / EDIT WISH SHEET
   // ══════════════════════════════════════
-  function AddWishSheet({ open, onClose, onAdd, disabled, error }) {
-    const [title,setTitle]=useState('');const [url,setUrl]=useState('');const [note,setNote]=useState('');
-    const [img,setImg]=useState('');const [imgErr,setImgErr]=useState('');const [imgLoad,setImgLoad]=useState(false);
+  const BLANK = { title:'', url:'', price:'', priority:2, note:'', image:'' };
+  function WishSheet({ open, initial, onClose, onSave }) {
+    const [f,setF] = useState(BLANK);
+    const [imgErr,setImgErr] = useState('');
+    const [imgLoad,setImgLoad] = useState(false);
+    const titleRef = useRef(null);
+    const set = (k,v) => setF(p=>({...p,[k]:v}));
 
-    const reset = () => {setTitle('');setUrl('');setNote('');setImg('');setImgErr('');}
-    const submit = () => {
-      if(!title.trim()) return;
-      onAdd({title:title.trim(),url:url.trim(),note:note.trim(),image:img});
-      reset(); onClose();
-    };
+    useEffect(()=>{
+      if(!open) return;
+      setF(initial ? { ...BLANK, ...initial, price: initial.price?String(initial.price):'', image: initial.image||'', priority: initial.priority||2 } : BLANK);
+      setImgErr('');
+      if(!initial) setTimeout(()=>titleRef.current && titleRef.current.focus(), 350);
+    },[open, initial && initial.id]);
+
     const handleFile = async e => {
-      const f=e.target.files?.[0]; if(!f)return;
+      const file = e.target.files && e.target.files[0]; if(!file) return;
       setImgLoad(true); setImgErr('');
-      try{setImg(await compressImage(f));}catch(err){setImg('');setImgErr(typeof err==='string'?err:'Ошибка.');}finally{setImgLoad(false);}
+      try{ set('image', await compressImage(file)); }catch(err){ setImgErr(typeof err==='string'?err:'Ошибка.'); }
+      finally{ setImgLoad(false); e.target.value=''; }
+    };
+    const shop = shopOf(f.url);
+    const submit = e => {
+      if(!f.title.trim()) return;
+      onSave({ title:f.title.trim(), url:normUrl(f.url), note:f.note.trim(), image:f.image||null,
+        price: Number(String(f.price).replace(/[^\d]/g,''))||null, priority:f.priority }, e.currentTarget);
     };
 
     return (
-      <div className={`modal-bg ${open?'open':''}`} onClick={e=>e.target===e.currentTarget&&onClose()}>
-        <div className="modal-sheet">
-          <div className="modal-handle"/>
-          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:14,fontWeight:700,marginBottom:16,color:'var(--t1)'}}>Новое желание ＋</div>
-          <div style={{display:'flex',flexDirection:'column',gap:10}}>
-            <input className="inp" placeholder="Что хочешь получить?" value={title} onChange={e=>setTitle(e.target.value)} autoFocus />
-            <input className="inp" placeholder="Ссылка на товар" value={url} onChange={e=>setUrl(e.target.value)} />
-            <textarea className="txta" rows="2" placeholder="Цвет, размер, нюансы…" value={note} onChange={e=>setNote(e.target.value)} />
-            <input type="file" accept="image/*" className="inp" style={{fontSize:12}} onChange={handleFile} />
-            {imgLoad&&<div className="note">Сжимается…</div>}
-            {imgErr&&<div className="err">{imgErr}</div>}
-            {img&&!imgLoad&&<img src={img} alt="" style={{borderRadius:12,maxHeight:130,width:'100%',objectFit:'cover'}} />}
-            {error&&<div className="err">{error}</div>}
-            <div style={{display:'flex',gap:8,marginTop:4}}>
-              <button className="btn btn-g" style={{flex:1}} onClick={()=>{reset();onClose();}}>Отмена</button>
-              <button className="btn btn-p" style={{flex:2}} onClick={submit} disabled={!title.trim()||disabled}>Добавить ✓</button>
+      <Sheet open={open} onClose={onClose}>
+        <div className="sheet-title">{initial?'Редактировать ✏️':'Новое желание ✨'}</div>
+        <div style={{display:'flex',flexDirection:'column',gap:10}}>
+          <input ref={titleRef} className="inp" placeholder="Что хочется получить?" value={f.title} maxLength={120} onChange={e=>set('title',e.target.value)}/>
+          <div style={{position:'relative'}}>
+            <input className="inp" placeholder="Ссылка на товар (необязательно)" value={f.url} onChange={e=>set('url',e.target.value)} inputMode="url" style={shop?{paddingRight:120}:null}/>
+            {shop && <span className="shop-chip" style={{position:'absolute',right:8,top:'50%',transform:'translateY(-50%)',maxWidth:110}}><img src={shop.icon} alt=""/>{shop.name}</span>}
+          </div>
+          <div className="row">
+            <input className="inp" placeholder="Примерная цена, ₽" value={f.price} inputMode="numeric" onChange={e=>set('price',e.target.value.replace(/[^\d\s]/g,''))}/>
+          </div>
+          <div className="seg">
+            {PRIORITIES.map(p=>(
+              <button key={p.v} className={f.priority===p.v?'on':''} onClick={()=>{set('priority',p.v);vibrate(10);}}>
+                <span className="e">{p.e}</span>{p.label}
+              </button>
+            ))}
+          </div>
+          <textarea className="txta" rows="2" placeholder="Цвет, размер, нюансы…" value={f.note} onChange={e=>set('note',e.target.value)}/>
+          {f.image && !imgLoad ? (
+            <div style={{position:'relative'}}>
+              <img src={f.image} alt="" style={{borderRadius:14,maxHeight:160,width:'100%',objectFit:'cover',display:'block'}}/>
+              <button className="icon-btn" style={{position:'absolute',top:8,right:8,width:32,height:32}} onClick={()=>set('image','')}>✕</button>
             </div>
+          ) : (
+            <label className="btn btn-g" style={{cursor:'pointer'}}>
+              {imgLoad?'Сжимаем…':'📷 Добавить фото'}
+              <input type="file" accept="image/*" style={{display:'none'}} onChange={handleFile}/>
+            </label>
+          )}
+          {imgErr && <div className="err">{imgErr}</div>}
+          <div className="row" style={{marginTop:4}}>
+            <button className="btn btn-g" style={{flex:1}} onClick={onClose}>Отмена</button>
+            <button className="btn btn-p" style={{flex:2}} onClick={submit} disabled={!f.title.trim()||imgLoad}>{initial?'Сохранить ✓':'Добавить ✓'}</button>
           </div>
         </div>
+      </Sheet>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // GROUPS
+  // ══════════════════════════════════════
+  const GROUP_EMOJI = ['🎄','🏡','👨‍👩‍👧','🎂','💼','🧑‍🤝‍🧑','❤️','🌟'];
+  function inviteLink(g){ return `${location.origin}${location.pathname}?join=${g.code}`; }
+  async function shareInvite(g){
+    const url = inviteLink(g);
+    const text = `Присоединяйся к вишлисту «${g.name}» 🎁 Код: ${g.code}`;
+    try {
+      if(navigator.share){ await navigator.share({ title:'Подарки, подарочки', text, url }); return; }
+      await navigator.clipboard.writeText(`${text}\n${url}`); toast('Ссылка-приглашение скопирована','🔗');
+    } catch(e) { if(e && e.name!=='AbortError'){ prompt('Скопируйте ссылку:', url); } }
+  }
+
+  function GroupCreateJoin({ onCreate, onJoin, compact }) {
+    const [mode,setMode] = useState(null);
+    const [name,setName] = useState(''); const [emoji,setEmoji] = useState('🎄');
+    const [code,setCode] = useState(''); const [busy,setBusy] = useState(false); const [err,setErr] = useState('');
+    const run = async fn => { setBusy(true); setErr(''); try{ await fn(); setMode(null); setName(''); setCode(''); }catch(e){ console.error(e); setErr(e.message==='not-found'?'Группа с таким кодом не найдена.':e.code==='permission-denied'?'Нет доступа — обновите правила Firestore.':'Не получилось. Попробуйте ещё раз.'); } setBusy(false); };
+    return (
+      <div>
+        {!mode && (
+          <div className="row">
+            <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>setMode('create')}>＋ Новая группа</button>
+            <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>setMode('join')}>🔑 Ввести код</button>
+          </div>
+        )}
+        {mode==='create' && (
+          <div style={{display:'flex',flexDirection:'column',gap:8}} className="fu">
+            <div className="hscroll" style={{margin:0,padding:0}}>
+              {GROUP_EMOJI.map(e=><button key={e} className={`chip ${emoji===e?'on':''}`} style={{fontSize:18,padding:'5px 10px'}} onClick={()=>setEmoji(e)}>{e}</button>)}
+            </div>
+            <input className="inp" placeholder="Название: Семья, Друзья, Офис…" value={name} maxLength={40} onChange={e=>setName(e.target.value)} autoFocus={!compact}/>
+            {err && <div className="err">{err}</div>}
+            <div className="row">
+              <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>{setMode(null);setErr('');}}>Отмена</button>
+              <button className="btn btn-p btn-sm" style={{flex:2}} disabled={!name.trim()||busy} onClick={()=>run(()=>onCreate(name.trim(),emoji))}>Создать</button>
+            </div>
+          </div>
+        )}
+        {mode==='join' && (
+          <div style={{display:'flex',flexDirection:'column',gap:8}} className="fu">
+            <input className="inp" placeholder="Код приглашения" value={code} maxLength={6} style={{textTransform:'uppercase',letterSpacing:'.2em',fontWeight:700,textAlign:'center'}}
+              onChange={e=>setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''))} autoFocus={!compact}/>
+            {err && <div className="err">{err}</div>}
+            <div className="row">
+              <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>{setMode(null);setErr('');}}>Отмена</button>
+              <button className="btn btn-p btn-sm" style={{flex:2}} disabled={code.length<6||busy} onClick={()=>run(()=>onJoin(code))}>Присоединиться</button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function GroupList({ groups, activeId, me, onPick, onLeave }) {
+    return (
+      <div style={{display:'grid',gap:8}}>
+        {groups.map(g=>(
+          <div key={g.id} className="glass" style={{padding:'10px 12px',display:'flex',alignItems:'center',gap:10,cursor:'pointer',
+            borderColor:g.id===activeId?'color-mix(in srgb,var(--g2) 50%,transparent)':undefined}} onClick={()=>onPick(g.id)}>
+            <div style={{fontSize:24}}>{g.emoji||'🎁'}</div>
+            <div style={{flex:1,minWidth:0}}>
+              <div style={{fontWeight:700,fontSize:14}}>{g.name}{g.id===activeId&&<span className="badge b-green" style={{marginLeft:8}}>сейчас</span>}</div>
+              <div className="note" style={{fontSize:11}}>{(g.members||[]).length||'—'} {plural((g.members||[]).length,['участник','участника','участников'])}{g.code?` · код ${g.code}`:''}</div>
+            </div>
+            {g.code && <button className="icon-btn" title="Пригласить" onClick={e=>{e.stopPropagation();shareInvite(g);}}>📨</button>}
+            {onLeave && groups.length>1 && <button className="icon-btn" title="Выйти" onClick={e=>{e.stopPropagation();onLeave(g);}}>🚪</button>}
+          </div>
+        ))}
       </div>
     );
   }
@@ -499,59 +821,370 @@
   // ══════════════════════════════════════
   // PERSON OVERLAY
   // ══════════════════════════════════════
-  function PersonOverlay({ name, open, onClose, items, claims, userName, authUid, onClaim, onUnclaim, onImgClick, claimError }) {
-    const [c1,c2] = nameColor(name||'А');
-    const wishes = useMemo(()=>items.filter(i=>i.ownerName===name),[items,name]);
-    const sorted = useMemo(()=>wishes.slice().sort((a,b)=>{
-      const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;
-    }),[wishes,claims]);
+  function PersonOverlay({ name, open, onClose, wishes, claims, profile, me, handlers, onImg }) {
+    const [onlyFree,setOnlyFree] = useState(false);
+    useEffect(()=>{ if(open) setOnlyFree(false); },[name,open]);
+    const [c1] = nameColor(name||'А');
+    const list = useMemo(()=>wishes
+      .filter(w=>!onlyFree || !claims[w.id] || (claims[w.id].coop && !isClaimBy(claims[w.id],me)))
+      .slice().sort((a,b)=>{
+        const ac=claims[a.id]&&!isClaimBy(claims[a.id],me)?1:0, bc=claims[b.id]&&!isClaimBy(claims[b.id],me)?1:0;
+        if(ac!==bc) return ac-bc;
+        return (b.priority||2)-(a.priority||2) || (b.createdAt||0)-(a.createdAt||0);
+      }),[wishes,claims,onlyFree,me]);
+    const free = wishes.filter(w=>!claims[w.id]).length;
+    const bd = profile && profile.birthday ? daysUntil(profile.birthday) : null;
+    const links = (profile && profile.links) || [];
 
     return (
       <div className={`person-overlay ${open?'open':''}`}>
-        <div style={{background:'var(--bg)',minHeight:'100vh',paddingBottom:'env(safe-area-inset-bottom,16px)'}}>
-          <div className="screen" style={{maxWidth:520,margin:'0 auto',paddingTop:0}}>
-            {/* Mesh in overlay */}
-            <div style={{position:'fixed',inset:0,zIndex:-1,
-              background:`radial-gradient(ellipse 60% 40% at 20% 20%,${c1}22 0%,transparent 60%)`,
-              pointerEvents:'none'}} />
-
-            <div style={{padding:'24px 0 16px',display:'flex',alignItems:'center',gap:14}}>
-              <button onClick={onClose} style={{background:'var(--s1)',border:'1px solid var(--b2)',borderRadius:12,width:36,height:36,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',color:'var(--t1)',fontSize:16,flexShrink:0}}>←</button>
-              <div className="avatar" style={{width:48,height:48,fontSize:16,background:`linear-gradient(135deg,${c1},${c2})`,boxShadow:`0 4px 16px ${c1}55`,flexShrink:0}}>
-                {(name||'').slice(0,2).toUpperCase()}
-              </div>
-              <div>
-                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:900,background:`linear-gradient(135deg,${c1},${c2})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>
-                  {name}
-                </div>
-                <div className="note" style={{fontSize:11,marginTop:1}}>
-                  {sorted.length} {sorted.length===1?'желание':sorted.length<5?'желания':'желаний'}
-                </div>
+        <div style={{position:'fixed',inset:0,pointerEvents:'none',background:`radial-gradient(ellipse 70% 40% at 20% 0%,${c1}33 0%,transparent 60%)`}}/>
+        <div className="screen" style={{maxWidth:520,margin:'0 auto',position:'relative'}}>
+          <div className="page-header" style={{alignItems:'center',justifyContent:'flex-start',gap:14}}>
+            <button className="icon-btn" onClick={onClose}>←</button>
+            <Avatar name={name} photo={profile&&profile.photo} size={54}/>
+            <div style={{minWidth:0}}>
+              <div className="page-title" style={{fontSize:20}}>{name}</div>
+              <div className="note" style={{fontSize:12,marginTop:2}}>
+                {wishes.length} {plural(wishes.length,['желание','желания','желаний'])} · {free} {plural(free,['свободно','свободно','свободно'])}
+                {bd!=null && bd<=60 && <> · 🎂 {whenText(bd)}</>}
               </div>
             </div>
+          </div>
 
-            <div style={{background:'rgba(255,255,255,.03)',border:'1px solid var(--b1)',borderRadius:14,padding:'10px 14px',marginBottom:14,fontSize:13,color:'var(--t2)',lineHeight:1.5}}>
-              🎁 Забронируйте подарок — {name} не узнает кто что дарит, сюрприз сохранится!
+          {links.length>0 && (
+            <div style={{marginBottom:12}}>
+              <div className="note" style={{fontSize:11,marginBottom:6}}>Другие вишлисты:</div>
+              <div className="hscroll">{links.map((l,i)=>{ const s=shopOf(l.url); return (
+                <a key={i} className="chip" href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{textDecoration:'none',color:'var(--t1)'}}>
+                  {s && <img src={s.icon} alt="" style={{width:16,height:16,borderRadius:4,background:'white'}}/>}{l.label||(s&&s.name)||'Ссылка'} ↗
+                </a>); })}</div>
             </div>
+          )}
 
-            {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
+          <div className="glass" style={{padding:'10px 14px',marginBottom:12,fontSize:13,color:'var(--t2)',lineHeight:1.5}}>
+            🤫 {name} не видит, кто и что бронирует — сюрприз сохранится!
+          </div>
 
-            {sorted.length===0&&(
-              <div style={{textAlign:'center',padding:'48px 0'}}>
-                <div style={{fontSize:44,marginBottom:12}}>🎀</div>
-                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:13,color:'var(--t1)',marginBottom:6}}>{name} пока не добавил{(name||'').slice(-1)==='а'?'а':''} желания</div>
-                <div className="note">Загляните позже!</div>
+          <div className="row" style={{marginBottom:12}}>
+            <button className={`chip ${!onlyFree?'on':''}`} onClick={()=>setOnlyFree(false)}>Все</button>
+            <button className={`chip ${onlyFree?'on':''}`} onClick={()=>setOnlyFree(true)}>Свободные · {free}</button>
+          </div>
+
+          {list.length===0 && (
+            <div className="empty"><div className="big">🎀</div>
+              <div style={{fontWeight:700,marginBottom:6}}>{wishes.length?'Всё уже разобрали!':`${name} пока ничего не добавил${(name||'').slice(-1)==='а'?'а':''}`}</div>
+              <div className="note">{wishes.length?'Можно присоединиться к складчине или заглянуть позже':'Загляните позже — или намекните лично 😉'}</div>
+            </div>
+          )}
+          {list.map(w=>(
+            <WishCardGuest key={w.id} wish={w} claim={claims[w.id]} me={me} onImg={onImg}
+              onClaim={handlers.claim} onJoin={handlers.join} onUnclaim={handlers.unclaim}/>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // PEOPLE TAB
+  // ══════════════════════════════════════
+  function PeopleTab({ group, groups, onSwitchGroup, people, profiles, loading, events, covered, onOpen, onOpenGroups }) {
+    return (
+      <div className="screen fu">
+        <div className="page-header">
+          <div>
+            <button className="chip" style={{marginBottom:10}} onClick={onOpenGroups}>
+              <span style={{fontSize:16}}>{group&&group.emoji||'🎁'}</span>{group?group.name:'…'} <span style={{opacity:.6}}>▾</span>
+            </button>
+            <div className="page-title">Кому дарим?</div>
+          </div>
+          {group && group.code && <button className="icon-btn" title="Пригласить" onClick={()=>shareInvite(group)}>➕</button>}
+        </div>
+
+        {events.length>0 && (
+          <div className="hscroll" style={{marginBottom:12}}>
+            {events.map((ev,i)=>(
+              <div key={ev.key} className={`event-card ${i===0?'hero':''}`}>
+                <div style={{fontSize:i===0?28:22,marginBottom:6}}>{ev.e}</div>
+                {i===0 && ev.days>0 ? (<>
+                  <div className="note" style={{fontSize:11,color:'rgba(255,255,255,.75)'}}>{ev.until}</div>
+                  <div className="event-num">{ev.days} <span style={{fontSize:13,fontWeight:600}}>{plural(ev.days,['день','дня','дней'])}</span></div>
+                </>) : (<>
+                  <div style={{fontWeight:700,fontSize:13}}>{ev.label}</div>
+                  <div className="note" style={{fontSize:11}}>{whenText(ev.days)}</div>
+                </>)}
               </div>
-            )}
+            ))}
+          </div>
+        )}
 
+        {people.length>0 && (
+          <div className="santa" style={{marginBottom:6}}>
+            <div style={{fontSize:34}}>{covered===people.length?'🎅':'🛷'}</div>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14,marginBottom:2}}>
+                {covered===0?'Начните с первого подарка':covered===people.length?'Вы порадуете всех!':'Вы радуете '+covered+' из '+people.length}
+              </div>
+              <div className="note" style={{fontSize:12,marginBottom:8}}>{covered===people.length?'Настоящий Дед Мороз ✨':'Осталось '+(people.length-covered)+' '+plural(people.length-covered,['человек','человека','человек'])+' без подарка от вас'}</div>
+              <div className="bar"><div style={{width:`${people.length?covered/people.length*100:0}%`}}/></div>
+            </div>
+          </div>
+        )}
+
+        <div className="sec">Участники</div>
+        {loading && <p className="note">Загружаем…</p>}
+        {!loading && people.length===0 && (
+          <div className="empty"><div className="big">👋</div>
+            <div style={{fontWeight:700,marginBottom:6}}>Здесь пока только вы</div>
+            <div className="note" style={{marginBottom:16}}>Позовите близких — отправьте им ссылку-приглашение</div>
+            {group && group.code && <button className="btn btn-gold" onClick={()=>shareInvite(group)}>📨 Пригласить</button>}
+          </div>
+        )}
+        <div className="people-grid">
+          {people.map((p,i)=>{
+            const pr = profiles[p.name]||{};
+            const bd = pr.birthday ? daysUntil(pr.birthday) : null;
+            return (
+              <div key={p.name} className="person-tile" style={{animationDelay:`${i*40}ms`}} onClick={()=>onOpen(p.name)}>
+                {p.mine>0 && <span className="flag" title="Вы дарите">🎁</span>}
+                <Ring value={p.total?p.taken/p.total:0} size={76}><Avatar name={p.name} photo={pr.photo} size={62} radius={31}/></Ring>
+                <div style={{fontWeight:700,fontSize:15,lineHeight:1.2}}>{p.name}</div>
+                <div className="note" style={{fontSize:11}}>
+                  {p.total===0?'пока пусто':`${p.free} из ${p.total} ${plural(p.total,['свободно','свободно','свободно'])}`}
+                </div>
+                {bd!=null && bd<=30 && <span className="badge b-gold">🎂 {whenText(bd)}</span>}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // FEED TAB
+  // ══════════════════════════════════════
+  const PRICE_FILTERS = [
+    ['all','Любая цена',()=>true], ['1','до 1 000 ₽',p=>p>0&&p<=1000], ['2','1–3 тыс.',p=>p>1000&&p<=3000],
+    ['3','3–10 тыс.',p=>p>3000&&p<=10000], ['4','от 10 тыс.',p=>p>10000],
+  ];
+  function FeedTab({ wishes, claims, me, people, profiles, handlers, onImg }) {
+    const [q,setQ] = useState('');
+    const [who,setWho] = useState('all');
+    const [onlyFree,setOnlyFree] = useState(false);
+    const [price,setPrice] = useState('all');
+    const [sort,setSort] = useState('prio');
+    const list = useMemo(()=>{
+      const pf = PRICE_FILTERS.find(x=>x[0]===price)[2];
+      const s = q.trim().toLowerCase();
+      let arr = wishes.filter(w=>
+        (who==='all'||w.ownerName===who) &&
+        (!onlyFree || !claims[w.id] || (claims[w.id].coop && !isClaimBy(claims[w.id],me))) &&
+        pf(w.price||0) &&
+        (!s || (w.title+' '+(w.note||'')+' '+w.ownerName).toLowerCase().includes(s)));
+      const taken = w => claims[w.id]&&!isClaimBy(claims[w.id],me)&&!claims[w.id].coop?1:0;
+      arr = arr.slice().sort((a,b)=> taken(a)-taken(b) || (
+        sort==='prio' ? (b.priority||2)-(a.priority||2)||(b.createdAt||0)-(a.createdAt||0) :
+        sort==='new' ? (b.createdAt||0)-(a.createdAt||0) :
+        sort==='cheap' ? (a.price||9e9)-(b.price||9e9) : (b.price||0)-(a.price||0)));
+      return arr;
+    },[wishes,claims,q,who,onlyFree,price,sort,me]);
+
+    return (
+      <div className="screen fu">
+        <div className="page-header"><div className="page-title">Идеи<br/>подарков</div><div className="note" style={{fontSize:12}}>{list.length} {plural(list.length,['идея','идеи','идей'])}</div></div>
+        <input className="inp" placeholder="🔎 Поиск: наушники, книга, Валера…" value={q} onChange={e=>setQ(e.target.value)} style={{marginBottom:10}}/>
+        <div className="hscroll" style={{marginBottom:8}}>
+          <button className={`chip ${who==='all'?'on':''}`} onClick={()=>setWho('all')}>Все</button>
+          {people.map(p=>(
+            <button key={p.name} className={`chip ${who===p.name?'on':''}`} onClick={()=>setWho(p.name)} style={{paddingLeft:5}}>
+              <Avatar name={p.name} photo={profiles[p.name]&&profiles[p.name].photo} size={22} radius={11}/>{p.name}
+            </button>
+          ))}
+        </div>
+        <div className="row" style={{marginBottom:14,flexWrap:'wrap'}}>
+          <button className={`chip ${onlyFree?'on':''}`} onClick={()=>setOnlyFree(v=>!v)}>{onlyFree?'✓ ':''}Свободные</button>
+          <select value={price} onChange={e=>setPrice(e.target.value)}>{PRICE_FILTERS.map(([v,l])=><option key={v} value={v}>{l}</option>)}</select>
+          <select value={sort} onChange={e=>setSort(e.target.value)}>
+            <option value="prio">🔥 Сначала важные</option><option value="new">🆕 Новые</option>
+            <option value="cheap">₽ Дешевле</option><option value="exp">₽₽₽ Дороже</option>
+          </select>
+        </div>
+        {list.length===0 && <div className="empty"><div className="big">🔍</div><div className="note">Ничего не нашлось — попробуйте другие фильтры</div></div>}
+        {list.map(w=>(
+          <WishCardGuest key={w.id} wish={w} claim={claims[w.id]} me={me} showOwner ownerPhoto={profiles[w.ownerName]&&profiles[w.ownerName].photo}
+            onImg={onImg} onClaim={handlers.claim} onJoin={handlers.join} onUnclaim={handlers.unclaim}/>
+        ))}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // MY TAB
+  // ══════════════════════════════════════
+  const THREE_MONTHS = 90*24*60*60*1000;
+  function ExternalLinks({ links, onChange }) {
+    const [url,setUrl] = useState(''); const [adding,setAdding] = useState(false);
+    const s = shopOf(url);
+    const add = () => { if(!s) return; onChange([...(links||[]),{url:normUrl(url),label:s.name}]); setUrl(''); setAdding(false); toast('Ссылка добавлена','🔗'); };
+    return (
+      <div className="card" style={{marginBottom:12}}>
+        <div className="row" style={{justifyContent:'space-between',marginBottom:(links||[]).length||adding?10:0}}>
+          <div><div style={{fontWeight:700,fontSize:14}}>🌐 Мои вишлисты в других местах</div>
+            {!(links||[]).length && !adding && <div className="note" style={{fontSize:12,marginTop:2}}>Ozon, WB, Я.Маркет, Pinterest — что угодно</div>}</div>
+          {!adding && <button className="icon-btn" onClick={()=>setAdding(true)}>＋</button>}
+        </div>
+        {(links||[]).length>0 && (
+          <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+            {links.map((l,i)=>{ const ss=shopOf(l.url); return (
+              <span key={i} className="chip" style={{paddingRight:6,color:'var(--t1)'}}>
+                {ss && <img src={ss.icon} alt="" style={{width:16,height:16,borderRadius:4,background:'white'}}/>}
+                <a href={normUrl(l.url)} target="_blank" rel="noreferrer" style={{textDecoration:'none'}}>{l.label||(ss&&ss.name)}</a>
+                <span style={{cursor:'pointer',opacity:.5,padding:'0 4px'}} onClick={()=>onChange(links.filter((_,j)=>j!==i))}>✕</span>
+              </span>); })}
+          </div>
+        )}
+        {adding && (
+          <div className="fu" style={{marginTop:10,display:'flex',flexDirection:'column',gap:8}}>
+            <input className="inp" placeholder="Вставьте ссылку на вишлист" value={url} onChange={e=>setUrl(e.target.value)} inputMode="url" autoFocus onKeyDown={e=>e.key==='Enter'&&add()}/>
+            {s && <div className="note" style={{fontSize:12}}>Распознано: <b style={{color:'var(--t1)'}}>{s.name}</b></div>}
+            <div className="row"><button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>{setAdding(false);setUrl('');}}>Отмена</button>
+              <button className="btn btn-p btn-sm" style={{flex:2}} disabled={!s} onClick={add}>Добавить</button></div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function MyTab({ me, wishes, loading, profile, onSaveLinks, onEdit, onRemove, onReceived, onImg }) {
+    const [snoozeTick,setSnoozeTick] = useState(0);
+    const snoozed = useMemo(()=>loadLocal('nywish:snoozed:'+me,[]).filter(s=>s&&s.until>Date.now()).map(s=>s.id),[me,snoozeTick,wishes]);
+    const stale = wishes.filter(w=>w.createdAt && Date.now()-w.createdAt>THREE_MONTHS && !snoozed.includes(w.id));
+    const fresh = wishes.filter(w=>!stale.includes(w)).sort((a,b)=>(b.priority||2)-(a.priority||2)||(b.createdAt||0)-(a.createdAt||0));
+    const snooze = id => {
+      const cur = loadLocal('nywish:snoozed:'+me,[]).filter(s=>s&&s.id!==id);
+      saveLocal('nywish:snoozed:'+me,[...cur,{id,until:Date.now()+THREE_MONTHS}]); setSnoozeTick(t=>t+1); toast('Отлично, оставили','👍');
+    };
+    const shareText = async () => {
+      const lines = wishes.map((w,i)=>`${i+1}. ${w.title}${w.price?` (~${fmtPrice(w.price)})`:''}${w.url?`\n   ${w.url}`:''}`);
+      const text = `🎁 Мой вишлист (${me}):\n\n${lines.join('\n')}`;
+      try{ if(navigator.share) await navigator.share({text}); else { await navigator.clipboard.writeText(text); toast('Список скопирован — вставьте в мессенджер','📋'); } }catch{}
+    };
+    return (
+      <div className="screen fu">
+        <div className="page-header">
+          <div className="page-title">Мои<br/>желания</div>
+          {wishes.length>0 && <button className="btn btn-g btn-sm" onClick={shareText}>📤 Отправить</button>}
+        </div>
+
+        <ExternalLinks links={profile.links||[]} onChange={onSaveLinks}/>
+
+        {stale.length>0 && (
+          <div style={{background:'linear-gradient(135deg,rgba(200,169,110,0.12),rgba(200,120,50,0.08))',border:'1px solid rgba(200,169,110,0.3)',borderRadius:20,padding:'14px 16px',marginBottom:12}}>
+            <div className="row" style={{alignItems:'flex-start',marginBottom:10}}>
+              <div style={{fontSize:22}}>⏰</div>
+              <div><div style={{fontWeight:700,color:'var(--gold)',fontSize:14}}>Ещё актуально?</div>
+                <div style={{fontSize:12,color:'rgba(200,169,110,.75)'}}>{stale.length} {plural(stale.length,['желание','желания','желаний'])} старше 3 месяцев</div></div>
+            </div>
             <div style={{display:'grid',gap:8}}>
-              {sorted.map(w=>(
-                <WishCardGuest key={w.id} wish={w} claim={claims[w.id]} userName={userName}
-                  authUid={authUid} onClaim={()=>onClaim(w)} onUnclaim={()=>onUnclaim(w)} onImgClick={onImgClick} />
+              {stale.map(w=>(
+                <div key={w.id} style={{background:'rgba(0,0,0,.2)',borderRadius:14,padding:'12px 14px'}}>
+                  <div style={{fontWeight:600,fontSize:14,marginBottom:3}}>{w.title}</div>
+                  <div style={{fontSize:11,color:'rgba(200,169,110,.6)',marginBottom:10}}>Добавлено {new Date(w.createdAt).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</div>
+                  <div className="row">
+                    <button className="btn btn-g btn-sm" style={{flex:1}} onClick={()=>snooze(w.id)}>✓ Всё ещё хочу</button>
+                    <button className="btn btn-gold btn-sm" style={{flex:1}} onClick={e=>onReceived(w,e.currentTarget)}>🎉 Уже получил</button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>
-        </div>
+        )}
+
+        {loading && <p className="note">Загружаем…</p>}
+        {!loading && wishes.length===0 && (
+          <div className="empty"><div className="big">🌟</div>
+            <div style={{fontWeight:700,marginBottom:6}}>Чего бы вам хотелось?</div>
+            <div className="note">Нажмите ＋ и добавьте первое желание.<br/>Отметьте 🔥 то, о чём мечтаете больше всего</div>
+          </div>
+        )}
+        {fresh.map(w=><WishCardMy key={w.id} wish={w} onEdit={onEdit} onRemove={onRemove} onImg={onImg}/>)}
+      </div>
+    );
+  }
+
+  // ══════════════════════════════════════
+  // GIFTS TAB (я дарю)
+  // ══════════════════════════════════════
+  function GiftsTab({ gifts, claims, me, profiles, onStatus, onUnclaim, onImg, onGoPeople }) {
+    const groups = useMemo(()=>{
+      const m = {}; gifts.forEach(w=>{ (m[w.ownerName]=m[w.ownerName]||[]).push(w); });
+      return Object.entries(m).sort((a,b)=>a[0].localeCompare(b[0],'ru'));
+    },[gifts]);
+    const done = gifts.filter(w=>claims[w.id]&&claims[w.id].status==='given').length;
+    const ready = gifts.filter(w=>claims[w.id]&&stepIdx(claims[w.id].status)>=1).length;
+    const budget = gifts.reduce((s,w)=>s+((w.price||0)/Math.max(1,claimParts(claims[w.id]).length)),0);
+    const spentBought = gifts.filter(w=>stepIdx(claims[w.id]&&claims[w.id].status)>=1).reduce((s,w)=>s+((w.price||0)/Math.max(1,claimParts(claims[w.id]).length)),0);
+
+    return (
+      <div className="screen fu">
+        <div className="page-header"><div className="page-title">Я дарю</div></div>
+        {gifts.length===0 ? (
+          <div className="empty"><div className="big">🛷</div>
+            <div style={{fontWeight:700,marginBottom:6}}>Сани пока пустые</div>
+            <div className="note" style={{marginBottom:16}}>Выберите, кого порадовать — и нажмите «Я подарю»</div>
+            <button className="btn btn-p" onClick={onGoPeople}>👥 К участникам</button>
+          </div>
+        ) : (<>
+          <div className="card" style={{marginBottom:6}}>
+            <div className="row" style={{justifyContent:'space-between',marginBottom:10}}>
+              <div><div className="event-num grad-text" style={{fontSize:30}}>{ready}/{gifts.length}</div><div className="note" style={{fontSize:11}}>куплено</div></div>
+              <div style={{textAlign:'right'}}>
+                {budget>0 && <><div style={{fontFamily:"'Unbounded',sans-serif",fontWeight:700,fontSize:17}}>≈ {fmtPrice(budget)}</div>
+                <div className="note" style={{fontSize:11}}>бюджет{spentBought?` · потрачено ≈ ${fmtPrice(spentBought)}`:''}</div></>}
+              </div>
+            </div>
+            <div className="bar"><div style={{width:`${gifts.length?(ready+done)/(gifts.length*2)*100:0}%`}}/></div>
+            {done===gifts.length && <div style={{marginTop:10,fontWeight:700,fontSize:13}}>🎉 Все подарки вручены — вы великолепны!</div>}
+          </div>
+          {groups.map(([owner,list])=>(
+            <div key={owner}>
+              <div className="row" style={{margin:'18px 0 10px'}}>
+                <Avatar name={owner} photo={profiles[owner]&&profiles[owner].photo} size={28} radius={10}/>
+                <div style={{fontWeight:700}}>{owner}</div><span className="note" style={{fontSize:12}}>получит от вас</span>
+              </div>
+              {list.map(w=>{
+                const c = claims[w.id]||{}; const cur = stepIdx(c.status); const parts = claimParts(c);
+                return (
+                  <div key={w.id} className="card" style={{padding:14}}>
+                    <div className="row" style={{alignItems:'flex-start'}}>
+                      {w.image && <img src={w.image} alt="" onClick={()=>onImg(w.image)} style={{width:52,height:52,borderRadius:12,objectFit:'cover',cursor:'zoom-in',flexShrink:0}}/>}
+                      <div style={{flex:1,minWidth:0}}>
+                        <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>{w.title}</div>
+                        <div className="wish-meta" style={{marginBottom:0}}>
+                          {w.price>0 && <span className="badge b-gold">≈ {fmtPrice(w.price)}{parts.length>1?` · ваша доля ≈ ${fmtPrice(w.price/parts.length)}`:''}</span>}
+                          {c.coop && <span className="badge b-green">🤝 {parts.join(', ')}</span>}
+                          {w.url && <ShopChip url={w.url}/>}
+                        </div>
+                        {w.archivedAt && <div className="warn">⚠️ {owner} убрал(а) это из вишлиста — уточните аккуратно</div>}
+                        {w.updatedAt && c.createdAt && w.updatedAt>c.createdAt && !w.archivedAt && <div className="warn">✏️ Изменено после брони</div>}
+                      </div>
+                      <button className="icon-btn" style={{width:30,height:30,fontSize:12}} onClick={()=>onUnclaim(w)}>✕</button>
+                    </div>
+                    <div className="steps">
+                      {STEPS.map((s,i)=>(
+                        <button key={s.id} className={`step ${i<=cur?'done':''} ${i===cur?'cur':''}`} onClick={e=>onStatus(w,s.id,e.currentTarget)}>
+                          <span className="e">{s.e}</span>{s.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </>)}
       </div>
     );
   }
@@ -560,210 +1193,135 @@
   // PROFILE TAB
   // ══════════════════════════════════════
   const THEMES = [
-    { id:'forest',  label:'Лесная',   g1:'#5a7a38', g2:'#7ea858', bg:'#0f110d', s1:'#181c15' },
-    { id:'ocean',   label:'Океан',    g1:'#1a6090', g2:'#2890c8', bg:'#0a0c10', s1:'#12161e' },
-    { id:'amber',   label:'Янтарь',   g1:'#8a5a10', g2:'#c8820a', bg:'#100d08', s1:'#1a1510' },
-    { id:'rose',    label:'Роза',     g1:'#8a3050', g2:'#c05878', bg:'#100a0d', s1:'#1a1015' },
-    { id:'plum',    label:'Слива',    g1:'#5a3888', g2:'#8860c0', bg:'#0c0a10', s1:'#151220' },
+    { id:'forest', label:'Лесная', g1:'#5a7a38', g2:'#7ea858' },
+    { id:'ocean',  label:'Океан',  g1:'#1a6090', g2:'#2890c8' },
+    { id:'amber',  label:'Янтарь', g1:'#8a5a10', g2:'#c8820a' },
+    { id:'rose',   label:'Роза',   g1:'#8a3050', g2:'#c05878' },
+    { id:'plum',   label:'Слива',  g1:'#5a3888', g2:'#8860c0' },
+    { id:'xmas',   label:'Ёлка',   g1:'#8a2a2a', g2:'#c84a3a' },
   ];
 
-  function ProfileTab({ userName, authUid, myWishes, myClaims, claims, items, onLogout, onUnclaim, onImgClick }) {
-    const [photo, setPhoto]       = useState(loadLocal('profile:photo:'+userName, ''));
-    const [showPin, setShowPin]   = useState(false);
-    const [oldPin, setOldPin]     = useState('');
-    const [newPin, setNewPin]     = useState('');
-    const [newPin2, setNewPin2]   = useState('');
-    const [pinMsg, setPinMsg]     = useState('');
-    const [pinErr, setPinErr]     = useState('');
-    const [pinLoad, setPinLoad]   = useState(false);
-    const [theme, setTheme]       = useState(loadLocal('profile:theme', 'forest'));
-    const [showClaims, setShowClaims] = useState(false);
-
-    const [c1, c2] = nameColor(userName);
-
-    // Применяем тему к CSS переменным
-    useEffect(()=>{
-      const t = THEMES.find(t=>t.id===theme) || THEMES[0];
-      const root = document.documentElement;
-      root.style.setProperty('--g1', t.g1);
-      root.style.setProperty('--g2', t.g2);
-      saveLocal('profile:theme', theme);
-    }, [theme]);
+  function ProfileTab({ me, profile, onSaveProfile, stats, groups, activeId, onPickGroup, onLeaveGroup, onCreateGroup, onJoinGroup, theme, setTheme, snow, setSnow, onLogout }) {
+    const [showPin,setShowPin] = useState(false);
+    const [oldPin,setOldPin] = useState(''); const [newPin,setNewPin] = useState(''); const [newPin2,setNewPin2] = useState('');
+    const [pinMsg,setPinMsg] = useState(''); const [pinErr,setPinErr] = useState(''); const [pinLoad,setPinLoad] = useState(false);
+    const [bdM,setBdM] = useState(''); const [bdD,setBdD] = useState('');
+    useEffect(()=>{ const [m,d]=(profile.birthday||'-').split('-'); setBdM(m||''); setBdD(d||''); },[profile.birthday]);
 
     const handlePhoto = async e => {
-      const f = e.target.files?.[0]; if(!f) return;
-      try {
-        const compressed = await compressImage(f);
-        setPhoto(compressed);
-        saveLocal('profile:photo:'+userName, compressed);
-      } catch(err) { console.error(err); }
+      const f = e.target.files && e.target.files[0]; if(!f) return;
+      try{ const ph = await compressImage(f,400,.8); await onSaveProfile({photo:ph}); toast('Фото обновлено','📸'); }
+      catch(err){ toast(typeof err==='string'?err:'Не удалось загрузить фото','⚠️'); }
+      e.target.value='';
     };
+    const setBd = (m,d) => { setBdM(m); setBdD(d); if(m&&d){ onSaveProfile({ birthday:`${m}-${d}` }); toast('День рождения сохранён','🎂'); } else if(!m&&!d) onSaveProfile({ birthday:null }); };
 
     const handleChangePin = async () => {
-      if(!oldPin){setPinErr('Введите старый PIN.');return;}
-      if(newPin.length<4){setPinErr('Новый PIN минимум 4 цифры.');return;}
-      if(newPin!==newPin2){setPinErr('Новые PIN-коды не совпадают.');return;}
+      if(newPin.length<4){ setPinErr('Новый PIN минимум 4 цифры.'); return; }
+      if(newPin!==newPin2){ setPinErr('Новые PIN-коды не совпадают.'); return; }
       setPinLoad(true); setPinErr(''); setPinMsg('');
       try {
-        const oldHash = await hashPin(oldPin);
-        const newHash = await hashPin(newPin);
-        const ref = usersCol().doc(userName);
+        const oldHash = await hashPin(oldPin), newHash = await hashPin(newPin), ref = usersCol().doc(me);
         await db.runTransaction(async tx => {
           const snap = await tx.get(ref);
           if(!snap.exists) throw new Error('no-user');
-          if(snap.data().pinHash !== oldHash) throw new Error('wrong-pin');
-          tx.update(ref, {pinHash: newHash});
+          if(snap.data().pinHash!==oldHash) throw new Error('wrong-pin');
+          tx.update(ref,{pinHash:newHash});
         });
-        // Обновляем разрешение для нового PIN
-        saveLocal('nywish:pin_ok', userName);
-        setPinMsg('PIN успешно изменён ✓');
-        setOldPin(''); setNewPin(''); setNewPin2('');
-        setTimeout(()=>setShowPin(false), 1500);
-      } catch(e) {
-        if(e.message==='wrong-pin') setPinErr('Старый PIN неверный.');
-        else setPinErr('Не удалось изменить PIN. Попробуйте ещё раз.');
-      }
+        setPinMsg('PIN изменён ✓'); setOldPin(''); setNewPin(''); setNewPin2(''); setTimeout(()=>setShowPin(false),1500);
+      } catch(e) { setPinErr(e.message==='wrong-pin'?'Старый PIN неверный.':'Не удалось изменить PIN.'); }
       setPinLoad(false);
     };
-
-    // Мои активные брони
-    const myClaimsList = useMemo(()=>{
-      return Object.entries(claims)
-        .filter(([,c])=>c.claimerUid===authUid)
-        .map(([id])=>items.find(i=>i.id===id))
-        .filter(Boolean);
-    }, [claims, items, authUid]);
 
     return (
       <div className="screen fu">
         <div className="page-header"><div className="page-title">Профиль</div></div>
 
-        {/* ── АВАТАР + ИМЯ ── */}
-        <div className="card" style={{marginBottom:10,textAlign:'center',paddingTop:24,paddingBottom:20}}>
-          <div style={{position:'relative',display:'inline-block',marginBottom:14}}>
-            <div style={{
-              width:88,height:88,borderRadius:26,overflow:'hidden',
-              background:photo?'transparent':`linear-gradient(135deg,${c1},${c2})`,
-              boxShadow:`0 6px 24px ${c1}55`,
-              display:'flex',alignItems:'center',justifyContent:'center',
-              fontFamily:"'Unbounded',sans-serif",fontSize:28,fontWeight:700,color:'white',
-            }}>
-              {photo
-                ? <img src={photo} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
-                : userName.slice(0,2).toUpperCase()
-              }
-            </div>
-            {/* Кнопка смены фото */}
-            <label style={{
-              position:'absolute',bottom:-6,right:-6,
-              width:28,height:28,borderRadius:'50%',
-              background:'var(--s2)',border:'2px solid var(--bg)',
-              display:'flex',alignItems:'center',justifyContent:'center',
-              cursor:'pointer',fontSize:13,
-            }}>
-              📷
-              <input type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto} />
-            </label>
-          </div>
-          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:18,fontWeight:700,color:'var(--t1)',marginBottom:4}}>{userName}</div>
-
-          {/* Статы */}
-          <div style={{display:'flex',justifyContent:'center',gap:24,marginTop:12}}>
-            {[
-              {val:myWishes.length, label:'желаний'},
-              {val:myClaims, label:'брон'+( myClaims===1?'ь':myClaims<5?'и':'ей')},
-            ].map(({val,label})=>(
-              <div key={label} style={{textAlign:'center'}}>
-                <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:700,
-                  background:`linear-gradient(135deg,${c1},${c2})`,WebkitBackgroundClip:'text',WebkitTextFillColor:'transparent',backgroundClip:'text'}}>{val}</div>
-                <div className="note" style={{fontSize:11}}>{label}</div>
-              </div>
+        <div className="card" style={{textAlign:'center',paddingTop:24,paddingBottom:20,marginBottom:10}}>
+          <label style={{position:'relative',display:'inline-block',marginBottom:12,cursor:'pointer'}}>
+            <Avatar name={me} photo={profile.photo} size={92} radius={30}/>
+            <div style={{position:'absolute',bottom:-6,right:-6,width:30,height:30,borderRadius:'50%',background:'var(--s2)',border:'2px solid var(--bg)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>📷</div>
+            <input type="file" accept="image/*" style={{display:'none'}} onChange={handlePhoto}/>
+          </label>
+          <div style={{fontFamily:"'Unbounded',sans-serif",fontSize:19,fontWeight:700}}>{me}</div>
+          <div style={{display:'flex',justifyContent:'center',gap:28,marginTop:14}}>
+            {[[stats.wishes,plural(stats.wishes,['желание','желания','желаний'])],[stats.gifts,plural(stats.gifts,['подарок','подарка','подарков'])+' дарю'],[stats.given,'вручено']].map(([v,l])=>(
+              <div key={l}><div className="grad-text" style={{fontFamily:"'Unbounded',sans-serif",fontSize:22,fontWeight:700}}>{v}</div><div className="note" style={{fontSize:11}}>{l}</div></div>
             ))}
           </div>
         </div>
 
-        {/* ── МОИ БРОНИ ── */}
         <div className="card" style={{marginBottom:10}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>setShowClaims(s=>!s)}>
-            <div style={{fontWeight:600,color:'var(--t1)',fontSize:14}}>🎁 Я дарю</div>
-            <div style={{fontSize:12,color:'var(--t2)'}}>{myClaims} подарк{myClaims===1?'':myClaims<5?'а':'ов'} {showClaims?'▲':'▼'}</div>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>🎂 День рождения</div>
+          <div className="note" style={{fontSize:12,marginBottom:10}}>Близкие увидят напоминание заранее</div>
+          <div className="row">
+            <select value={bdD||''} onChange={e=>setBd(bdM,e.target.value)} style={{flex:1}}>
+              <option value="">День</option>{Array.from({length:31},(_,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{i+1}</option>)}
+            </select>
+            <select value={bdM||''} onChange={e=>setBd(e.target.value,bdD)} style={{flex:2}}>
+              <option value="">Месяц</option>{MONTHS.map((m,i)=><option key={i} value={String(i+1).padStart(2,'0')}>{m}</option>)}
+            </select>
           </div>
-          {showClaims && (
-            <div style={{marginTop:12,display:'grid',gap:8}}>
-              {myClaimsList.length===0&&<div className="note">Вы пока ничего не бронировали.</div>}
-              {myClaimsList.map(w=>(
-                <div key={w.id} style={{background:'var(--s2)',borderRadius:14,padding:'10px 12px',display:'flex',alignItems:'flex-start',gap:10}}>
-                  {w.image&&<img src={w.image} alt="" style={{width:40,height:40,borderRadius:8,objectFit:'cover',cursor:'pointer',flexShrink:0}} onClick={()=>onImgClick(w.image)} />}
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:600,fontSize:13,color:'var(--t1)',marginBottom:2}}>{w.title}</div>
-                    <div className="note" style={{fontSize:11}}>Для: {w.ownerName}</div>
-                  </div>
-                  <button className="btn btn-d" style={{fontSize:11,padding:'5px 10px',flexShrink:0}}
-                    onClick={()=>onUnclaim(w)}>Снять</button>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* ── ЦВЕТОВАЯ ТЕМА ── */}
         <div className="card" style={{marginBottom:10}}>
-          <div style={{fontWeight:600,color:'var(--t1)',fontSize:14,marginBottom:12}}>🎨 Цветовая тема</div>
-          <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:10}}>👨‍👩‍👧 Мои группы</div>
+          <GroupList groups={groups} activeId={activeId} me={me} onPick={onPickGroup} onLeave={onLeaveGroup}/>
+          <div style={{marginTop:10}}><GroupCreateJoin onCreate={onCreateGroup} onJoin={onJoinGroup} compact/></div>
+        </div>
+
+        <div className="card" style={{marginBottom:10}}>
+          <div style={{fontWeight:700,fontSize:14,marginBottom:12}}>🎨 Оформление</div>
+          <div style={{display:'flex',gap:10,flexWrap:'wrap',marginBottom:14}}>
             {THEMES.map(t=>(
-              <div key={t.id} onClick={()=>setTheme(t.id)} style={{
-                display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer',
-              }}>
-                <div style={{
-                  width:44,height:44,borderRadius:14,
-                  background:`linear-gradient(135deg,${t.g1},${t.g2})`,
-                  border:theme===t.id?`2px solid ${t.g2}`:'2px solid transparent',
-                  boxShadow:theme===t.id?`0 0 0 2px ${t.g1}55`:'none',
-                  transition:'all .2s',
-                }}/>
-                <div style={{fontSize:10,color:theme===t.id?'var(--t1)':'var(--t2)',fontWeight:theme===t.id?600:400}}>{t.label}</div>
+              <div key={t.id} onClick={()=>setTheme(t.id)} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:5,cursor:'pointer'}}>
+                <div style={{width:44,height:44,borderRadius:14,background:`linear-gradient(135deg,${t.g1},${t.g2})`,
+                  border:theme===t.id?'2px solid white':'2px solid transparent',transform:theme===t.id?'scale(1.08)':'none',transition:'all .2s'}}/>
+                <div style={{fontSize:10,color:theme===t.id?'var(--t1)':'var(--t2)'}}>{t.label}</div>
               </div>
             ))}
           </div>
+          <div className="row" style={{justifyContent:'space-between'}}><div style={{fontSize:14}}>❄️ Снегопад</div><Switch on={snow} onChange={setSnow}/></div>
         </div>
 
-        {/* ── СМЕНА PIN ── */}
         <div className="card" style={{marginBottom:10}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',cursor:'pointer'}} onClick={()=>{setShowPin(s=>!s);setPinErr('');setPinMsg('');}}>
-            <div style={{fontWeight:600,color:'var(--t1)',fontSize:14}}>🔑 Изменить PIN</div>
-            <div style={{fontSize:12,color:'var(--t2)'}}>{showPin?'▲':'▼'}</div>
+          <div className="row" style={{justifyContent:'space-between',cursor:'pointer'}} onClick={()=>{setShowPin(s=>!s);setPinErr('');setPinMsg('');}}>
+            <div style={{fontWeight:700,fontSize:14}}>🔑 Изменить PIN</div><div className="note">{showPin?'▲':'▼'}</div>
           </div>
-          {showPin&&(
-            <div style={{marginTop:12,display:'flex',flexDirection:'column',gap:8}}>
-              <input className="inp" type="password" inputMode="numeric" placeholder="Старый PIN" value={oldPin}
-                onChange={e=>{setOldPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
-              <input className="inp" type="password" inputMode="numeric" placeholder="Новый PIN (мин. 4 цифры)" value={newPin}
-                onChange={e=>{setNewPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
-              <input className="inp" type="password" inputMode="numeric" placeholder="Повторите новый PIN" value={newPin2}
-                onChange={e=>{setNewPin2(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8} />
-              {pinErr&&<div className="err">{pinErr}</div>}
-              {pinMsg&&<div style={{color:'#9aba70',fontSize:13}}>{pinMsg}</div>}
-              <button className="btn btn-p" style={{fontSize:13}} onClick={handleChangePin} disabled={!oldPin||newPin.length<4||!newPin2||pinLoad}>
-                {pinLoad?'Меняем…':'Сохранить новый PIN'}
-              </button>
+          {showPin && (
+            <div className="fu" style={{marginTop:12,display:'flex',flexDirection:'column',gap:8}}>
+              <input className="inp" type="password" inputMode="numeric" placeholder="Старый PIN" value={oldPin} onChange={e=>{setOldPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8}/>
+              <input className="inp" type="password" inputMode="numeric" placeholder="Новый PIN" value={newPin} onChange={e=>{setNewPin(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8}/>
+              <input className="inp" type="password" inputMode="numeric" placeholder="Повторите новый PIN" value={newPin2} onChange={e=>{setNewPin2(e.target.value.replace(/\D/g,''));setPinErr('');}} maxLength={8}/>
+              {pinErr && <div className="err">{pinErr}</div>}
+              {pinMsg && <div style={{color:'var(--g2)',fontSize:13}}>{pinMsg}</div>}
+              <button className="btn btn-p" onClick={handleChangePin} disabled={!oldPin||newPin.length<4||!newPin2||pinLoad}>{pinLoad?'Меняем…':'Сохранить'}</button>
             </div>
           )}
         </div>
 
-        {/* ── ВЫХОД ── */}
-        <div className="card" style={{marginBottom:10}}>
-          <div className="note" style={{marginBottom:12,fontSize:12,lineHeight:1.5}}>
-            🔒 PIN защищает ваш профиль. Используйте один PIN на всех устройствах.
-          </div>
-          <button className="btn btn-d" style={{width:'100%',fontSize:13}} onClick={onLogout}>Выйти из аккаунта</button>
-        </div>
-
-        <div style={{fontSize:11,color:'var(--t2)',textAlign:'center',marginTop:8,marginBottom:8,lineHeight:1.6}}>
-          🛡️ 23 февраля · 🌷 8 марта · 🎄 Новый год<br/>Семейный вишлист подарков<br/>
-          <span style={{fontSize:10,opacity:.5,userSelect:'all'}}>uid: {authUid}</span>
-        </div>
+        <button className="btn btn-d btn-block" onClick={onLogout}>Выйти из аккаунта</button>
+        <div className="note" style={{fontSize:11,textAlign:'center',marginTop:16,lineHeight:1.7}}>🎄 Новый год · 🎂 Дни рождения · 🌷 8 марта · 🛡️ 23 февраля<br/>Подарки, подарочки</div>
       </div>
     );
+  }
+
+  // ══════════════════════════════════════
+  // HOOKS
+  // ══════════════════════════════════════
+  function useProfiles(names, enabled) {
+    const [map,setMap] = useState({});
+    const key = Array.from(new Set(names.filter(Boolean))).sort().join('|');
+    useEffect(()=>{
+      if(!enabled || !key) return;
+      const arr = key.split('|'); const chunks = [];
+      for(let i=0;i<arr.length;i+=10) chunks.push(arr.slice(i,i+10));
+      const unsubs = chunks.map(ch => profilesCol().where(firebase.firestore.FieldPath.documentId(),'in',ch).onSnapshot(s=>{
+        setMap(m=>{ const n={...m}; ch.forEach(k=>{ delete n[k]; }); s.forEach(d=>{ n[d.id]=d.data(); }); return n; });
+      }, e=>console.error('profiles',e)));
+      return ()=>unsubs.forEach(u=>u());
+    },[key,enabled]);
+    return map;
   }
 
   // ══════════════════════════════════════
@@ -771,301 +1329,354 @@
   // ══════════════════════════════════════
   function App() {
     const savedName = loadLocal('nywish:name','');
-    const pinOk     = loadLocal('nywish:pin_ok','');
-    const isAuthed  = savedName && pinOk === savedName;
+    const pinOk = loadLocal('nywish:pin_ok','');
+    const [me,setMe] = useState(savedName && pinOk===savedName ? savedName : '');
+    const [authUid,setAuthUid] = useState(null);
+    const [tab,setTab] = useState('people');
+    const [userDoc,setUserDoc] = useState(null);
+    const [groupDocs,setGroupDocs] = useState({});
+    const [activeGroup,setActiveGroupS] = useState('');
+    const [items,setItems] = useState([]);
+    const [claims,setClaims] = useState({});
+    const [loading,setLoading] = useState(true);
+    const [previewImage,setPreviewImage] = useState(null);
+    const [sheet,setSheet] = useState(null); // null | {initial}
+    const [openPerson,setOpenPerson] = useState(null);
+    const [groupSheet,setGroupSheet] = useState(false);
+    const [theme,setThemeS] = useState(loadLocal('profile:theme','forest'));
+    const [snow,setSnowS] = useState(loadLocal('profile:snow', [10,11,0,1].includes(new Date().getMonth())));
+    const [pendingCode,setPendingCode] = useState(()=>{
+      const c = new URLSearchParams(location.search).get('join');
+      if(c){ saveLocal('nywish:pendingJoin',c.toUpperCase()); history.replaceState(null,'',location.pathname); }
+      return loadLocal('nywish:pendingJoin','');
+    });
+    const [invite,setInvite] = useState(null);
 
-    const [authDone, setAuthDone] = useState(isAuthed);
-    const [userName, setUserName] = useState(isAuthed ? savedName : '');
-    const [authUid, setAuthUid]   = useState(null);
-    const [tab, setTab]           = useState('my'); // people | my | feed | profile
-    const [items, setItems]       = useState([]);
-    const [claims, setClaims]     = useState({});
-    const [loading, setLoading]   = useState(true);
-    const [addError, setAddError] = useState('');
-    const [claimError, setClaimError] = useState('');
-    const [previewImage, setPreviewImage] = useState(null);
-    const [showAdd, setShowAdd]   = useState(false);
-    const [openPerson, setOpenPerson] = useState(null); // имя или null
-    const [feedFilter, setFeedFilter] = useState('all');
-
-    useEffect(()=>{ const u=auth.onAuthStateChanged(u=>setAuthUid(u?.uid||null)); return u; },[]);
-    useEffect(()=>{ if(userName) saveLocal('nywish:name',userName); },[userName]);
-
+    // ── тема (применяется сразу при запуске)
     useEffect(()=>{
-      if(!authDone) return;
-      setLoading(true);
-      const u=itemsCol().orderBy('createdAt','desc').onSnapshot(snap=>{
-        const a=[];snap.forEach(d=>a.push({id:d.id,...d.data()}));
-        setItems(a);setLoading(false);
-      },err=>{console.error(err);setLoading(false);});
-      return u;
-    },[authDone]);
+      const t = THEMES.find(x=>x.id===theme)||THEMES[0];
+      document.documentElement.style.setProperty('--g1',t.g1);
+      document.documentElement.style.setProperty('--g2',t.g2);
+      saveLocal('profile:theme',theme);
+    },[theme]);
+    const setSnow = v => { setSnowS(v); saveLocal('profile:snow',v); };
 
+    useEffect(()=>auth.onAuthStateChanged(u=>setAuthUid(u?u.uid:null)),[]);
+    useEffect(()=>{ if(me) setActiveGroupS(loadLocal('nywish:group:'+me,'')); },[me]);
+
+    // ── превью приглашения (для экрана входа)
     useEffect(()=>{
-      if(!authDone) return;
-      const u=claimsCol().onSnapshot(snap=>{const m={};snap.forEach(d=>m[d.id]=d.data());setClaims(m);},
-        err=>{console.error(err);setClaims({});});
-      return u;
-    },[authDone]);
+      if(!pendingCode || !authUid) return;
+      listsCol().where('code','==',pendingCode).limit(1).get().then(q=>{
+        if(q.empty){ toast('Приглашение не найдено','🤷'); saveLocal('nywish:pendingJoin',''); setPendingCode(''); return; }
+        setInvite({ id:q.docs[0].id, ...q.docs[0].data() });
+      }).catch(console.error);
+    },[pendingCode,authUid]);
 
-    const myWishes    = useMemo(()=>items.filter(i=>i.addedByUid===authUid),[items,authUid]);
+    // ── профиль пользователя (список групп)
+    useEffect(()=>{
+      if(!me || !authUid) return;
+      return usersCol().doc(me).onSnapshot(s=>setUserDoc(s.exists?s.data():{}), e=>console.error('user',e));
+    },[me,authUid]);
 
-    const THREE_MONTHS = 90 * 24 * 60 * 60 * 1000;
-    // Желания которые надо проверить: старше 3 месяцев И не отложены (snooze)
-    const snoozedRaw = useMemo(()=>loadLocal('nywish:snoozed:'+userName,[]),[userName,items]);
-    // Фильтруем только те у кого срок отсрочки не истёк
-    const snoozedIds = useMemo(()=>snoozedRaw
-      .filter(s=>s?.until && Date.now() < s.until)
-      .map(s=>s.id)
-    ,[snoozedRaw]);
-    const staleWishes = useMemo(()=>myWishes.filter(w=>{
-      if(!w.createdAt) return false;
-      const age = Date.now() - w.createdAt;
-      return age > THREE_MONTHS && !snoozedIds.includes(w.id);
-    }),[myWishes,snoozedIds]);
-    const freshWishes = useMemo(()=>myWishes.filter(w=>!staleWishes.find(s=>s.id===w.id)),[myWishes,staleWishes]);
+    const isLegacyUser = !!userDoc && !Array.isArray(userDoc.groups);
+    const groupIds = useMemo(()=> !userDoc ? [] : Array.isArray(userDoc.groups) ? userDoc.groups : [LEGACY_LIST], [userDoc]);
+    const gidsKey = groupIds.join('|');
 
-    // «Всё ещё хочу» — откладываем напоминание ещё на 3 месяца
-    const handleSnoozeWish = (id) => {
-      const snoozed = loadLocal('nywish:snoozed:'+userName,[]);
-      // Сохраняем id + время когда отложили
-      const next = [...snoozed.filter(s=>s!==id&&s?.id!==id), {id, until: Date.now()+THREE_MONTHS}];
-      saveLocal('nywish:snoozed:'+userName, next);
-      // Принудительно обновляем список — пересчитываем
-      setItems(prev=>[...prev]);
+    // Добавить группу пользователю (старым пользователям сохраняем и семейный список)
+    const addGroupToUser = gid => usersCol().doc(me).set({ groups: FV.arrayUnion(...(isLegacyUser?[LEGACY_LIST]:[]), gid) },{merge:true});
+
+    // ── миграция: у старого семейного списка появляются название и код приглашения
+    const migrated = useRef(false);
+    useEffect(()=>{
+      if(!me || !authUid || !groupIds.includes(LEGACY_LIST) || migrated.current) return;
+      migrated.current = true;
+      const ref = listsCol().doc(LEGACY_LIST);
+      db.runTransaction(async tx=>{
+        const s = await tx.get(ref); const d = s.exists?s.data():{};
+        const patch = { members: FV.arrayUnion(me) };
+        if(!d.name) patch.name='Наша семья';
+        if(!d.emoji) patch.emoji='🎄';
+        if(!d.code) patch.code=genCode();
+        if(!d.createdAt) patch.createdAt=Date.now();
+        tx.set(ref,patch,{merge:true});
+      }).then(()=> isLegacyUser && usersCol().doc(me).set({groups:FV.arrayUnion(LEGACY_LIST)},{merge:true}))
+        .catch(e=>console.warn('migration (обновите правила Firestore):',e));
+    },[me,authUid,gidsKey,isLegacyUser]);
+
+    // ── перенос локального фото профиля в облако (один раз)
+    useEffect(()=>{
+      if(!me || !authUid) return;
+      const lp = loadLocal('profile:photo:'+me,''); const flag = 'nywish:photoMigrated:'+me;
+      if(!lp || loadLocal(flag,false)) return;
+      profilesCol().doc(me).get().then(s=>{ if(!(s.data()&&s.data().photo)) return profilesCol().doc(me).set({photo:lp},{merge:true}); })
+        .then(()=>saveLocal(flag,true)).catch(console.error);
+    },[me,authUid]);
+
+    // ── вступление по приглашению после входа
+    const joinByCode = async code => {
+      const q = await listsCol().where('code','==',code.trim().toUpperCase()).limit(1).get();
+      if(q.empty) throw new Error('not-found');
+      const g = q.docs[0];
+      await listsCol().doc(g.id).set({ members: FV.arrayUnion(me) },{merge:true});
+      if(!groupIds.includes(g.id)) await addGroupToUser(g.id);
+      setActiveGroup(g.id); setTab('people');
+      setTimeout(()=>{ FX.big(); toast(`Добро пожаловать в «${g.data().name}»!`, g.data().emoji||'🎉'); vibrate([30,50,30]); },300);
+      return g.id;
     };
-    const othersWishes= useMemo(()=>items.filter(i=>i.addedByUid!==authUid),[items,authUid]);
-    const peopleData  = useMemo(()=>{
-      const map={};
-      items.forEach(i=>{if(!i.ownerName)return;map[i.ownerName]=(map[i.ownerName]||0)+1;});
-      return Object.entries(map).map(([name,count])=>({name,count})).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
-    },[items]);
+    useEffect(()=>{
+      if(!me || !authUid || !userDoc || !pendingCode) return;
+      saveLocal('nywish:pendingJoin',''); setPendingCode(''); setInvite(null);
+      joinByCode(pendingCode).catch(e=>{ console.error(e); toast(e.message==='not-found'?'Приглашение не найдено':'Не удалось вступить в группу','⚠️'); });
+    },[me,authUid,!!userDoc,pendingCode]);
 
-    const feedNames   = useMemo(()=>{const s=new Set();othersWishes.forEach(w=>w.ownerName&&s.add(w.ownerName));return Array.from(s);},[othersWishes]);
-    const feedItems   = useMemo(()=>{
-      let arr = feedFilter==='my_claims' ? items.filter(w=>claims[w.id]?.claimerUid===authUid)
-              : feedFilter!=='all' ? items.filter(w=>w.ownerName===feedFilter)
-              : othersWishes;
-      return arr.slice().sort((a,b)=>{const ac=!!claims[a.id],bc=!!claims[b.id];return ac===bc?0:ac?1:-1;});
-    },[feedFilter,othersWishes,items,claims,authUid]);
-
-    const handleAdd = async ({title,url,note,image}) => {
-      setAddError('');
-      if(!userName.trim()){setAddError('Войдите сначала.');return;}
-      try{await itemsCol().add({title,url,note,image:image||null,ownerName:userName.trim(),addedByUid:authUid,createdAt:Date.now()});}
-      catch(e){console.error(e);setAddError('Не удалось добавить.');}
+    const createGroup = async (name,emoji) => {
+      const ref = listsCol().doc();
+      await ref.set({ name, emoji, code:genCode(), ownerName:me, members:[me], createdAt:Date.now() });
+      await addGroupToUser(ref.id);
+      setActiveGroup(ref.id); setGroupSheet(false); setTab('people');
+      FX.big(); toast(`Группа «${name}» создана — пригласите близких!`, emoji);
     };
-    const handleUpdate=async(id,u)=>{try{await itemsCol().doc(id).update(u);}catch(e){console.error(e);}};
-    const handleDelete=async id=>{try{await itemsCol().doc(id).delete();}catch(e){console.error(e);}};
-
-    const handleClaim = async wish => {
-      setClaimError('');
-      if(!userName.trim()){setClaimError('Войдите сначала.');return;}
-      if(wish.addedByUid===authUid){setClaimError('Нельзя бронировать своё желание.');return;}
-      const ref=claimsCol().doc(wish.id);
-      try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(s.exists)throw new Error('taken');tx.set(ref,{claimerUid:authUid,claimerName:userName.trim(),createdAt:Date.now()});});}
-      catch(e){setClaimError(e.message==='taken'?'Уже забронировано.':'Не удалось забронировать.');}
-    };
-    const handleUnclaim = async wish => {
-      setClaimError('');
-      if(!window.confirm('Снять бронь?'))return;
-      const ref=claimsCol().doc(wish.id);
-      try{await db.runTransaction(async tx=>{const s=await tx.get(ref);if(!s.exists)throw new Error();if(s.data().claimerUid!==authUid)throw new Error('not-owner');tx.delete(ref);});}
-      catch(e){setClaimError(e.message==='not-owner'?'Только вы можете снять свою бронь.':'Не удалось снять бронь.');}
+    const leaveGroup = async g => {
+      if(!await askConfirm({ e:'🚪', title:`Выйти из «${g.name}»?`, text:'Ваши желания в этой группе останутся, но вы перестанете видеть группу.', ok:'Выйти', danger:true })) return;
+      try{
+        await usersCol().doc(me).set({ groups: groupIds.filter(x=>x!==g.id) },{merge:true});
+        await listsCol().doc(g.id).set({ members: FV.arrayRemove(me) },{merge:true});
+        toast('Вы вышли из группы','👋');
+      }catch(e){ console.error(e); toast('Не получилось — проверьте правила Firestore','⚠️'); }
     };
 
-    const handleLogout = () => {
-      saveLocal('nywish:pin_ok','');
-      setAuthDone(false); setUserName(''); setTab('my');
+    // ── документы групп
+    useEffect(()=>{
+      if(!authUid || !groupIds.length) return;
+      const unsubs = groupIds.map(id => listsCol().doc(id).onSnapshot(
+        s => setGroupDocs(g=>({ ...g, [id]: s.exists ? { id, ...s.data() } : { id, name:id===LEGACY_LIST?'Наша семья':'Группа', emoji:'🎄' } })),
+        e => console.error('group',e)));
+      return ()=>unsubs.forEach(u=>u());
+    },[gidsKey,authUid]);
+    const groups = groupIds.map(id=>groupDocs[id]||{id,name:'…',emoji:'🎁'});
+    const gid = groupIds.includes(activeGroup) ? activeGroup : (groupIds[0]||null);
+    const group = gid ? groups.find(g=>g.id===gid) : null;
+    const setActiveGroup = id => { setActiveGroupS(id); saveLocal('nywish:group:'+me,id); setGroupSheet(false); };
+
+    // ── желания и брони активной группы
+    useEffect(()=>{
+      if(!authUid || !gid) return;
+      setLoading(true); setItems([]);
+      return itemsCol(gid).orderBy('createdAt','desc').onSnapshot(snap=>{
+        const a=[]; snap.forEach(d=>a.push({id:d.id,...d.data()})); setItems(a); setLoading(false);
+      }, e=>{ console.error(e); setLoading(false); });
+    },[gid,authUid]);
+    useEffect(()=>{
+      if(!authUid || !gid) return;
+      setClaims({});
+      return claimsCol(gid).onSnapshot(snap=>{ const m={}; snap.forEach(d=>m[d.id]=d.data()); setClaims(m); }, e=>{ console.error(e); setClaims({}); });
+    },[gid,authUid]);
+
+    // ── производные данные
+    const visible = useMemo(()=>items.filter(i=>!i.archivedAt),[items]);
+    const myWishes = useMemo(()=>visible.filter(i=>i.ownerName===me),[visible,me]);
+    const others = useMemo(()=>visible.filter(i=>i.ownerName!==me),[visible,me]);
+    const myGifts = useMemo(()=>items.filter(i=>i.ownerName!==me && isClaimBy(claims[i.id],me)),[items,claims,me]);
+
+    const people = useMemo(()=>{
+      const names = new Set([...(group&&group.members||[]), ...others.map(i=>i.ownerName)].filter(n=>n&&n!==me));
+      return Array.from(names).map(name=>{
+        const ws = others.filter(i=>i.ownerName===name);
+        const taken = ws.filter(w=>claims[w.id]).length;
+        const mine = ws.filter(w=>isClaimBy(claims[w.id],me)).length;
+        return { name, total:ws.length, taken, free:ws.length-taken, mine };
+      }).sort((a,b)=>a.name.localeCompare(b.name,'ru'));
+    },[group,others,claims,me]);
+    const covered = people.filter(p=>p.mine>0).length;
+
+    const profiles = useProfiles([me, ...people.map(p=>p.name)], !!(me&&authUid));
+    const myProfile = profiles[me]||{};
+    const saveProfile = patch => profilesCol().doc(me).set(patch,{merge:true}).catch(e=>{ console.error(e); toast('Не сохранилось — проверьте правила Firestore','⚠️'); });
+
+    const events = useMemo(()=>{
+      const ev = HOLIDAYS.map(h=>({ key:h.label, e:h.e, label:h.label, until:h.until, days:daysUntil(h.date) }));
+      people.forEach(p=>{ const b=profiles[p.name]&&profiles[p.name].birthday; if(b) ev.push({ key:'bd'+p.name, e:'🎂', label:'ДР · '+p.name, until:'До дня рождения · '+p.name, days:daysUntil(b) }); });
+      return ev.filter(x=>x.days!=null && x.days<=120).sort((a,b)=>a.days-b.days).slice(0,5);
+    },[people,profiles]);
+
+    // ── достижение «порадовал всех»
+    useEffect(()=>{
+      if(!gid || people.length<2 || covered!==people.length) return;
+      const k='nywish:ach:all:'+gid+':'+people.length;
+      if(loadLocal(k,false)) return; saveLocal(k,true);
+      setTimeout(()=>{ FX.big(); toast('У каждого будет подарок от вас! 🎅','🏆'); },400);
+    },[covered,people.length,gid]);
+
+    // ── действия с желаниями
+    const saveWish = async (data, el) => {
+      const editing = sheet && sheet.initial;
+      try {
+        if(editing){ await itemsCol(gid).doc(editing.id).update({ ...data, updatedAt:Date.now() }); toast('Сохранено','✓'); }
+        else {
+          await itemsCol(gid).add({ ...data, ownerName:me, addedByUid:authUid, createdAt:Date.now() });
+          burstFrom(el,{n:40}); vibrate(20);
+          toast(myWishes.length===0?'Первое желание! Пусть сбудется ✨':data.priority===3?'Мечта добавлена 🔥':'Желание добавлено','🌟');
+        }
+        setSheet(null);
+      } catch(e){ console.error(e); toast('Не удалось сохранить','⚠️'); }
+    };
+    // Убрать желание: если кто-то уже забронировал — мягко архивируем, чтобы дарящий узнал (сам владелец этого не видит)
+    const archiveWish = async (wish) => {
+      const ref = itemsCol(gid).doc(wish.id);
+      const c = await claimsCol(gid).doc(wish.id).get();
+      if(c.exists) await ref.update({ archivedAt:Date.now() }); else await ref.delete();
+    };
+    const removeWish = async wish => {
+      if(!await askConfirm({ e:'🗑️', title:'Убрать желание?', text:`«${wish.title}» исчезнет из вашего списка.`, ok:'Убрать', danger:true })) return;
+      try{ await archiveWish(wish); toast('Убрано','🗑️'); }catch(e){ console.error(e); toast('Не получилось','⚠️'); }
+    };
+    const receivedWish = async (wish, el) => {
+      burstFrom(el,{n:50,emoji:null}); vibrate([20,40,20]);
+      try{ await archiveWish(wish); toast('Ура! Мечта сбылась 🎉','🎁'); }catch(e){ console.error(e); }
     };
 
-    if(!authDone) return <AuthScreen onAuth={name=>{setUserName(name);setAuthDone(true);}}/>;
+    // ── брони
+    const claimWish = async (wish, coop, el) => {
+      if(wish.ownerName===me) return;
+      const ref = claimsCol(gid).doc(wish.id);
+      try {
+        await db.runTransaction(async tx=>{
+          const s = await tx.get(ref); if(s.exists) throw new Error('taken');
+          tx.set(ref,{ claimerName:me, claimerUid:authUid, createdAt:Date.now(), status:'reserved', coop:!!coop, participants:[me] });
+        });
+        burstFrom(el,{n:coop?35:60, ...(coop?{emoji:['🤝','✨']}:{})}); vibrate([15,30,15]);
+        const p = people.find(x=>x.name===wish.ownerName);
+        toast(coop?'Складчина открыта — другие увидят и присоединятся':(p&&p.mine===0?`${wish.ownerName} будет рад(а)! Первый подарок от вас`:'Забронировано — сюрприз в безопасности'), coop?'🤝':'🎁');
+      } catch(e){ toast(e.message==='taken'?'Кто-то успел раньше 😅':'Не удалось забронировать','⚠️'); }
+    };
+    const joinCoop = async (wish, el) => {
+      const ref = claimsCol(gid).doc(wish.id);
+      try {
+        await db.runTransaction(async tx=>{
+          const s = await tx.get(ref); if(!s.exists) throw new Error('gone');
+          const d = s.data(); if(!d.coop) throw new Error('solo');
+          tx.update(ref,{ participants: Array.from(new Set([...claimParts(d), me])) });
+        });
+        burstFrom(el,{n:30,emoji:['🤝','💛']}); vibrate(20); toast('Вы в складчине!','🤝');
+      } catch(e){ toast('Не получилось присоединиться','⚠️'); }
+    };
+    const unclaimWish = async wish => {
+      if(!await askConfirm({ e:'↩️', title:'Снять бронь?', text:`«${wish.title}» снова станет свободным для других.`, ok:'Снять' })) return;
+      const ref = claimsCol(gid).doc(wish.id);
+      try {
+        await db.runTransaction(async tx=>{
+          const s = await tx.get(ref); if(!s.exists) return;
+          const d = s.data(); const rest = claimParts(d).filter(n=>n!==me);
+          if(!isClaimBy(d,me)) throw new Error('not-owner');
+          if(rest.length===0) tx.delete(ref);
+          else tx.update(ref,{ participants:rest, claimerName: d.claimerName===me ? rest[0] : d.claimerName });
+        });
+        toast('Бронь снята','↩️');
+      } catch(e){ toast(e.message==='not-owner'?'Это не ваша бронь':'Не удалось снять бронь','⚠️'); }
+    };
+    const setStatus = async (wish, status, el) => {
+      try {
+        await claimsCol(gid).doc(wish.id).update({ status });
+        vibrate(15);
+        if(status==='given'){ burstFrom(el,{n:70,emoji:null,power:1.2}); toast(`Подарок вручён: ${wish.ownerName} 🎉`,'🎊');
+          const left = myGifts.filter(w=>w.id!==wish.id && (claims[w.id]||{}).status!=='given').length;
+          if(left===0) setTimeout(()=>{ FX.big(); toast('Все подарки вручены — вы лучший! 🏆','🎅'); },500);
+        } else if(status==='bought'){ burstFrom(el,{n:30,emoji:['🛍️','✨']}); toast('Куплено — минус одна забота','🛍️'); }
+        else if(status==='wrapped'){ burstFrom(el,{n:30,emoji:['🎀','✨']}); toast('Красиво упаковано!','🎀'); }
+      } catch(e){ console.error(e); toast('Не удалось обновить статус','⚠️'); }
+    };
+    const handlers = { claim:claimWish, join:joinCoop, unclaim:unclaimWish };
 
-    const myClaims = Object.entries(claims).filter(([,c])=>c.claimerUid===authUid).length;
+    // ── оверлей человека + кнопка «назад» на телефоне
+    const openPersonFn = name => { setOpenPerson(name); history.pushState({person:name},''); };
+    const closePerson = () => { if(history.state && history.state.person) history.back(); else setOpenPerson(null); };
+    useEffect(()=>{ const h=()=>setOpenPerson(null); addEventListener('popstate',h); return ()=>removeEventListener('popstate',h); },[]);
+
+    const logout = async () => {
+      if(!await askConfirm({ e:'👋', title:'Выйти из аккаунта?', ok:'Выйти', danger:true })) return;
+      saveLocal('nywish:pin_ok',''); setMe(''); setUserDoc(null); setGroupDocs({}); setItems([]); setClaims({}); setTab('people'); migrated.current=false;
+    };
+
+    const fx = (<>{snow && <Snow/>}<ToastHost/><ConfirmHost/><RingDefs/></>);
+
+    if(!me) return (<>{fx}<AuthScreen invite={invite} onAuth={(name,isNew)=>{ setMe(name); setTab(isNew?'my':'people'); if(isNew) setTimeout(()=>{FX.big();toast(`Добро пожаловать, ${name}!`,'🎉');},300); }}/></>);
+
+    // Нет ни одной группы — онбординг
+    if(userDoc && groupIds.length===0) return (
+      <>{fx}
+        <div className="app"><div className="screen fu" style={{paddingTop:40}}>
+          <div className="empty" style={{paddingBottom:16}}><div className="big">🏡</div>
+            <div className="page-title" style={{marginBottom:10}}>Привет, {me}!</div>
+            <div className="note">Вишлисты живут в группах: семья, друзья, коллеги.<br/>Создайте свою или вступите по коду от близких.</div>
+          </div>
+          <div className="card"><GroupCreateJoin onCreate={createGroup} onJoin={joinByCode}/></div>
+          <button className="btn btn-g btn-block" style={{marginTop:20}} onClick={logout}>Выйти</button>
+        </div></div>
+      </>
+    );
+
+    const activeGifts = myGifts.filter(w=>(claims[w.id]||{}).status!=='given').length;
+    const NAV = [
+      { id:'people',  icon:'👥', label:'Люди' },
+      { id:'feed',    icon:'💡', label:'Идеи' },
+      { id:'my',      icon:'⭐', label:'Моё' },
+      { id:'gifts',   icon:'🎁', label:'Дарю', badge:activeGifts },
+      { id:'profile', icon:'👤', label:'Профиль' },
+    ];
 
     return (
+      <>{fx}
       <div className="app">
-        {/* ── ЛЮДИ ── */}
-        {tab==='people' && (
-          <div className="screen fu">
-            <div className="page-header">
-              <div>
-                <div className="page-title">Вишлисты</div>
-                <div className="note" style={{fontSize:11,marginTop:3}}>Нажмите на человека чтобы подарить 🎁</div>
-              </div>
-            </div>
-            {loading&&<p className="note">Загружается…</p>}
-            {!loading&&peopleData.length===0&&<p className="note">Пока никто не добавил желания.</p>}
-            {peopleData.map(({name,count})=>{
-              const [c1,c2]=nameColor(name);
-              const myClaimsForPerson = Object.values(claims).filter(c=>c.claimerUid===authUid&&items.find(i=>i.id===Object.keys(claims).find(k=>claims[k]===c)&&i.ownerName===name)).length;
-              return (
-                <div className="person-card" key={name} onClick={()=>setOpenPerson(name)}>
-                  <div className="avatar" style={{width:46,height:46,fontSize:14,background:`linear-gradient(135deg,${c1},${c2})`,boxShadow:`0 3px 12px ${c1}44`}}>
-                    {name.slice(0,2).toUpperCase()}
-                  </div>
-                  <div style={{flex:1}}>
-                    <div style={{fontWeight:600,fontSize:15,color:'var(--t1)',marginBottom:2}}>{name}</div>
-                    <div className="note" style={{fontSize:11}}>{count} {count===1?'желание':count<5?'желания':'желаний'}</div>
-                  </div>
-                  <div style={{fontSize:18,color:'var(--t2)'}}>›</div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+        {tab==='people' && <PeopleTab group={group} groups={groups} people={people} profiles={profiles} loading={loading} events={events}
+          covered={covered} onOpen={openPersonFn} onOpenGroups={()=>setGroupSheet(true)}/>}
+        {tab==='feed' && <FeedTab wishes={others} claims={claims} me={me} people={people} profiles={profiles} handlers={handlers} onImg={setPreviewImage}/>}
+        {tab==='my' && <MyTab me={me} wishes={myWishes} loading={loading} profile={myProfile} onSaveLinks={links=>saveProfile({links})}
+          onEdit={w=>setSheet({initial:w})} onRemove={removeWish} onReceived={receivedWish} onImg={setPreviewImage}/>}
+        {tab==='gifts' && <GiftsTab gifts={myGifts} claims={claims} me={me} profiles={profiles} onStatus={setStatus} onUnclaim={unclaimWish}
+          onImg={setPreviewImage} onGoPeople={()=>setTab('people')}/>}
+        {tab==='profile' && <ProfileTab me={me} profile={myProfile} onSaveProfile={saveProfile}
+          stats={{wishes:myWishes.length,gifts:myGifts.length,given:myGifts.filter(w=>(claims[w.id]||{}).status==='given').length}}
+          groups={groups} activeId={gid} onPickGroup={id=>{setActiveGroup(id);toast('Группа: '+((groupDocs[id]||{}).name||''),(groupDocs[id]||{}).emoji||'🎁');}}
+          onLeaveGroup={leaveGroup} onCreateGroup={createGroup} onJoinGroup={joinByCode}
+          theme={theme} setTheme={setThemeS} snow={snow} setSnow={setSnow} onLogout={logout}/>}
 
-        {/* ── МОЁ ── */}
-        {tab==='my' && (
-          <div className="screen fu">
-            <div className="page-header">
-              <div className="page-title">Мои<br/>желания</div>
-            </div>
+        {(tab==='my'||tab==='feed') && <button className="fab" onClick={()=>{vibrate(10);setSheet({initial:null});}}>＋</button>}
 
-            {/* Устаревшие желания — напоминание */}
-            {staleWishes.length>0&&(
-              <div style={{marginBottom:16}}>
-                <div style={{
-                  background:'linear-gradient(135deg,rgba(200,169,110,0.12),rgba(200,120,50,0.08))',
-                  border:'1px solid rgba(200,169,110,0.3)',
-                  borderRadius:18,padding:'14px 16px',marginBottom:10,
-                }}>
-                  <div style={{display:'flex',gap:10,alignItems:'flex-start',marginBottom:10}}>
-                    <div style={{fontSize:22,flexShrink:0}}>⏰</div>
-                    <div>
-                      <div style={{fontWeight:700,color:'var(--gold)',fontSize:14,marginBottom:3}}>Проверьте старые желания</div>
-                      <div style={{fontSize:12,color:'rgba(200,169,110,0.7)',lineHeight:1.4}}>
-                        {staleWishes.length} {staleWishes.length===1?'желание уже':'желания уже'} больше 3 месяцев — актуально ещё?
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{display:'grid',gap:8}}>
-                    {staleWishes.map(w=>(
-                      <div key={w.id} style={{background:'rgba(0,0,0,0.2)',borderRadius:14,padding:'12px 14px'}}>
-                        <div style={{fontWeight:600,fontSize:14,color:'var(--t1)',marginBottom:3}}>{w.title}</div>
-                        {w.note&&<div style={{fontSize:12,color:'var(--t2)',marginBottom:3}}>{w.note}</div>}
-                        <div style={{fontSize:11,color:'rgba(200,169,110,0.6)',marginBottom:10}}>
-                          Добавлено {new Date(w.createdAt).toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}
-                        </div>
-                        <div style={{display:'flex',gap:8}}>
-                          <button className="btn btn-g" style={{flex:1,fontSize:12,padding:'8px 12px'}}
-                            onClick={()=>handleSnoozeWish(w.id)}>
-                            ✓ Всё ещё хочу
-                          </button>
-                          <button className="btn btn-d" style={{flex:1,fontSize:12,padding:'8px 12px'}}
-                            onClick={()=>handleDelete(w.id)}>
-                            🎁 Уже подарили
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {myWishes.length===0&&!loading&&(
-              <div style={{textAlign:'center',padding:'32px 0 16px'}}>
-                <div style={{fontSize:44,marginBottom:12}}>🌟</div>
-                <div className="note">Добавьте первое желание — нажмите ＋</div>
-              </div>
-            )}
-            <div style={{display:'grid',gap:8}}>
-              {freshWishes.map(w=><WishCardMy key={w.id} wish={w} locked={!!claims[w.id]} onDelete={handleDelete} onUpdate={handleUpdate} onImgClick={setPreviewImage} />)}
-            </div>
-          </div>
-        )}
-
-        {/* ── ЛЕНТА ── */}
-        {tab==='feed' && (
-          <div className="screen fu">
-            <div className="page-header">
-              <div className="page-title">Лента</div>
-            </div>
-            <div style={{display:'flex',gap:6,overflowX:'auto',paddingBottom:8,marginBottom:8,WebkitOverflowScrolling:'touch'}}>
-              {[['all','Все'],['my_claims','Мои брони'],...feedNames.map(n=>[n,n])].map(([val,label])=>(
-                <button key={val} onClick={()=>setFeedFilter(val)} style={{
-                  flexShrink:0,borderRadius:999,padding:'5px 12px',fontSize:12,fontWeight:600,border:'none',cursor:'pointer',
-                  background:feedFilter===val?`linear-gradient(135deg,var(--g1),var(--g2))`:'var(--s2)',
-                  color:feedFilter===val?'var(--t1)':'var(--t2)',
-                  boxShadow:feedFilter===val?'0 3px 12px rgba(90,122,56,.3)':'none',
-                }}>{label}</button>
-              ))}
-            </div>
-            {claimError&&<div className="err" style={{marginBottom:10}}>{claimError}</div>}
-            {feedItems.length===0&&!loading&&<p className="note">Пусто.</p>}
-            <div style={{display:'grid',gap:8}}>
-              {feedItems.map(w=>(
-                <div key={w.id}>
-                  {feedFilter==='all'&&<div style={{fontSize:10,fontWeight:700,color:'var(--gold)',marginBottom:4,letterSpacing:'.06em',textTransform:'uppercase'}}>{w.ownerName}</div>}
-                  <WishCardGuest wish={w} claim={claims[w.id]} userName={userName} authUid={authUid}
-                    onClaim={()=>handleClaim(w)} onUnclaim={()=>handleUnclaim(w)} onImgClick={setPreviewImage} />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── ПРОФИЛЬ ── */}
-        {tab==='profile' && (
-          <ProfileTab
-            userName={userName} authUid={authUid}
-            myWishes={myWishes} myClaims={myClaims}
-            claims={claims} items={items}
-            onLogout={handleLogout}
-            onUnclaim={handleUnclaim}
-            onImgClick={setPreviewImage}
-          />
-        )}
-
-        {/* ── FAB ── */}
-        {(tab==='my'||tab==='feed') && (
-          <button className="fab" onClick={()=>setShowAdd(true)}>＋</button>
-        )}
-
-        {/* ── BOTTOM NAV ── */}
         <nav className="bottom-nav">
-          {[
-            {id:'people', icon:'👥', label:'Люди'},
-            {id:'my',     icon:'🎁', label:'Моё'},
-            {id:'feed',   icon:'🔍', label:'Лента'},
-            {id:'profile',icon:'👤', label:'Профиль'},
-          ].map(({id,icon,label})=>(
-            <div key={id} className={`nav-item ${tab===id?'on':''}`} onClick={()=>setTab(id)}>
-              {tab===id&&<div className="nav-dot"/>}
-              <div className="nav-icon">{icon}</div>
-              <div className="nav-label">{label}</div>
+          {NAV.map(n=>(
+            <div key={n.id} className={`nav-item ${tab===n.id?'on':''}`} onClick={()=>{ if(tab!==n.id) vibrate(8); setTab(n.id); window.scrollTo({top:0}); }}>
+              <div className="nav-icon">{n.icon}</div>
+              <div className="nav-label">{n.label}</div>
+              {n.badge>0 && <div className="nav-badge">{n.badge}</div>}
             </div>
           ))}
         </nav>
 
-        {/* ── ADD SHEET ── */}
-        <AddWishSheet open={showAdd} onClose={()=>setShowAdd(false)} onAdd={handleAdd} disabled={!authUid} error={addError} />
+        <WishSheet open={!!sheet} initial={sheet&&sheet.initial} onClose={()=>setSheet(null)} onSave={saveWish}/>
 
-        {/* ── PERSON OVERLAY ── */}
-        <PersonOverlay
-          name={openPerson||''} open={!!openPerson}
-          onClose={()=>{setOpenPerson(null);setClaimError('');}}
-          items={items} claims={claims}
-          userName={userName} authUid={authUid}
-          onClaim={handleClaim} onUnclaim={handleUnclaim}
-          onImgClick={setPreviewImage} claimError={claimError}
-        />
+        <Sheet open={groupSheet} onClose={()=>setGroupSheet(false)}>
+          <div className="sheet-title">Группы</div>
+          <GroupList groups={groups} activeId={gid} me={me} onPick={setActiveGroup}/>
+          <div style={{marginTop:12}}><GroupCreateJoin onCreate={createGroup} onJoin={joinByCode} compact/></div>
+        </Sheet>
 
-        {/* ── IMAGE PREVIEW ── */}
-        {previewImage&&(
+        <PersonOverlay name={openPerson||''} open={!!openPerson} onClose={closePerson}
+          wishes={others.filter(w=>w.ownerName===openPerson)} claims={claims} profile={profiles[openPerson]} me={me}
+          handlers={handlers} onImg={setPreviewImage}/>
+
+        {previewImage && (
           <div className="img-overlay" onClick={()=>setPreviewImage(null)}>
-            <div style={{position:'relative'}} onClick={e=>e.stopPropagation()}>
-              <button style={{position:'absolute',top:-10,right:-10,width:30,height:30,borderRadius:'50%',background:'var(--s1)',border:'1px solid var(--b2)',cursor:'pointer',color:'var(--t1)',fontSize:13,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPreviewImage(null)}>✕</button>
-              <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'88vw',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,.7)'}} />
-            </div>
+            <img src={previewImage} alt="" style={{maxHeight:'85vh',maxWidth:'92vw',borderRadius:18,boxShadow:'0 30px 80px rgba(0,0,0,.7)'}}/>
           </div>
         )}
       </div>
+      </>
     );
   }
 
-  ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
 </script>
 </body>
 </html>
+
